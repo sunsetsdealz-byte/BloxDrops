@@ -1,12 +1,18 @@
-import React from "react";
-import { Heart, ArrowsClockwise, Crown, FireSimple } from "@phosphor-icons/react";
+import React, { useState, useRef, lazy, Suspense } from "react";
+import { Heart, ArrowsClockwise, Crown, FireSimple, Cube } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { Link } from "react-router-dom";
 import DropBadges from "./DropBadges";
 import RarityBorder from "./RarityBorder";
 
+// Heavy R3F viewer — lazy so it only loads when actually needed
+const ModelViewer = lazy(() => import("./ModelViewer"));
+
 export default function CreationCard({ item, onLikeToggle, onRemix, compact = false }) {
+  const [hover, setHover] = useState(false);
+  const enterTimer = useRef(null);
+
   const handleLike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -15,6 +21,18 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
       onLikeToggle && onLikeToggle(item.id, data.liked);
     } catch {}
   };
+
+  // Slight delay on hover-in to avoid mounting the canvas on accidental hovers
+  const onEnter = () => {
+    clearTimeout(enterTimer.current);
+    enterTimer.current = setTimeout(() => setHover(true), 220);
+  };
+  const onLeave = () => {
+    clearTimeout(enterTimer.current);
+    setHover(false);
+  };
+
+  const hasModel = !!item.model_url && item.status === "completed";
 
   return (
     <RarityBorder item={item} className="group">
@@ -35,14 +53,20 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
           )}
         </div>
 
-        {/* IMAGE — fully unobstructed avatar */}
+        {/* IMAGE — fully unobstructed avatar; hover swaps in live 3D viewer */}
         <Link to={`/studio?view=${item.id}`}>
-          <div className="aspect-[4/5] bg-gradient-to-br from-zinc-800 to-zinc-950 overflow-hidden relative">
+          <div
+            className="aspect-[4/5] bg-gradient-to-br from-zinc-800 to-zinc-950 overflow-hidden relative"
+            onMouseEnter={onEnter}
+            onMouseLeave={onLeave}
+          >
             {item.thumbnail_url ? (
               <img
                 src={item.thumbnail_url}
                 alt={item.prompt}
-                className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
+                className={`w-full h-full object-cover transition-all duration-500 ease-out ${
+                  hover && hasModel ? "opacity-0 scale-105" : "group-hover:scale-[1.04] opacity-100"
+                }`}
                 loading="lazy"
               />
             ) : (
@@ -51,27 +75,45 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
               </div>
             )}
 
-            {/* Subtle bottom gradient for chip readability */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+            {/* Live 3D preview overlay (mounted only on hover) */}
+            {hover && hasModel && (
+              <div className={`absolute inset-0 transition-opacity duration-500 ${hover ? "opacity-100" : "opacity-0"}`}>
+                <Suspense fallback={
+                  <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-[10px] uppercase tracking-widest">
+                    Loading 3D…
+                  </div>
+                }>
+                  <ModelViewer url={item.model_url} height="100%" showHint={false} allowTryOn={false} />
+                </Suspense>
+                <span className="absolute top-2 left-2 text-[9px] uppercase tracking-widest font-black bg-black/80 text-[#ccff00] border border-[#ccff00]/40 rounded-full px-2 py-0.5 inline-flex items-center gap-1 pointer-events-none">
+                  <Cube size={9} weight="fill" /> Live 3D
+                </span>
+              </div>
+            )}
 
-            {/* BOTTOM-LEFT (on image): featured boost pill if active */}
-            {item.is_featured && (
+            {/* Subtle bottom gradient for chip readability (only when not in 3D mode) */}
+            {!hover && (
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+            )}
+
+            {item.is_featured && !hover && (
               <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
                 <FireSimple size={10} weight="fill" /> Featured
               </span>
             )}
 
-            {/* BOTTOM-RIGHT (on image): type + style chips */}
-            <div className="absolute bottom-2 right-2 flex gap-1.5 flex-wrap justify-end">
-              <span className="text-[10px] uppercase tracking-widest bg-black/80 border border-white/15 rounded-full px-2 py-0.5 font-bold backdrop-blur-sm">
-                {item.attachment_type}
-              </span>
-              {item.style && item.style !== "auto" && (
-                <span className="text-[10px] uppercase tracking-widest bg-[#ccff00] text-black rounded-full px-2 py-0.5 font-bold">
-                  {item.style}
+            {!hover && (
+              <div className="absolute bottom-2 right-2 flex gap-1.5 flex-wrap justify-end">
+                <span className="text-[10px] uppercase tracking-widest bg-black/80 border border-white/15 rounded-full px-2 py-0.5 font-bold backdrop-blur-sm">
+                  {item.attachment_type}
                 </span>
-              )}
-            </div>
+                {item.style && item.style !== "auto" && (
+                  <span className="text-[10px] uppercase tracking-widest bg-[#ccff00] text-black rounded-full px-2 py-0.5 font-bold">
+                    {item.style}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </Link>
 
