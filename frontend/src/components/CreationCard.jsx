@@ -1,19 +1,13 @@
-import React, { useState, useRef, lazy, Suspense } from "react";
-import { Heart, ArrowsClockwise, Crown, FireSimple, Cube, ArrowsOut } from "@phosphor-icons/react";
+import React, { useState } from "react";
+import { Heart, ArrowsClockwise, Crown, FireSimple, MagnifyingGlassPlus } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
-import { Link } from "react-router-dom";
 import DropBadges from "./DropBadges";
 import RarityBorder from "./RarityBorder";
-import FullScreenModelModal from "./FullScreenModelModal";
-
-// Heavy R3F viewer — lazy so it only loads when actually needed
-const ModelViewer = lazy(() => import("./ModelViewer"));
+import ImageZoomModal from "./ImageZoomModal";
 
 export default function CreationCard({ item, onLikeToggle, onRemix, compact = false }) {
-  const [hover, setHover] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const enterTimer = useRef(null);
+  const [zoom, setZoom] = useState(false);
 
   const handleLike = async (e) => {
     e.preventDefault();
@@ -23,18 +17,6 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
       onLikeToggle && onLikeToggle(item.id, data.liked);
     } catch {}
   };
-
-  // Slight delay on hover-in to avoid mounting the canvas on accidental hovers
-  const onEnter = () => {
-    clearTimeout(enterTimer.current);
-    enterTimer.current = setTimeout(() => setHover(true), 220);
-  };
-  const onLeave = () => {
-    clearTimeout(enterTimer.current);
-    setHover(false);
-  };
-
-  const hasModel = !!item.model_url && item.status === "completed";
 
   return (
     <RarityBorder item={item} className="group">
@@ -55,83 +37,55 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
           )}
         </div>
 
-        {/* IMAGE — fully unobstructed avatar; hover swaps in live 3D viewer */}
-        <Link to={`/studio?view=${item.id}`}>
-          <div
-            className="aspect-[4/5] bg-gradient-to-br from-zinc-800 to-zinc-950 overflow-hidden relative"
-            onMouseEnter={onEnter}
-            onMouseLeave={onLeave}
+        {/* IMAGE — click to zoom (works on desktop + mobile) */}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setZoom(true); }}
+          data-testid="open-image-zoom"
+          aria-label="Zoom image"
+          className="aspect-[4/5] block w-full bg-gradient-to-br from-zinc-800 to-zinc-950 overflow-hidden relative cursor-zoom-in"
+        >
+          {item.thumbnail_url ? (
+            <img
+              src={item.thumbnail_url}
+              alt={item.prompt}
+              className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
+              {item.status === "pending" ? "GENERATING…" : "NO PREVIEW"}
+            </div>
+          )}
+
+          {/* Zoom icon (top-right) — visible on hover */}
+          <span
+            className="absolute top-2 right-2 z-10 w-9 h-9 rounded-full bg-black/80 border border-white/15 text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-hidden="true"
           >
-            {item.thumbnail_url ? (
-              <img
-                src={item.thumbnail_url}
-                alt={item.prompt}
-                className={`w-full h-full object-cover transition-all duration-500 ease-out ${
-                  hover && hasModel ? "opacity-0 scale-105" : "group-hover:scale-[1.04] opacity-100"
-                }`}
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
-                {item.status === "pending" ? "GENERATING…" : "NO PREVIEW"}
-              </div>
-            )}
+            <MagnifyingGlassPlus size={15} weight="bold" />
+          </span>
 
-            {/* Live 3D preview overlay (mounted only on hover) */}
-            {hover && hasModel && (
-              <div className={`absolute inset-0 transition-opacity duration-500 ${hover ? "opacity-100" : "opacity-0"}`}>
-                <Suspense fallback={
-                  <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-[10px] uppercase tracking-widest">
-                    Loading 3D…
-                  </div>
-                }>
-                  <ModelViewer url={item.model_url} height="100%" showHint={false} allowTryOn={false} />
-                </Suspense>
-                <span className="absolute top-2 left-2 text-[9px] uppercase tracking-widest font-black bg-black/80 text-[#ccff00] border border-[#ccff00]/40 rounded-full px-2 py-0.5 inline-flex items-center gap-1 pointer-events-none">
-                  <Cube size={9} weight="fill" /> Live 3D
-                </span>
-              </div>
-            )}
+          {/* Subtle bottom gradient for chip readability */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
 
-            {/* Expand-to-fullscreen 3D button — always visible (mobile-friendly) */}
-            {hasModel && (
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFullscreen(true); }}
-                data-testid="open-fullscreen-3d"
-                className="absolute top-2 right-2 z-20 w-9 h-9 rounded-full bg-black/80 border border-white/15 text-white flex items-center justify-center hover:bg-[#ccff00] hover:text-black hover:border-[#ccff00] transition-all backdrop-blur-sm shadow-lg"
-                aria-label="View live 3D"
-                title="View live 3D"
-              >
-                <ArrowsOut size={15} weight="bold" />
-              </button>
-            )}
+          {item.is_featured && (
+            <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
+              <FireSimple size={10} weight="fill" /> Featured
+            </span>
+          )}
 
-            {/* Subtle bottom gradient for chip readability (only when not in 3D mode) */}
-            {!hover && (
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-            )}
-
-            {item.is_featured && !hover && (
-              <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
-                <FireSimple size={10} weight="fill" /> Featured
+          <div className="absolute bottom-2 right-2 flex gap-1.5 flex-wrap justify-end">
+            <span className="text-[10px] uppercase tracking-widest bg-black/80 border border-white/15 rounded-full px-2 py-0.5 font-bold backdrop-blur-sm">
+              {item.attachment_type}
+            </span>
+            {item.style && item.style !== "auto" && (
+              <span className="text-[10px] uppercase tracking-widest bg-[#ccff00] text-black rounded-full px-2 py-0.5 font-bold">
+                {item.style}
               </span>
             )}
-
-            {!hover && (
-              <div className="absolute bottom-2 right-2 flex gap-1.5 flex-wrap justify-end">
-                <span className="text-[10px] uppercase tracking-widest bg-black/80 border border-white/15 rounded-full px-2 py-0.5 font-bold backdrop-blur-sm">
-                  {item.attachment_type}
-                </span>
-                {item.style && item.style !== "auto" && (
-                  <span className="text-[10px] uppercase tracking-widest bg-[#ccff00] text-black rounded-full px-2 py-0.5 font-bold">
-                    {item.style}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
-        </Link>
+        </button>
 
         {/* BOTTOM META — prompt + creator + actions */}
         <div className="p-3 space-y-2">
@@ -167,8 +121,8 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
         </div>
       </div>
 
-      {/* Full-screen immersive 3D modal */}
-      <FullScreenModelModal item={item} open={fullscreen} onClose={() => setFullscreen(false)} />
+      {/* Full-screen image zoom modal */}
+      <ImageZoomModal item={item} open={zoom} onClose={() => setZoom(false)} />
     </RarityBorder>
   );
 }

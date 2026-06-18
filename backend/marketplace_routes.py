@@ -19,7 +19,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 ROYALTY_PCT = 0.05  # 5% to original creator on resales
+PLATFORM_FEE_PCT = 0.05  # 5% platform fee to the company owner (admin "Blox")
 MIN_LISTING_BB = 100
+
+
+async def _get_platform_owner_id(db) -> Optional[str]:
+    """Find the user_id of the platform owner (admin user with name 'Blox')."""
+    owner = await db.users.find_one(
+        {"is_platform_owner": True},
+        {"_id": 1},
+    )
+    if not owner:
+        # Fallback to admin named Blox (case-insensitive)
+        owner = await db.users.find_one(
+            {"role": "admin", "name": {"$regex": "^blox$", "$options": "i"}},
+            {"_id": 1},
+        )
+    return str(owner["_id"]) if owner else None
 
 
 # -------------------------------------------------------------------- helpers
@@ -259,14 +275,21 @@ async def marketplace_buy(listing_id: str, payload: BuyRequest, user=Depends(get
         raise HTTPException(404, "Drop not found")
     original_creator_id = gen["user_id"]
     seller_id = listing["seller_user_id"]
+    platform_owner_id = await _get_platform_owner_id(db)
 
-    # Compute splits: if seller == creator → 100% to seller. Else 95% seller / 5% royalty.
+    # === Splits ===
+    # Platform fee: 5% to "Blox" owner, on every sale.
+    # Creator royalty: 5% to original creator, only when seller is NOT the creator (resale).
+    # Seller take: whatever remains.
+    platform_fee = max(1, int(price * PLATFORM_FEE_PCT)) if platform_owner_id else 0
     if seller_id == original_creator_id:
-        seller_take = price
         royalty = 0
     else:
-        royalty = max(1, int(price * ROYALTY_PCT))  # at least 1 BB if price >= 100
-        seller_take = price - royalty
+        royalty = max(1, int(price * ROYALTY_PCT))
+    seller_take = price - royalty - platform_fee
+    if seller_take < 0:
+        # Defensive: shouldn't happen with MIN_LISTING_BB=100, but guard anyway
+        raise HTTPException(400, "Sale price too low after fees")
 
     # === Atomic-ish settlement (Mongo transactions would be cleanest but our setup is single-replica) ===
     # 1. Debit buyer
@@ -285,7 +308,13 @@ async def marketplace_buy(listing_id: str, payload: BuyRequest, user=Depends(get
         await _record_bb_tx(db, original_creator_id, "royalty", royalty, creator_new,
                             {"listing_id": listing_id, "generation_id": listing["generation_id"], "edition_number": listing["edition_number"], "from_seller": seller_id})
 
-    # 4. Transfer ownership: delete old row, insert buyer's row
+    # 4. Platform fee to "Blox" owner
+    if platform_fee > 0 and platform_owner_id and platform_owner_id != seller_id:
+        owner_new = await _adjust_balance(db, platform_owner_id, platform_fee)
+        await _record_bb_tx(db, platform_owner_id, "platform_fee", platform_fee, owner_new,
+                            {"listing_id": listing_id, "generation_id": listing["generation_id"], "edition_number": listing["edition_number"], "from_seller": seller_id})
+
+    # 5. Transfer ownership: delete old row, insert buyer's row
     await db.ownerships.delete_one({
         "generation_id": listing["generation_id"],
         "edition_number": listing["edition_number"],
@@ -300,7 +329,7 @@ async def marketplace_buy(listing_id: str, payload: BuyRequest, user=Depends(get
         "source_listing_id": listing_id,
     })
 
-    # 5. Mark listing sold
+    # 6. Mark listing sold
     await db.marketplace_listings.update_one(
         {"_id": ObjectId(listing_id)},
         {"$set": {
@@ -317,6 +346,7 @@ async def marketplace_buy(listing_id: str, payload: BuyRequest, user=Depends(get
         "price": price,
         "seller_take": seller_take,
         "royalty": royalty,
+        "platform_fee": platform_fee,
         "buyer_balance_after": buyer_new,
         "generation_id": listing["generation_id"],
         "edition_number": listing["edition_number"],
