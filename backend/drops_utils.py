@@ -27,6 +27,19 @@ RARITY_DISPLAY = {
     "mythic":    {"label": "Mythic",    "color": "#ff0055", "glow": "rgba(255,0,85,0.85)"},
 }
 
+# VFX presets — modeled after Roblox UGC particle-emitter effects (e.g. Stormbreak
+# Horns of the Tempest Skies). Admin-attached per drop; rendered in the BloxDrops
+# 3D viewer via drei <Sparkles>. The frontend reads the `label` + `color` and
+# applies its own particle config tuned per preset.
+VFX_PRESETS = {
+    "purple_tempest": {"label": "Purple Tempest", "color": "#a855f7"},
+    "red_flame":      {"label": "Red Flame",      "color": "#ff4d2e"},
+    "blue_frost":     {"label": "Blue Frost",     "color": "#00e5ff"},
+    "gold_aura":      {"label": "Gold Aura",      "color": "#fbbf24"},
+    "toxic_green":    {"label": "Toxic Green",    "color": "#a3e635"},
+    "volt_lightning": {"label": "Volt Lightning", "color": "#ccff00"},
+}
+
 
 def make_mint_id() -> str:
     return uuid.uuid4().hex
@@ -105,6 +118,9 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
         doc["is_genesis"] = False
     if "is_coming_soon" not in doc:
         doc["is_coming_soon"] = False
+    # VFX preset (admin-attached particle effect)
+    if "vfx_preset" not in doc:
+        doc["vfx_preset"] = None
 
     tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]

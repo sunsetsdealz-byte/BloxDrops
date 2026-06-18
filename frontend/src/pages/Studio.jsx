@@ -46,6 +46,8 @@ export default function Studio() {
   const [genesisRemaining, setGenesisRemaining] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [vfxPresets, setVfxPresets] = useState([]);
+  const [savingVfx, setSavingVfx] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -122,6 +124,29 @@ export default function Studio() {
       toast.error(formatApiError(err));
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  // Admin-only: VFX preset attachment for drops
+  const isAdmin = user?.role === "admin";
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/admin/vfx/presets")
+      .then(({ data }) => setVfxPresets(data.presets || []))
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const setVfxPreset = async (presetKey) => {
+    if (!currentGen) return;
+    setSavingVfx(true);
+    try {
+      await api.post(`/admin/generations/${currentGen.id}/vfx`, { preset: presetKey });
+      setCurrentGen((prev) => prev ? { ...prev, vfx_preset: presetKey } : prev);
+      toast.success(presetKey ? "VFX preset attached" : "VFX preset cleared");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSavingVfx(false);
     }
   };
 
@@ -527,6 +552,7 @@ export default function Studio() {
             <ModelViewer
               url={currentGen?.status === "completed" ? currentGen.model_url : null}
               height={520}
+              vfxPreset={currentGen?.vfx_preset || null}
             />
             {currentGen?.status === "pending" && (
               <div
@@ -539,6 +565,51 @@ export default function Studio() {
                 <div className="w-12 h-12 rounded-full border-2 border-[#ccff00] border-t-transparent animate-spin" />
                 <p className="font-display font-bold text-lg uppercase tracking-wider">Generating</p>
                 <p className="text-xs text-zinc-400">Usually under 2 minutes</p>
+              </div>
+            )}
+            {currentGen?.status === "failed" && (
+              <div
+                data-testid="studio-status-failed"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-2xl px-6 text-center"
+                style={{
+                  background: "radial-gradient(circle at 50% 50%, #2a1015 0%, #0a0a0c 75%)",
+                }}
+              >
+                <div className="w-14 h-14 rounded-2xl border border-[#ff0055]/50 flex items-center justify-center"
+                     style={{ boxShadow: "0 0 28px rgba(255,0,85,0.25), inset 0 0 18px rgba(255,0,85,0.08)" }}>
+                  <Lightning size={26} weight="duotone" className="text-[#ff0055]" />
+                </div>
+                <div>
+                  <p className="font-display text-base font-black uppercase tracking-[0.3em] text-white mb-1"
+                     style={{ textShadow: "0 0 18px rgba(255,0,85,0.35)" }}>
+                    Generation failed
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-400 font-bold max-w-sm">
+                    The 3D model couldn&apos;t be created. Tap Regenerate to try again — your prompt &amp; image are saved.
+                  </p>
+                </div>
+                {ownsCurrent && (
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={regenerateCurrent}
+                      disabled={regenerating}
+                      data-testid="studio-failed-regenerate"
+                      className="rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-all disabled:opacity-50"
+                    >
+                      <ArrowClockwise size={14} weight="bold" />
+                      {regenerating ? "Queuing…" : "Regenerate"}
+                    </button>
+                    <button
+                      onClick={deleteCurrent}
+                      disabled={deleting}
+                      data-testid="studio-failed-delete"
+                      className="rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 transition-all disabled:opacity-50"
+                    >
+                      <Trash size={14} weight="bold" />
+                      {deleting ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {currentGen?.status === "completed" && (
@@ -636,6 +707,55 @@ export default function Studio() {
                       </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* === ADMIN: VFX PRESET PICKER === */}
+              {isAdmin && vfxPresets.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-white/8" data-testid="admin-vfx-picker">
+                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold flex items-center gap-2">
+                      <Lightning size={11} weight="fill" className="text-[#ccff00]" />
+                      Admin · VFX Animation
+                    </p>
+                    {currentGen.vfx_preset && (
+                      <button
+                        onClick={() => setVfxPreset(null)}
+                        disabled={savingVfx}
+                        data-testid="vfx-clear"
+                        className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 hover:text-[#ff0055] transition-colors disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {vfxPresets.map((p) => {
+                      const active = currentGen.vfx_preset === p.key;
+                      return (
+                        <button
+                          key={p.key}
+                          onClick={() => setVfxPreset(p.key)}
+                          disabled={savingVfx}
+                          data-testid={`vfx-preset-${p.key}`}
+                          className={`rounded-full px-3.5 py-1.5 text-[10px] uppercase tracking-[0.15em] font-black flex items-center gap-2 border transition-all disabled:opacity-50 ${
+                            active
+                              ? "bg-white/10 text-white border-white/40 shadow-[0_0_14px_rgba(255,255,255,0.15)]"
+                              : "bg-black/40 text-zinc-300 border-white/10 hover:border-white/30 hover:bg-white/5"
+                          }`}
+                        >
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ background: p.color, boxShadow: `0 0 8px ${p.color}` }}
+                          />
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] tracking-wider text-zinc-500 mt-3">
+                    Effects render live in the viewer above. Inspired by Roblox UGC particle emitters (e.g. Stormbreak Tempest).
+                  </p>
                 </div>
               )}
             </div>

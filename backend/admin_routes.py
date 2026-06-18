@@ -455,3 +455,56 @@ async def cleanup_stale_models(user=Depends(get_current_user)):
         "founder_repointed": founder_res.modified_count,
         "stale_deleted": del_res.deleted_count,
     }
+
+
+
+# ============== VFX PRESETS (admin attaches particle effects to drops) ==============
+class VfxPresetPayload(BaseModel):
+    preset: str | None = Field(default=None, description="One of VFX_PRESETS keys, or null to clear")
+
+
+@router.get("/vfx/presets")
+async def list_vfx_presets(user=Depends(get_current_user)):
+    """Returns the catalog of VFX presets admins can attach to drops."""
+    _require_admin(user)
+    from drops_utils import VFX_PRESETS
+    return {
+        "presets": [
+            {"key": k, "label": v["label"], "color": v["color"]}
+            for k, v in VFX_PRESETS.items()
+        ]
+    }
+
+
+@router.post("/generations/{generation_id}/vfx")
+async def set_generation_vfx(
+    generation_id: str,
+    payload: VfxPresetPayload,
+    user=Depends(get_current_user),
+):
+    """Attach (or clear) a particle-effect preset on a drop. Admin only."""
+    _require_admin(user)
+    from server import db
+    from drops_utils import VFX_PRESETS
+
+    if payload.preset is not None and payload.preset not in VFX_PRESETS:
+        raise HTTPException(status_code=400, detail=f"Unknown preset. Valid: {list(VFX_PRESETS.keys())}")
+
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"vfx_preset": payload.preset}},
+    )
+
+    await _log(db, user, "set_vfx_preset", None, {
+        "generation_id": generation_id,
+        "preset": payload.preset,
+    })
+
+    return {"ok": True, "generation_id": generation_id, "vfx_preset": payload.preset}

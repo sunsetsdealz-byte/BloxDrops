@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center, Html, Bounds, useBounds } from "@react-three/drei";
 import { MagnifyingGlassPlus, X } from "@phosphor-icons/react";
 import UnavailablePlaceholder from "./UnavailablePlaceholder";
+import VFXLayer from "./VFXLayer";
 
 function Model({ url }) {
   const { scene } = useGLTF(url);
@@ -51,7 +52,7 @@ class ModelErrorBoundary extends React.Component {
 
 // `allowTryOn` retained as a prop name for backwards-compat; semantically it now
 // toggles the Zoom (fullscreen) button visibility.
-export default function ModelViewer({ url, height = 360, showHint = true, allowTryOn = true, allowZoom }) {
+export default function ModelViewer({ url, height = 360, showHint = true, allowTryOn = true, allowZoom, vfxPreset = null }) {
   const showZoomBtn = allowZoom ?? allowTryOn;
   const [zoomed, setZoomed] = useState(false);
   const isFullHeight = height === "100%";
@@ -113,6 +114,7 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
                 </Center>
                 <AutoFit />
               </Bounds>
+              <VFXLayer preset={vfxPreset} />
               <Environment preset="city" />
             </Suspense>
             <OrbitControls
