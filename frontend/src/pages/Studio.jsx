@@ -40,7 +40,15 @@ export default function Studio() {
   const [history, setHistory] = useState([]);
   const [exporting, setExporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [genesisRemaining, setGenesisRemaining] = useState(null);
   const pollRef = useRef(null);
+
+  // Pull live Genesis counter
+  useEffect(() => {
+    api.get("/stats")
+      .then((r) => setGenesisRemaining(r.data?.genesis_remaining ?? null))
+      .catch(() => {});
+  }, []);
 
   const uploadFile = async (file) => {
     if (!file) return;
@@ -294,10 +302,29 @@ export default function Studio() {
 
             {/* EDITION CAP SELECTOR — drop scarcity */}
             <div className="mt-4">
-              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 flex items-center gap-1.5">
-                <Hash size={11} weight="bold" /> Edition supply
-              </label>
-              <div className="grid grid-cols-5 gap-1 mt-1.5" data-testid="studio-edition-caps">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 flex items-center gap-1.5">
+                  <Hash size={11} weight="bold" /> Edition supply
+                </label>
+                {genesisRemaining !== null && genesisRemaining > 0 && (
+                  <span
+                    className={`genesis-counter text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1 ${
+                      genesisRemaining <= 20 ? "genesis-counter-urgent" : ""
+                    }`}
+                    data-testid="genesis-counter"
+                    title="First 100 mints on BloxDrops are GENESIS forever"
+                  >
+                    <span className="genesis-counter-dot" />
+                    Genesis · {genesisRemaining} / 100 left
+                  </span>
+                )}
+                {genesisRemaining === 0 && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    Genesis · Sold Out
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-1 mt-1" data-testid="studio-edition-caps">
                 {EDITION_CAP_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}

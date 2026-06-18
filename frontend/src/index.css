@@ -541,6 +541,33 @@ body {
   box-shadow: 0 0 16px rgba(255,0,85,0.55);
 }
 
+/* GENESIS counter (live-remaining pill on Studio) */
+.genesis-counter {
+  background: linear-gradient(90deg, #fde68a, #fbbf24, #fde68a);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  animation: legendaryShine 4.2s linear infinite;
+}
+.genesis-counter-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24, 0 0 16px rgba(251,191,36,0.7);
+  animation: livePulse 1.4s ease-in-out infinite;
+  -webkit-background-clip: initial;
+          background-clip: initial;
+  display: inline-block;
+}
+.genesis-counter-urgent {
+  animation: legendaryShine 1.4s linear infinite,
+             genesisUrgent 1.2s ease-in-out infinite;
+}
+@keyframes genesisUrgent {
+  0%, 100% { letter-spacing: 0.10em; }
+  50%      { letter-spacing: 0.18em; }
+}
+
 @layer base {
   :root {
     --background: 240 6% 4%;

@@ -401,6 +401,8 @@ async def public_stats():
         "status": "completed",
         "created_at": {"$gte": today_start},
     })
+    total_genesis = await db.generations.count_documents({"is_genesis": True})
+    genesis_remaining = max(0, GENESIS_CAP - total_genesis)
     return {
         "total_creations": total,
         "pending_now": pending,
@@ -408,4 +410,7 @@ async def public_stats():
         "battles_settled": battles,
         "total_likes": likes,
         "today_creations": today,
+        "genesis_total": GENESIS_CAP,
+        "genesis_minted": min(total_genesis, GENESIS_CAP),
+        "genesis_remaining": genesis_remaining,
     }

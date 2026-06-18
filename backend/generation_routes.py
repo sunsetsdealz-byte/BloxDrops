@@ -167,9 +167,9 @@ async def _create_generation_record(
     mint_id = make_mint_id()
     signature_hash = make_signature(user["id"], mint_id, created_iso)
 
-    # Genesis: first 100 drops ever forged on the platform
-    total_drops = await db.generations.count_documents({})
-    is_genesis = total_drops < GENESIS_CAP
+    # Genesis: first 100 drops ever forged on the platform — count by flag, not total docs
+    total_genesis = await db.generations.count_documents({"is_genesis": True})
+    is_genesis = total_genesis < GENESIS_CAP
 
     doc = {
         "user_id": user["id"],
