@@ -150,12 +150,22 @@ async def _create_generation_record(
     source_image_url: Optional[str] = None,
     challenge_id: Optional[str] = None,
     original_prompt: Optional[str] = None,
+    edition_cap: int = 0,
 ):
     from server import db
+    from drops_utils import make_mint_id, make_signature, EDITION_CAPS
     is_admin = user.get("role") == "admin"
     # Admins bypass credit checks and never get charged
     if not is_admin and user.get("credits", 0) <= 0:
         raise HTTPException(status_code=402, detail="Out of credits. Upgrade your plan.")
+
+    # Sanitize edition_cap (only allow whitelisted values)
+    if edition_cap not in EDITION_CAPS:
+        edition_cap = 0
+
+    created_iso = now_utc().isoformat()
+    mint_id = make_mint_id()
+    signature_hash = make_signature(user["id"], mint_id, created_iso)
 
     doc = {
         "user_id": user["id"],
@@ -175,8 +185,15 @@ async def _create_generation_record(
         "remix_count": 0,
         "remixed_from": None,
         "challenge_id": challenge_id,
-        "created_at": now_utc().isoformat(),
+        "created_at": created_iso,
         "free_by_admin": is_admin,
+        # === COLLECTIBILITY ===
+        "edition_cap": edition_cap,           # 0 = unlimited
+        "edition_number": 1,                  # creator's original is always #1
+        "editions_minted": 1,
+        "mint_id": mint_id,
+        "signature_hash": signature_hash,
+        "is_founder_signed": is_admin,        # admins auto-sign their drops
     }
     res = await db.generations.insert_one(doc)
     gen_id = str(res.inserted_id)
@@ -200,6 +217,7 @@ async def generate_text_to_3d(
         payload.attachment_type, payload.style,
         challenge_id=payload.challenge_id,
         original_prompt=payload.prompt,
+        edition_cap=payload.edition_cap,
     )
     if _has_fal_key():
         bg.add_task(_run_fal_generation, gen_id, full_prompt)
@@ -219,6 +237,7 @@ async def generate_image_to_3d(
         user, f"Image-to-3D: {payload.attachment_type}", "image",
         payload.attachment_type, payload.style,
         source_image_url=payload.image_url,
+        edition_cap=payload.edition_cap,
     )
     if _has_fal_key():
         bg.add_task(_run_fal_generation, gen_id, doc["prompt"], payload.image_url)
@@ -230,6 +249,7 @@ async def generate_image_to_3d(
 @router.get("/generate/{generation_id}")
 async def get_generation(generation_id: str, user=Depends(get_current_user)):
     from server import db
+    from drops_utils import enrich_drop
     try:
         doc = await db.generations.find_one({"_id": ObjectId(generation_id)})
     except Exception:
@@ -242,6 +262,7 @@ async def get_generation(generation_id: str, user=Depends(get_current_user)):
         like = await db.likes.find_one({"user_id": user["id"], "generation_id": doc["id"]})
         is_liked = bool(like)
     doc["is_liked"] = is_liked
+    enrich_drop(doc)
     return doc
 
 

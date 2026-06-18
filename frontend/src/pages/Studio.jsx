@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
 import RobloxExportModal from "../components/RobloxExportModal";
+import DropBadges from "../components/DropBadges";
+import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
 
 const ATTACHMENTS = ["Hat", "Hair", "Back", "Neck", "Face", "Shoulder", "Hoodie", "Shirt", "Jacket", "auto"];
@@ -31,6 +33,7 @@ export default function Studio() {
   const [uploading, setUploading] = useState(false);
   const [attachment, setAttachment] = useState("Hat");
   const [style, setStyle] = useState("auto");
+  const [editionCap, setEditionCap] = useState(0); // 0 = unlimited
   const [generating, setGenerating] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [currentGen, setCurrentGen] = useState(null);
@@ -117,7 +120,7 @@ export default function Studio() {
     setGenerating(true);
     try {
       const { data } = await api.post("/generate/text-to-3d", {
-        prompt, attachment_type: attachment, style,
+        prompt, attachment_type: attachment, style, edition_cap: editionCap,
       });
       setCurrentGen({ id: data.id, status: "pending", original_prompt: prompt, attachment_type: attachment, style });
       refresh();
@@ -134,7 +137,7 @@ export default function Studio() {
     setGenerating(true);
     try {
       const { data } = await api.post("/generate/image-to-3d", {
-        image_url: imageUrl, attachment_type: attachment, style,
+        image_url: imageUrl, attachment_type: attachment, style, edition_cap: editionCap,
       });
       setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style });
       refresh();
@@ -289,6 +292,32 @@ export default function Studio() {
               </div>
             </div>
 
+            {/* EDITION CAP SELECTOR — drop scarcity */}
+            <div className="mt-4">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 flex items-center gap-1.5">
+                <Hash size={11} weight="bold" /> Edition supply
+              </label>
+              <div className="grid grid-cols-5 gap-1 mt-1.5" data-testid="studio-edition-caps">
+                {EDITION_CAP_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-testid={`edition-cap-${opt.value}`}
+                    onClick={() => setEditionCap(opt.value)}
+                    title={opt.sub}
+                    className={`edition-cap-pill rarity-${opt.tier} ${
+                      editionCap === opt.value ? "edition-cap-active" : ""
+                    } rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all`}
+                  >
+                    {opt.value === 0 ? "∞" : opt.value === 1 ? "1/1" : opt.value}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-1.5 leading-snug">
+                {EDITION_CAP_OPTIONS.find((o) => o.value === editionCap)?.sub}
+              </p>
+            </div>
+
             <div className="flex gap-2 mt-5">
               {mode === "text" && (
                 <button
@@ -411,6 +440,26 @@ export default function Studio() {
                   </span>
                 </div>
               </div>
+
+              {/* === DROP PROVENANCE / COLLECTIBILITY PANEL === */}
+              {currentGen.rarity_tier && (
+                <div className="mt-5 pt-5 border-t border-white/8" data-testid="drop-provenance">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-2">
+                        Drop · Provenance
+                      </p>
+                      <DropBadges item={currentGen} />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">Mint ID</p>
+                      <p className="font-mono text-xs text-[#ccff00]" data-testid="mint-signature">
+                        {signatureShort(currentGen)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

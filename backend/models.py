@@ -57,12 +57,14 @@ class GenerationRequest(BaseModel):
     attachment_type: str = "Hat"  # Hat, Hair, Back, Neck, Face, Hoodie, Shirt, Pants, auto
     style: str = "auto"  # auto, anime, gothic, streetwear, cyberpunk, realistic, fantasy
     challenge_id: Optional[str] = None
+    edition_cap: int = 0  # 0 = unlimited, else 1 / 10 / 50 / 100
 
 
 class ImageGenerationRequest(BaseModel):
     image_url: str
     attachment_type: str = "auto"
     style: str = "auto"
+    edition_cap: int = 0
 
 
 class PromptEnhanceRequest(BaseModel):

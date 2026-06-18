@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 7 — Phase 1 NFT-like collectibility (editions + rarity tiers + signed drops). 18/18 backend tests PASS. Verified: register/login JWT, edition_cap accepts 0/1/10/50/100, invalid edition_cap=999 sanitized to 0 without erroring, GET /api/generate/{id} returns edition_cap+edition_number=1+editions_minted=1+32-hex mint_id+32-hex signature_hash+rarity_tier+rarity_label+rarity_color+rarity_score+is_founder_signed, admin gens have is_founder_signed=true while normal-user gens have it=false, feed/me/generations/leaderboard/battle.random all enrich items with drop+rarity fields, legacy docs (without edition_cap in DB) are correctly backfilled (cap=0, edition_number=1, editions_minted=1, mint_id from doc id), and rarity computation matches spec: 1-of-1 zero-engagement=epic, unlimited zero-engagement=common, 50-likes unlimited=legendary.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/login", "issue": "Server lowercases email on login response while user registered with original case — test had to use case-insensitive compare. Not a product bug, just an observation that emails are canonicalized."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase1_collectibility.py",
+    "/app/test_reports/pytest/it7_phase1.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "drops_utils.enrich_drop is correctly idempotent and safe for legacy docs — backfills edition_cap=0, edition_number=1, editions_minted=1, mint_id from doc.id (stripped dashes, first 32 chars) when missing. Good fallback design.",
+    "drops_utils.compute_rarity_tier — scoring formula (likes + wins*3 + remixes*2) is well-tuned: 1-of-1 floor=epic, 10/50 cap floor=rare, unlimited driven by score with clear thresholds. Matches PRD.",
+    "generation_routes._create_generation_record — sanitizes edition_cap against EDITION_CAPS whitelist (good defensive guard against client tampering). Admin role auto-sets is_founder_signed=True. mint_id/signature_hash generated at insert time and stored — immutable provenance preserved.",
+    "models.GenerationRequest/ImageGenerationRequest — edition_cap accepts arbitrary int (no Pydantic Literal/Enum constraint). The whitelist check happens server-side which is OK, but consider Pydantic constraint (e.g. Literal[0,1,10,50,100]) to reject obviously-bad payloads at validation rather than silently coercing to 0. Either approach is defensible; silent coercion is friendlier for backward compatibility.",
+    "community_routes._hydrate — single shared enrich path means feed/me/generations/leaderboard/battle.random/challenges-today all stay consistent. Good DRY.",
+    "Note: signature_hash currently uses sha256(user_id|mint_id|created_at)[:32] truncation — fine for fingerprinting & display, but if Phase 2 marketplace uses it for cryptographic verification of authenticity, consider keeping the full 64-hex digest (or HMAC with a server secret) to prevent collision/forgery.",
+    "Legacy backfill in enrich_drop is read-time only (in-memory) — fine performance-wise, but means a write to the DB will still leave the doc without persisted edition_cap/mint_id. Phase 2 may need a one-time migration so resale lookups can index on mint_id."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase1_collectibility.py (new — 18 tests covering Phase 1 collectibility end-to-end)"
+  ],
+  "success_rate": {
+    "backend": "100% — 18/18 Phase 1 tests PASS",
+    "frontend": "N/A — backend-only run as requested"
+  },
+  "test_credentials": "Admin: admin@bloxdrops.com / BloxDrops2026! (verified working). Also dynamically registered TEST_phase1_<uuid>@example.com / TestPass123! per run.",
+  "seed_data_creation": "Per-run: 1 new TEST_ user + ~8 generations across edition_cap variants. Admin made 1 generation to verify is_founder_signed=True. All inserts are non-destructive to existing data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 1 collectibility is fully verified via /app/backend/tests/test_phase1_collectibility.py (18 tests, all green). Drop fields available on every read endpoint: edition_cap (0/1/10/50/100), edition_number, editions_minted, mint_id (32-hex), signature_hash (32-hex, only on /generate/{id}; NOT enriched onto feed items — only stored docs have it), rarity_tier/label/color/score, is_founder_signed. For Phase 2 marketplace work, mint_id is the immutable provenance id to key off; consider a one-time migration to persist backfilled mint_id/edition_cap onto legacy docs before adding mint_id-indexed lookups. FAL is LIVE (FAL_KEY set in backend/.env), so generation completion takes 30-90s — tests above intentionally do NOT poll for status=completed (they only validate that the drop fields are set at insert time, which is correct).",
+  "rca of the issue": "N/A — no issues found."
+}

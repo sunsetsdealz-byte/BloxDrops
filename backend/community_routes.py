@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from auth_utils import get_current_user, get_optional_user
 from models import BattleVoteRequest, now_utc
+from drops_utils import enrich_drop
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def _hydrate(doc: dict) -> dict:
     doc["id"] = str(doc.pop("_id"))
+    enrich_drop(doc)
     return doc
 
 
