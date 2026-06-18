@@ -545,7 +545,7 @@ function HeroShowcase() {
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">manifesto</p>
           <p className="text-[11px] font-bold italic leading-tight">
-            &ldquo;Every kid with an idea is one prompt away from a Roblox empire.&rdquo;
+            &ldquo;Every person with an idea is one prompt away from a Roblox empire.&rdquo;
           </p>
         </div>
       </motion.div>
