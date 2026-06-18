@@ -9,7 +9,7 @@ import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
 import ModelViewer from "../components/ModelViewer";
 
-const HERO_IMAGE = "https://customer-assets.emergentagent.com/job_ai-generator-66/artifacts/eu7kzqzc_me%20roblox.png";
+const HERO_IMAGE = "/hero/character.png";
 
 /* ---------- AnimatedNumber: count-up on mount ---------- */
 function AnimatedNumber({ value = 0, duration = 1.6, className = "" }) {
