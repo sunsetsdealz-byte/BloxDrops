@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { X, CheckCircle, WarningCircle, Copy, DownloadSimple, Robot } from "@phosphor-icons/react";
+import { X, CheckCircle, WarningCircle, Copy, DownloadSimple, Robot, Plug, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { api, API } from "../lib/api";
+import { api, API, formatApiError } from "../lib/api";
 
 export default function RobloxExportModal({ generationId, onClose }) {
   const [manifest, setManifest] = useState(null);
   const [checklist, setChecklist] = useState(null);
+  const [robloxStatus, setRobloxStatus] = useState(null);
+  const [pushing, setPushing] = useState(false);
+  const [pushResult, setPushResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [m, c] = await Promise.all([
+        const [m, c, rs] = await Promise.all([
           api.get(`/export/${generationId}/manifest`),
           api.get(`/export/${generationId}/checklist`),
+          api.get(`/roblox/status`).catch(() => ({ data: { connected: false } })),
         ]);
         setManifest(m.data);
         setChecklist(c.data);
+        setRobloxStatus(rs.data);
       } catch (err) {
         toast.error("Couldn't load export details");
       } finally {
@@ -26,6 +31,20 @@ export default function RobloxExportModal({ generationId, onClose }) {
     };
     load();
   }, [generationId]);
+
+  const pushToRoblox = async () => {
+    setPushing(true);
+    setPushResult(null);
+    try {
+      const { data } = await api.post(`/roblox/upload/${generationId}`);
+      setPushResult(data);
+      toast.success(`Pushed to Roblox · Asset #${data.asset_id}`);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setPushing(false);
+    }
+  };
 
   const copyManifest = () => {
     if (!manifest) return;
@@ -118,7 +137,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
             </div>
 
             {/* ACTIONS */}
-            <div className="flex flex-wrap gap-3 mb-6">
+            <div className="flex flex-wrap gap-3 mb-4">
               <button
                 onClick={downloadGlb}
                 data-testid="export-download-glb"
@@ -133,6 +152,64 @@ export default function RobloxExportModal({ generationId, onClose }) {
               >
                 <Copy size={16} weight="bold" /> Copy manifest
               </button>
+            </div>
+
+            {/* ROBLOX PUSH */}
+            <div className="bg-gradient-to-br from-[#ccff00]/8 via-zinc-900/40 to-[#ff0055]/8 border border-[#ccff00]/30 rounded-2xl p-5 mb-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Robot size={18} weight="duotone" className="text-[#ccff00]" />
+                <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#ccff00]">Direct push · Open Cloud</p>
+              </div>
+              {robloxStatus?.connected ? (
+                <>
+                  <p className="text-sm text-zinc-300 mb-3">
+                    Send the preview to <strong>@{robloxStatus.roblox_user_id}</strong>'s Roblox Inventory as a Decal in one click.
+                    Then import the .GLB into Studio for the marketplace publish.
+                  </p>
+                  {pushResult ? (
+                    <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
+                      <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">Pushed ✓</p>
+                      <p className="text-sm text-zinc-200">
+                        Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
+                      </p>
+                      {pushResult.inventory_url && (
+                        <a
+                          href={pushResult.inventory_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-[#ccff00] font-bold underline flex items-center gap-1"
+                        >
+                          Open in Roblox Inventory <ArrowSquareOut size={12} weight="bold" />
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={pushToRoblox}
+                      disabled={pushing}
+                      data-testid="export-push-roblox"
+                      className="bg-[#ccff00] text-black rounded-full px-5 py-2.5 text-sm font-black uppercase tracking-wider hover:shadow-[0_0_24px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <Robot size={16} weight="fill" />
+                      {pushing ? "Pushing…" : "Push to Roblox"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-zinc-300">
+                    Connect your Roblox account to push creations straight to your Inventory.
+                  </p>
+                  <a
+                    href="/profile"
+                    onClick={onClose}
+                    className="btn-ghost rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                    data-testid="export-connect-roblox-cta"
+                  >
+                    <Plug size={12} weight="bold" /> Connect now
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* INSTRUCTIONS */}

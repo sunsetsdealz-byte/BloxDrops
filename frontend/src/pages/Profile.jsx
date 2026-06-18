@@ -3,7 +3,125 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { api, formatApiError } from "../lib/api";
-import { Coins, Cube, Trophy, Heart, Crown, Lightning } from "@phosphor-icons/react";
+import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected } from "@phosphor-icons/react";
+
+function RobloxConnectCard() {
+  const [status, setStatus] = useState(null);
+  const [apiKey, setApiKey] = useState("");
+  const [userId, setUserId] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    try {
+      const { data } = await api.get("/roblox/status");
+      setStatus(data);
+    } catch {}
+  };
+  useEffect(() => { load(); }, []);
+
+  const connect = async (e) => {
+    e.preventDefault();
+    if (!apiKey || !userId) return;
+    setLoading(true);
+    try {
+      await api.post("/roblox/connect", { api_key: apiKey, roblox_user_id: userId });
+      toast.success("Roblox connected");
+      setApiKey(""); setUserId("");
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const disconnect = async () => {
+    try {
+      await api.delete("/roblox/disconnect");
+      toast.success("Disconnected");
+      load();
+    } catch {}
+  };
+
+  return (
+    <div className="bg-zinc-950/70 border border-white/10 rounded-2xl p-5 mb-8" data-testid="roblox-connect-card">
+      <div className="flex items-center gap-2 mb-4">
+        <Robot size={20} weight="duotone" className="text-[#ccff00]" />
+        <p className="text-xs uppercase tracking-[0.2em] font-bold text-zinc-300">Roblox connection</p>
+      </div>
+
+      {status?.connected ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <PlugsConnected size={28} weight="duotone" className="text-[#ccff00]" />
+            <div>
+              <p className="font-display text-lg font-bold tracking-tight">Connected · @{status.roblox_user_id}</p>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">
+                key {status.key_masked}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={disconnect}
+            data-testid="roblox-disconnect"
+            className="btn-ghost rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider"
+          >
+            Disconnect
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={connect} className="space-y-3">
+          <p className="text-sm text-zinc-300">
+            Push creations directly into your Roblox Inventory. Generate a key with the
+            <code className="text-[#ccff00] font-mono mx-1">asset:write</code>
+            permission at
+            <a href="https://create.roblox.com/dashboard/credentials" target="_blank" rel="noreferrer" className="text-[#ccff00] underline mx-1">
+              create.roblox.com/dashboard/credentials
+            </a>
+            then paste it here.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Roblox API key</label>
+              <input
+                data-testid="roblox-api-key"
+                type="password"
+                required
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="input-dark w-full rounded-lg px-3 py-2.5 mt-1 text-sm font-mono"
+                placeholder="paste the API key"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Your Roblox user ID</label>
+              <input
+                data-testid="roblox-user-id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]+"
+                required
+                value={userId}
+                onChange={(e) => setUserId(e.target.value.replace(/\D/g, ""))}
+                className="input-dark w-full rounded-lg px-3 py-2.5 mt-1 text-sm font-mono"
+                placeholder="e.g. 1234567890"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={loading || !apiKey || !userId}
+            data-testid="roblox-connect-submit"
+            className="btn-volt rounded-full px-5 py-2.5 text-sm flex items-center gap-2"
+          >
+            <Plug size={14} weight="bold" />
+            {loading ? "Connecting…" : "Connect Roblox"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
 
 export default function Profile() {
   const { user } = useAuth();
@@ -103,6 +221,8 @@ export default function Profile() {
         </div>
         <Link to="/pricing" className="btn-volt rounded-full px-5 py-2.5 text-sm">Get more credits</Link>
       </div>
+
+      <RobloxConnectCard />
 
       {items.length === 0 ? (
         <div className="text-center py-20 text-zinc-500">

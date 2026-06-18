@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 6 verification PASS end-to-end. Backend Roblox routes (connect/status/disconnect/upload) work, validate input strictly, never leak the raw API key (returns key_masked='FAKE••••7890' only), and bubble Roblox errors cleanly. Frontend: Pricing page completely rewritten with original copy (Starter / Studio / Indie plan names, 'PICK A LANE. SHIP YOUR DROP.' headline, Tripo H3.1 mention, annual default with neon-volt SAVE 40% pill, monthly/annual toggle flips prices $30/$15 ↔ $18/$9 with strikethrough, TOP PICK badge on Studio card, 9-row comparison table, Featured-for-Robux cyan callout, 3 FAQ cards). Landing hero now shows the custom suited Roblox-style character PNG (no GLB <canvas> in hero), correct alt text, floating Y animation, both spec chips visible (Tripo H3.1 / .GLB · 1024px PBR). Profile Roblox Connect card works: api-key+user-id form → submit → flips to connected state with masked key and disconnect button. Studio Export & Upload modal renders 'Push to Roblox' button (data-testid=export-push-roblox) when connected; clicking triggers backend upload which fails cleanly with FAKEKEY as designed. iter-6 backend suite: 12 PASS / 1 SKIP. Full regression (iter-4 + iter-5 + backend_test): 47 PASS / 1 SKIP / 1 known-stale FAIL (live FAL latency in test_text_to_3d_flow_and_credit_deduct — pre-existing since iter-4).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/generate/text-to-3d (backend_test.py poll loop)", "issue": "test_text_to_3d_flow_and_credit_deduct still expects demo-mode completion ~12s but FAL is LIVE — pre-existing stale test (called out since iter-4). Not a product regression."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration6.py",
+    "/app/test_reports/pytest/it6.xml"
+  ],
+  "action_items": [
+    "(carry-over) Fix backend_test.py::test_text_to_3d_flow_and_credit_deduct to branch on /api/meta.fal_configured for the 2-3 min live FAL polling window. Non-blocking."
+  ],
+  "critical_code_review_comments": [
+    "roblox_routes.py — schema is tight: api_key 10-400 chars + roblox_user_id numeric-only via pattern. _mask_key returns 'FAKE••••7890' for 'FAKEKEY1234567890' as spec'd. Lifecycle (connect→status→disconnect) is symmetric: $set roblox sub-doc on connect, $unset on disconnect. Confirmed via DB-level test that disconnect actually clears state.",
+    "roblox_routes.py — upload error mapping is good: 401 from Roblox → 401 'Roblox rejected the API key', 403 → 403 'missing asset:write', other 4xx/5xx → 502 with text trimmed to 200 chars. _poll_operation respects 25 attempts × 2s = 50s before 504. Good defensive shape.",
+    "roblox_routes.py — Open Cloud only accepts FBX/PNG/JPEG; pushing the PNG preview as a Decal is the right interim choice (documented in the upload route docstring + Studio modal copy says 'preview lands as Decal; .GLB downloads for marketplace publish'). No misleading UX claim of a full UGC mesh upload.",
+    "roblox_routes.py — `from server import db` is a runtime circular-import-safe lazy import inside functions; fine, but creates per-request overhead. Consider injecting db via FastAPI Depends if route count grows.",
+    "roblox_routes.py — API key persisted in plaintext on the user document. For production, consider envelope encryption (AWS KMS / Fernet with key in env) or at minimum a Mongo field-level encryption client config. Currently masked-on-read by the API surface, which is the correct first defense.",
+    "Pricing.jsx — `pricing-interval-monthly` and `pricing-interval-annual` data-testids present and verified. Only minor nit: `interval === 'annual' ? 'bg-[#ccff00] text-black' : 'text-zinc-400'` button has the 'SAVE 40%' pill always rendered which swaps bg/text on toggle — works but unusual; consider keeping pill only on the active state for clarity.",
+    "Landing.jsx — HERO_IMAGE constant correctly points at the customer-assets URL; alt text matches spec verbatim. motion.img float animation y: [0,-10,0] over 5.5s eased; subtle and on-brand. Removing the WebGL hero saved ~6MB of bundle weight + the previously-seen 'GPU stall due to ReadPixels' console noise."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration6.py (new — 13 tests: auth-required, validation, lifecycle, upload error paths)"
+  ],
+  "success_rate": {
+    "backend": "iter-6: 12/13 (1 conditional skip when admin has no completed-with-thumbnail gen). Full regression across iter-4+iter-5+iter-6+backend_test: 47 PASS / 1 SKIP / 1 known-stale FAIL = 96% pass excluding the stale FAL test.",
+    "frontend": "100% — every iter-6 visual + integration target verified on the live preview URL."
+  },
+  "test_credentials": "Admin: admin@bloxcraft.ai / BloxCraft2026! (verified working; roblox state cleaned up after tests).",
+  "seed_data_creation": "None — used existing admin user. Test connected with FAKEKEY1234567890 + user_id 12345 then disconnected as cleanup.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 6 = Roblox Open Cloud direct push + Pricing rewrite + custom hero PNG. New backend file: /app/backend/tests/test_iteration6.py (13 tests, hits /api/roblox/{connect,status,disconnect,upload}). The Roblox API key is masked as 'FAKE••••7890' on /connect & /status responses — never returned raw. Profile page has data-testid='roblox-connect-card' which renders the form OR the connected state. Studio's Export & Upload modal has data-testid='export-push-roblox' (when connected) or 'export-connect-roblox-cta' (when not). To open the export modal in Studio, you must FIRST click an existing creation thumbnail to set currentGen, THEN click 'Export to Roblox' button — modal only mounts when both `exporting` AND `currentGen?.id` are truthy. Known carry-over stale test still failing: backend_test::test_text_to_3d_flow_and_credit_deduct (live FAL >12s).",
+  "rca of the issue": "N/A — no issues found in iteration 6."
+}

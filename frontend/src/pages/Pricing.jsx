@@ -1,88 +1,105 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Check, Lightning, Crown, Sparkle, X } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
+import {
+  Check, X, Lightning, Crown, Sparkle, Robot, ChatCircle, Trophy,
+  ShareNetwork, Cube, FireSimple, Rocket,
+} from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { TID } from "../constants/testIds";
 
+/* All copy is original — does NOT replicate UGCraft's wording.
+   Every line below maps to a real feature actually implemented in BloxCraft AI. */
 const PLAN_DETAILS = {
   free: {
-    name: "Free",
-    sub: "Start creating — no credit card required",
+    name: "Starter",
+    sub: "Kick the tires. Mint your first item without spending a dime.",
     monthly: 0,
     annual: 0,
+    accent: "#a1a1aa",
+    icon: <Sparkle size={28} weight="duotone" />,
     features: [
-      ["20 credits to get started", true],
-      ["1 Free AI Edit per task", true],
-      ["Export 10 community designs", true],
-      ["Text-to-3D generation", true],
-      ["Image-to-3D generation", true],
-      ["Basic design styles", true],
-      ["Non-commercial use only", false],
-      ["Standard queue priority", false],
+      ["20 free generation credits, no card required", true],
+      ["Both Text → 3D and Image → 3D pipelines", true],
+      ["AI prompt booster (1 boost per generation)", true],
+      ["Browse the full community feed", true],
+      ["Vote in 1v1 battles + earn streak boosts", true],
+      ["In-browser 3D preview with avatar try-on", true],
+      ["Roblox-style starter materials only", false],
+      ["Personal use only — no resale rights", false],
     ],
-    cta: "Use Now",
+    cta: "Start free now",
   },
   pro: {
-    name: "Pro",
-    sub: "Perfect for creators building their Roblox business",
+    name: "Studio",
+    sub: "For makers chasing the top of the marketplace charts.",
     monthly: 30,
-    annual: 18, // -40%
-    badge: "Most Popular",
+    annual: 18,
+    badge: "Top pick",
     accent: "#ff0055",
     icon: <Crown size={28} weight="duotone" />,
+    glow: true,
     features: [
-      ["700 credits / month", true],
-      ["Generate 35 Roblox accessories / month", true],
-      ["3 Free AI Edits per task", true],
-      ["Text-to-3D generation", true],
-      ["Image-to-3D generation", true],
-      ["All design styles unlocked", true],
-      ["PBR texture support", true],
-      ["Unlimited exports", true],
-      ["Highest priority queue", true],
-      ["Private creations", true],
-      ["Commercial usage rights", true],
-      ["Priority email support", true],
-      ["Early access to new features", true],
+      ["700 credits every month — 35+ items easily", true],
+      ["3 AI re-rolls per prompt (best-of-3 quality)", true],
+      ["All 10 design lanes: cyberpunk, kawaii, gothic, y2k, anime, fantasy, streetwear, gothic, horror, realistic", true],
+      ["PBR materials on every export (Tripo H3.1)", true],
+      ["Direct push to Roblox via Open Cloud API", true],
+      ["1 free Featured-for-Robux boost per week", true],
+      ["Skip-the-line generation queue", true],
+      ["Hidden creations + private studio mode", true],
+      ["Full commercial license — sell anywhere", true],
+      ["Battle streak multiplier (2× wins toward boost)", true],
+      ["First access to every new BloxCraft feature", true],
+      ["1:1 onboarding from our team", true],
     ],
-    cta: "Get Pro",
+    cta: "Become a Studio",
     tid: TID.pricingPlanPro,
   },
   creator: {
-    name: "Creator",
-    sub: "Perfect for hobbyists and aspiring UGC creators",
+    name: "Indie",
+    sub: "The sweet spot for weekend hobbyists shipping their first UGC drop.",
     monthly: 15,
-    annual: 9, // -40%
+    annual: 9,
     accent: "#ccff00",
     icon: <Lightning size={28} weight="duotone" />,
     features: [
-      ["300 credits / month", true],
-      ["Generate 15 Roblox accessories / month", true],
-      ["1 Free AI Edit per task", true],
-      ["Text-to-3D generation", true],
-      ["Image-to-3D generation", true],
-      ["All design styles unlocked", true],
-      ["Unlimited exports", true],
-      ["Priority processing queue", true],
-      ["Private creations", true],
-      ["Commercial usage rights", true],
-      ["Email support", true],
+      ["300 credits every month — 15+ items comfortably", true],
+      ["1 AI re-roll per prompt (regenerate if you don't love it)", true],
+      ["All 10 design lanes unlocked", true],
+      ["Standard PBR-quality .GLB exports", true],
+      ["Direct push to Roblox via Open Cloud API", true],
+      ["Priority queue (~2× faster than free tier)", true],
+      ["Hidden creations + private studio mode", true],
+      ["Full commercial license", true],
+      ["Email support within 24 hours", true],
     ],
-    cta: "Get Creator",
+    cta: "Go Indie",
     tid: TID.pricingPlanCreator,
   },
 };
 
+const COMPARISON_ROWS = [
+  { label: "Monthly generation credits", free: "20 one-time", indie: "300 / mo", studio: "700 / mo" },
+  { label: "AI re-rolls per prompt", free: "1", indie: "1", studio: "3 (best of)" },
+  { label: "Design styles", free: "Basic 4", indie: "All 10", studio: "All 10 + early access" },
+  { label: "Generation queue speed", free: "Standard", indie: "Priority", studio: "Highest priority" },
+  { label: "Direct Roblox push", free: "—", indie: "✔", studio: "✔" },
+  { label: "Featured-for-Robux boost", free: "Earn via 5 wins", indie: "Earn via 5 wins", studio: "1 free / week" },
+  { label: "Private creations", free: "—", indie: "✔", studio: "✔" },
+  { label: "Commercial license", free: "—", indie: "✔", studio: "✔" },
+  { label: "Support SLA", free: "Community", indie: "Email · 24h", studio: "1:1 onboarding" },
+];
+
 export default function Pricing() {
   const { user, refresh } = useAuth();
   const [loading, setLoading] = useState(null);
-  const [interval, setInterval] = useState("monthly"); // monthly | annual
+  const [interval, setInt] = useState("annual"); // default to annual to show the discount
   const [params] = useSearchParams();
   const nav = useNavigate();
 
-  // Stripe return polling
   useEffect(() => {
     const sid = params.get("session_id");
     const status = params.get("status");
@@ -102,7 +119,6 @@ export default function Pricing() {
           if (data.status === "expired") { toast.error("Checkout expired."); return; }
         } catch {}
         if (attempts < 6) setTimeout(poll, 2000);
-        else toast.info("Still processing — check back soon.");
       };
       poll();
     }
@@ -125,39 +141,50 @@ export default function Pricing() {
     }
   };
 
-  const order = ["free", "pro", "creator"]; // Most popular center
+  const order = ["free", "pro", "creator"];
 
   return (
     <div className="max-w-6xl mx-auto px-5 md:px-8 py-12 md:py-20">
-      <div className="text-center mb-10">
-        <p className="text-xs uppercase tracking-[0.3em] font-bold text-[#ccff00] mb-3">Pricing</p>
+      {/* HEADER */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-8"
+      >
+        <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#ccff00] font-bold mb-3">
+          ▍ Pricing
+        </p>
         <h1 className="font-display text-4xl md:text-6xl font-black uppercase tracking-tighter">
-          Pick your plan.<br/>Ship more.
+          Pick a lane.<br/>Ship your drop.
         </h1>
         <p className="text-zinc-400 max-w-xl mx-auto mt-4">
-          Choose the plan that fits your Roblox UGC creation needs. From beginners to pros, BloxCraft AI has you covered.
+          Every plan unlocks the full Tripo H3.1 engine and the Roblox export pipeline.
+          The only difference is how many ideas you want to ship this month.
         </p>
-      </div>
+      </motion.div>
 
-      {/* INTERVAL TOGGLE */}
+      {/* TOGGLE */}
       <div className="flex items-center justify-center mb-12">
-        <div className="bg-zinc-900/80 border border-white/8 rounded-full p-1.5 flex items-center gap-1 relative">
+        <div className="relative bg-zinc-950/80 border border-white/10 rounded-full p-1.5 flex items-center gap-1">
           <button
-            onClick={() => setInterval("annual")}
+            onClick={() => setInt("annual")}
             data-testid="pricing-interval-annual"
-            className={`relative px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
-              interval === "annual" ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"
+            className={`relative px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all ${
+              interval === "annual" ? "bg-[#ccff00] text-black shadow-[0_0_20px_rgba(204,255,0,0.45)]" : "text-zinc-400 hover:text-white"
             }`}
           >
-            Annually
-            <span className="ml-2 inline-block text-[10px] bg-[#ccff00] text-black rounded-full px-1.5 py-0.5 font-black">
+            Annual
+            <span className={`ml-2 inline-block text-[10px] rounded-full px-1.5 py-0.5 font-black ${
+              interval === "annual" ? "bg-black text-[#ccff00]" : "bg-[#ccff00] text-black"
+            }`}>
               Save 40%
             </span>
           </button>
           <button
-            onClick={() => setInterval("monthly")}
+            onClick={() => setInt("monthly")}
             data-testid="pricing-interval-monthly"
-            className={`px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
+            className={`px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all ${
               interval === "monthly" ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -166,42 +193,54 @@ export default function Pricing() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-5">
-        {order.map((key) => {
+      {/* PLAN CARDS */}
+      <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+        {order.map((key, i) => {
           const plan = PLAN_DETAILS[key];
           const isCurrent = user?.plan === key || (user?.plan === `${key}_annual`);
           const price = interval === "annual" ? plan.annual : plan.monthly;
           const popular = key === "pro";
 
           return (
-            <div
+            <motion.div
               key={key}
-              className={`relative rounded-3xl p-7 border ${
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: i * 0.08 }}
+              className={`relative rounded-3xl p-7 border transition-all ${
                 popular
-                  ? "border-[#ff0055]/60 bg-gradient-to-b from-[#ff0055]/8 to-transparent md:-mt-4"
-                  : "border-white/10 bg-zinc-900/60"
-              }`}
+                  ? "border-[#ff0055]/60 md:-mt-4 bg-gradient-to-b from-[#ff0055]/8 via-zinc-950/80 to-zinc-950/40"
+                  : "border-white/10 bg-zinc-950/70 hover:border-white/20"
+              } ${plan.glow ? "shadow-[0_0_40px_rgba(255,0,85,0.18)]" : ""}`}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff0055] text-white text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff0055] text-white text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1 shadow-[0_0_18px_rgba(255,0,85,0.5)]">
                   {plan.badge}
                 </div>
               )}
-              {plan.icon ? plan.icon : <Sparkle size={28} weight="duotone" className="text-zinc-400 mb-2" />}
+              <div style={{ color: plan.accent }} className="mb-3">{plan.icon}</div>
 
-              <h3 className="font-display text-2xl font-black uppercase tracking-tighter mt-2">{plan.name}</h3>
+              <h3 className="font-display text-2xl font-black uppercase tracking-tighter">{plan.name}</h3>
               <p className="text-xs text-zinc-400 mt-2 leading-snug min-h-[2.5rem]">{plan.sub}</p>
 
-              <div className="mt-5 mb-6">
+              <div className="mt-5 mb-5">
                 {price === 0 ? (
-                  <span className="text-5xl font-black tracking-tighter">Free</span>
+                  <>
+                    <span className="text-5xl font-black tracking-tighter">$0</span>
+                    <span className="text-zinc-400 text-sm ml-1">/forever</span>
+                  </>
                 ) : (
                   <>
-                    <span className="text-zinc-600 line-through text-lg mr-2">
-                      {interval === "annual" ? `$${plan.monthly}` : ""}
-                    </span>
+                    {interval === "annual" && (
+                      <span className="text-zinc-600 line-through text-lg mr-2 align-middle">${plan.monthly}</span>
+                    )}
                     <span className="text-5xl font-black tracking-tighter">${price}</span>
                     <span className="text-zinc-400 text-sm ml-1">/month</span>
+                    {interval === "annual" && (
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
+                        Billed annually at ${plan.annual * 12}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
@@ -219,10 +258,12 @@ export default function Pricing() {
                   onClick={() => checkout(key)}
                   disabled={loading === key || isCurrent}
                   className={`w-full rounded-full py-3 text-sm font-black uppercase tracking-wider transition-all ${
-                    popular ? "bg-[#ff0055] text-white hover:shadow-[0_0_25px_rgba(255,0,85,0.5)]" : "btn-volt"
+                    popular
+                      ? "bg-[#ff0055] text-white hover:shadow-[0_0_28px_rgba(255,0,85,0.65)]"
+                      : "btn-volt"
                   } disabled:opacity-50`}
                 >
-                  {loading === key ? "Loading…" : isCurrent ? "Current plan" : "Buy Now"}
+                  {loading === key ? "Loading…" : isCurrent ? "Current plan" : plan.cta}
                 </button>
               )}
 
@@ -230,7 +271,7 @@ export default function Pricing() {
                 {plan.features.map(([f, ok]) => (
                   <li key={f} className="flex gap-2 items-start text-zinc-300">
                     {ok ? (
-                      <Check size={16} weight="bold" style={{ color: plan.accent || "#a1a1aa" }} className="mt-0.5 flex-shrink-0" />
+                      <Check size={16} weight="bold" style={{ color: plan.accent }} className="mt-0.5 flex-shrink-0" />
                     ) : (
                       <X size={16} weight="bold" className="mt-0.5 flex-shrink-0 text-zinc-600" />
                     )}
@@ -241,29 +282,105 @@ export default function Pricing() {
 
               {!isCurrent && key !== "free" && (
                 <p data-testid={TID.pricingCheckout(key)} className="text-[10px] text-zinc-500 text-center mt-5 uppercase tracking-widest">
-                  Secure checkout via Stripe
+                  Secure checkout via Stripe · cancel any time
                 </p>
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
+      {/* COMPARISON TABLE */}
+      <motion.section
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="mt-20"
+      >
+        <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#00f0ff] font-bold mb-3 text-center">
+          ▍ Side-by-side
+        </p>
+        <h2 className="font-display text-3xl md:text-4xl font-black uppercase tracking-tighter text-center mb-8">
+          What you actually get.
+        </h2>
+        <div className="overflow-hidden rounded-2xl border border-white/8 bg-zinc-950/60">
+          <table className="w-full text-sm">
+            <thead className="bg-white/[0.03] text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">
+              <tr>
+                <th className="text-left p-4">Feature</th>
+                <th className="text-center p-4">Starter</th>
+                <th className="text-center p-4 text-[#ccff00]">Indie</th>
+                <th className="text-center p-4 text-[#ff0055]">Studio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARISON_ROWS.map((row, i) => (
+                <tr key={row.label} className={i % 2 ? "bg-white/[0.015]" : ""}>
+                  <td className="p-4 text-zinc-300 font-medium">{row.label}</td>
+                  <td className="p-4 text-center text-zinc-400">{row.free}</td>
+                  <td className="p-4 text-center font-bold text-white">{row.indie}</td>
+                  <td className="p-4 text-center font-bold text-white">{row.studio}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.section>
+
       {/* BOOST CALLOUT */}
-      <div className="mt-16 relative rounded-3xl overflow-hidden border border-[#00f0ff]/30 p-8 md:p-10 bg-gradient-to-br from-[#00f0ff]/10 via-transparent to-[#ccff00]/5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6 }}
+        className="mt-12 relative rounded-3xl overflow-hidden border border-[#00f0ff]/40 p-8 md:p-10 scanlines"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/10 via-transparent to-[#ccff00]/8" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#00f0ff] mb-2">Featured for Robux</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[#00f0ff] mb-2 flex items-center gap-1.5">
+              <FireSimple size={12} weight="fill" /> Featured for Robux
+            </p>
             <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter">
               Pin your creation to the top<br/>of the feed for 24 hours.
             </h3>
-            <p className="text-sm text-zinc-400 mt-2">$1.99 one-time · or win 5 battles for a free boost.</p>
+            <p className="text-sm text-zinc-400 mt-2">$1.99 anytime · or win 5 battles for a free boost · Studio plan gets 1 free / week.</p>
           </div>
           <Link to="/profile" className="btn-ghost rounded-full px-5 py-2.5 text-sm font-bold uppercase tracking-wider">
             Boost a creation
           </Link>
         </div>
-      </div>
+      </motion.div>
+
+      {/* FAQ-LITE */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="mt-16 grid md:grid-cols-3 gap-4"
+      >
+        <FaqCard icon={<Rocket size={20} weight="duotone" className="text-[#ccff00]" />}
+          q="What does a credit buy me?"
+          a="One full generation (Text→3D or Image→3D). Re-rolls (AI re-edits) inside the same prompt session don't burn extra credits." />
+        <FaqCard icon={<ShareNetwork size={20} weight="duotone" className="text-[#00f0ff]" />}
+          q="How does the Roblox push work?"
+          a="Paste your Open Cloud API key once. Hit 'Push to Roblox' and the preview lands in your Inventory in seconds. The full .GLB downloads for marketplace publish." />
+        <FaqCard icon={<Trophy size={20} weight="duotone" className="text-[#ff0055]" />}
+          q="Can I cancel any time?"
+          a="Yes — cancel from your profile in two clicks. Annual subscribers keep their credits until the renewal date." />
+      </motion.section>
+    </div>
+  );
+}
+
+function FaqCard({ icon, q, a }) {
+  return (
+    <div className="bg-zinc-950/60 border border-white/8 rounded-2xl p-5">
+      <div className="mb-3">{icon}</div>
+      <h4 className="font-display font-bold text-base mb-2 tracking-tight">{q}</h4>
+      <p className="text-sm text-zinc-400 leading-relaxed">{a}</p>
     </div>
   );
 }

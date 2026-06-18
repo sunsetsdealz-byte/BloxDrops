@@ -284,6 +284,7 @@ from payment_routes import router as pay_router
 from upload_routes import router as upload_router
 from export_routes import router as export_router
 from password_routes import router as password_router
+from roblox_routes import router as roblox_router
 
 app.include_router(gen_router)
 app.include_router(comm_router)
@@ -291,6 +292,7 @@ app.include_router(pay_router)
 app.include_router(upload_router)
 app.include_router(export_router)
 app.include_router(password_router)
+app.include_router(roblox_router)
 
 
 # ============== META ==============

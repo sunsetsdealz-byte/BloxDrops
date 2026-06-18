@@ -9,7 +9,7 @@ import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
 import ModelViewer from "../components/ModelViewer";
 
-const HERO_GLB = "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
+const HERO_IMAGE = "https://customer-assets.emergentagent.com/job_ai-generator-66/artifacts/eu7kzqzc_me%20roblox.png";
 
 /* ---------- AnimatedNumber: count-up on mount ---------- */
 function AnimatedNumber({ value = 0, duration = 1.6, className = "" }) {
@@ -188,20 +188,39 @@ export default function Landing() {
               </motion.div>
             </div>
 
-            {/* 3D HERO MODEL */}
+            {/* HERO SHOWCASE — custom Roblox-style creator character */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.1 }}
               className="lg:col-span-5 relative"
             >
-              <div className="absolute -inset-6 bg-[#ccff00]/10 blur-3xl rounded-full pointer-events-none" />
-              <div className="relative">
-                <ModelViewer url={HERO_GLB} height={480} showHint allowTryOn={false} />
+              <div className="absolute -inset-8 bg-[#ccff00]/12 blur-3xl rounded-full pointer-events-none" />
+              <div
+                className="relative rounded-2xl overflow-hidden border border-white/10 aspect-square w-full max-w-[480px] mx-auto"
+                style={{
+                  background:
+                    "radial-gradient(circle at 50% 60%, #1a1a1d 0%, #050507 80%)",
+                }}
+              >
+                <motion.img
+                  src={HERO_IMAGE}
+                  alt="BloxCraft creator character — generated with AI"
+                  className="absolute inset-0 w-full h-full object-contain select-none"
+                  draggable={false}
+                  initial={{ y: 0 }}
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 5.5, ease: "easeInOut", repeat: Infinity }}
+                />
+                {/* Bottom shadow */}
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-6 w-2/3 h-3 rounded-[50%] bg-black/70 blur-md pointer-events-none" />
+                <div className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                  blox/character_v3.glb
+                </div>
 
                 {/* Floating spec chips */}
                 <motion.div
-                  className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2"
+                  className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
@@ -214,7 +233,7 @@ export default function Landing() {
                 </motion.div>
 
                 <motion.div
-                  className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2"
+                  className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10"
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.75, duration: 0.5 }}
@@ -227,7 +246,7 @@ export default function Landing() {
                 </motion.div>
 
                 <motion.div
-                  className="absolute top-1/2 -right-5 glass rounded-full px-3 py-1.5 hidden lg:flex items-center gap-1.5"
+                  className="absolute top-1/2 -right-5 glass rounded-full px-3 py-1.5 hidden lg:flex items-center gap-1.5 z-10"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.0, duration: 0.5 }}
