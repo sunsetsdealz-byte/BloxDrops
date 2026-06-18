@@ -152,7 +152,7 @@ async def _create_generation_record(
     original_prompt: Optional[str] = None,
     edition_cap: int = 0,
 ):
-    from server import db
+    from server import db, GENESIS_CAP
     from drops_utils import make_mint_id, make_signature, EDITION_CAPS
     is_admin = user.get("role") == "admin"
     # Admins bypass credit checks and never get charged
@@ -166,6 +166,10 @@ async def _create_generation_record(
     created_iso = now_utc().isoformat()
     mint_id = make_mint_id()
     signature_hash = make_signature(user["id"], mint_id, created_iso)
+
+    # Genesis: first 100 drops ever forged on the platform
+    total_drops = await db.generations.count_documents({})
+    is_genesis = total_drops < GENESIS_CAP
 
     doc = {
         "user_id": user["id"],
@@ -194,6 +198,7 @@ async def _create_generation_record(
         "mint_id": mint_id,
         "signature_hash": signature_hash,
         "is_founder_signed": is_admin,        # admins auto-sign their drops
+        "is_genesis": is_genesis,             # first 100 forever
     }
     res = await db.generations.insert_one(doc)
     gen_id = str(res.inserted_id)

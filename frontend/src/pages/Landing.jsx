@@ -93,7 +93,7 @@ export default function Landing() {
             <TerminalTicker lines={[
               `> ${stats.total_creations.toLocaleString()} CREATIONS · ${stats.creators.toLocaleString()} CREATORS ONLINE`,
               `> ${stats.today_creations} ITEMS MINTED IN THE LAST 24H`,
-              `> ${stats.battles_settled} BATTLES SETTLED · TRIPO H3.1 ENGINE LIVE`,
+              `> ${stats.battles_settled} BATTLES SETTLED · BLOXDROPS ENGINE LIVE`,
               `> READY: TEXT→3D · IMAGE→3D · ROBLOX MARKETPLACE PIPELINE`,
             ]} />
           </div>
@@ -125,7 +125,7 @@ export default function Landing() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-[#ccff00]/40 text-xs uppercase tracking-[0.3em] font-bold"
               >
                 <Sparkle size={14} weight="fill" className="text-[#ccff00]" />
-                <span>v3 · tripo h3.1 engine</span>
+                <span>v3 · bloxdrops engine</span>
               </motion.div>
 
               <motion.h1
@@ -198,7 +198,7 @@ export default function Landing() {
       <section className="border-y border-white/5 py-6 overflow-hidden bg-black/40 relative">
         <div className="marquee gap-12 text-zinc-500 font-display text-2xl font-black uppercase tracking-tighter whitespace-nowrap">
           {Array.from({ length: 2 }).flatMap((_, i) =>
-            ["Text → 3D", "Image → 3D", "Battle Mode", "Daily Challenges", "AI Prompt Boost", "Remix Anything", "Marketplace Ready", "Tripo H3.1"]
+            ["Text → 3D", "Image → 3D", "Battle Mode", "Daily Challenges", "AI Prompt Boost", "Remix Anything", "Marketplace Ready", "BloxDrops Engine"]
               .map((w, j) => (
                 <span key={`${i}-${j}`} className="flex items-center gap-12">
                   {w} <span className="text-[#ccff00]">✦</span>
@@ -229,7 +229,7 @@ export default function Landing() {
 
         <div className="grid md:grid-cols-6 gap-4 md:gap-6">
           <FeatureCard delay={0} span="md:col-span-3" icon={<Cube size={28} weight="duotone" />} title="Text & Image → 3D"
-            body="Drop a prompt or a reference image. Tripo H3.1 sculpts a Roblox-ready GLB in under 2 minutes." kbd="01" />
+            body="Drop a prompt or a reference image. The BloxDrops engine sculpts a Roblox-ready GLB in under 2 minutes." kbd="01" />
           <FeatureCard delay={0.08} span="md:col-span-3" icon={<ChatCircle size={28} weight="duotone" />} title="AI Prompt Booster"
             body="Stuck at 'cool hat'? Our Claude-powered prompt engine upgrades it into a vivid 60-word spec." kbd="02" />
           <FeatureCard delay={0.16} span="md:col-span-2" icon={<Trophy size={28} weight="duotone" />} title="1v1 Battles"

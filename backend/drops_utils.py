@@ -96,6 +96,8 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
         doc["mint_id"] = (doc.get("id") or "").replace("-", "")[:32] or "legacy"
     if "is_founder_signed" not in doc:
         doc["is_founder_signed"] = bool(doc.get("free_by_admin"))
+    if "is_genesis" not in doc:
+        doc["is_genesis"] = False
 
     tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]

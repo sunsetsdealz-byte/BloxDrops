@@ -1,9 +1,9 @@
 import React from "react";
-import { Sparkle, Hash, Crown } from "@phosphor-icons/react";
+import { Sparkle, Hash, Crown, Star } from "@phosphor-icons/react";
 import { rarityOf, editionLabel } from "../lib/rarity";
 
 /**
- * Compact drop badges row: rarity tier + edition number + founder signed.
+ * Compact drop badges row: GENESIS + rarity tier + edition number + founder signed.
  * Stacks horizontally; pass `size="sm"` for use inside cards.
  */
 export default function DropBadges({ item, size = "md" }) {
@@ -12,6 +12,7 @@ export default function DropBadges({ item, size = "md" }) {
   const tier = item.rarity_tier || "common";
   const ed = editionLabel(item);
   const isSigned = !!item.is_founder_signed;
+  const isGenesis = !!item.is_genesis;
 
   const small = size === "sm";
   const padY = small ? "py-0.5" : "py-1";
@@ -21,6 +22,17 @@ export default function DropBadges({ item, size = "md" }) {
 
   return (
     <div className="flex flex-wrap gap-1.5 items-center" data-testid="drop-badges">
+      {/* Genesis — first 100 ever minted */}
+      {isGenesis && (
+        <span
+          className={`genesis-pill ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}
+          data-testid="genesis-badge"
+          title="GENESIS — one of the first 100 drops ever minted on BloxDrops"
+        >
+          <Star size={iconSize} weight="fill" /> Genesis
+        </span>
+      )}
+
       {/* Rarity tier */}
       <span
         className={`rarity-pill rarity-pill-${tier} ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}

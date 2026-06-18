@@ -45,7 +45,7 @@ const PLAN_DETAILS = {
       ["700 credits every month — 35+ items easily", true],
       ["3 AI re-rolls per prompt (best-of-3 quality)", true],
       ["All 10 design lanes: cyberpunk, kawaii, gothic, y2k, anime, fantasy, streetwear, gothic, horror, realistic", true],
-      ["PBR materials on every export (Tripo H3.1)", true],
+      ["PBR materials on every export (BloxDrops engine)", true],
       ["Direct push to Roblox via Open Cloud API", true],
       ["1 free Featured-for-Robux boost per week", true],
       ["Skip-the-line generation queue", true],
@@ -159,7 +159,7 @@ export default function Pricing() {
           Pick a lane.<br/>Ship your drop.
         </h1>
         <p className="text-zinc-400 max-w-xl mx-auto mt-4">
-          Every plan unlocks the full Tripo H3.1 engine and the Roblox export pipeline.
+          Every plan unlocks the full BloxDrops engine and the Roblox export pipeline.
           The only difference is how many ideas you want to ship this month.
         </p>
       </motion.div>

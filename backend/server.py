@@ -180,6 +180,33 @@ async def seed_demo_creations():
     logger.info("Seeded %d unique demo creations", len(samples))
 
 
+GENESIS_CAP = 100  # First 100 mint_ids ever are marked GENESIS forever
+
+
+async def seed_genesis_collection():
+    """Mark the earliest GENESIS_CAP generations (by created_at ASC) as Genesis.
+
+    Idempotent — only flips drops that don't already have is_genesis set.
+    New generations created while total drops < GENESIS_CAP are auto-marked Genesis
+    via _create_generation_record (it queries the count before insert).
+    """
+    already = await db.generations.count_documents({"is_genesis": True})
+    if already >= GENESIS_CAP:
+        return
+    needed = GENESIS_CAP - already
+    cursor = db.generations.find(
+        {"is_genesis": {"$ne": True}}
+    ).sort([("created_at", 1)]).limit(needed)
+    ids = [d["_id"] async for d in cursor]
+    if ids:
+        await db.generations.update_many(
+            {"_id": {"$in": ids}},
+            {"$set": {"is_genesis": True}},
+        )
+        logger.info("Marked %d drops as GENESIS (total Genesis now: %d)", len(ids), already + len(ids))
+
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Indexes
@@ -194,6 +221,7 @@ async def lifespan(app: FastAPI):
     await seed_admin()
     await seed_challenges()
     await seed_demo_creations()
+    await seed_genesis_collection()
 
     # Write test credentials
     try:
