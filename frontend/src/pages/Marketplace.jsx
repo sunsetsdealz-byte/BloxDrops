@@ -7,6 +7,7 @@ import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import CreationCard from "../components/CreationCard";
 import TopUpModal from "../components/TopUpModal";
+import BloxBucksExplainer from "../components/BloxBucksExplainer";
 import { rarityOf, editionLabel } from "../lib/rarity";
 
 export default function Marketplace() {
@@ -218,6 +219,9 @@ export default function Marketplace() {
           )
         )}
       </main>
+
+      {/* === HOW BLOXBUCKS WORK · educational section === */}
+      <BloxBucksExplainer />
 
       {/* Listing modal */}
       <AnimatePresence>
