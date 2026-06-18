@@ -6,9 +6,21 @@ export const API = `${BACKEND_URL}/api`;
 const TOKEN_KEY = "bloxdrops_token";
 
 export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (t) => localStorage.setItem(TOKEN_KEY, t),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  get: () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY),
+  set: (t, remember = true) => {
+    // Always clear the other store to avoid stale tokens
+    if (remember) {
+      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.setItem(TOKEN_KEY, t);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.setItem(TOKEN_KEY, t);
+    }
+  },
+  clear: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  },
 };
 
 export const api = axios.create({ baseURL: API });

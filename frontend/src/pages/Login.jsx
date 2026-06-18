@@ -9,6 +9,7 @@ export default function Login() {
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +18,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, remember);
       nav("/studio");
     } catch (err) {
       setError(formatApiError(err));
@@ -64,6 +65,18 @@ export default function Login() {
               {error}
             </div>
           )}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <input
+              data-testid={TID.loginRemember}
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-[#ccff00] accent-[#ccff00] focus:ring-1 focus:ring-[#ccff00] focus:ring-offset-0 cursor-pointer"
+            />
+            <span className="text-xs uppercase tracking-[0.15em] font-bold text-zinc-400 group-hover:text-zinc-200 transition-colors">
+              Keep me logged in
+            </span>
+          </label>
           <button
             type="submit"
             data-testid={TID.loginSubmit}

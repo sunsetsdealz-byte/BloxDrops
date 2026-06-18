@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
@@ -26,7 +26,10 @@ export default function Studio() {
   const [searchParams] = useSearchParams();
   const viewId = searchParams.get("view");
 
-  const [mode, setMode] = useState("text"); // text | image
+  const PAID_PLANS = ["creator", "creator_annual", "pro", "pro_annual"];
+  const isPaid = user && (user.role === "admin" || PAID_PLANS.includes(user.plan));
+
+  const [mode, setMode] = useState("text"); // text | image | photo
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageMode, setImageMode] = useState("url"); // url | upload
@@ -77,7 +80,7 @@ export default function Studio() {
     try {
       const { data } = await api.get("/me/generations");
       setHistory(data.items || []);
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   useEffect(() => { loadHistory(); }, []);
@@ -104,7 +107,7 @@ export default function Studio() {
           if (data.status === "completed") toast.success("Your creation is ready!");
           if (data.status === "failed") toast.error("Generation failed: " + (data.error || "unknown"));
         }
-      } catch {}
+      } catch { /* keep polling */ }
     }, 2200);
     return () => clearInterval(pollRef.current);
   }, [currentGen?.id, currentGen?.status]);
@@ -157,6 +160,24 @@ export default function Studio() {
     }
   };
 
+  const generatePhoto = async () => {
+    if (!imageUrl.trim()) return toast.error("Upload a real-world photo first");
+    if (!isPaid) return toast.error("Photo Scanner requires Creator or Pro plan");
+    setGenerating(true);
+    try {
+      const { data } = await api.post("/generate/photo-to-3d", {
+        image_url: imageUrl, attachment_type: attachment, style, edition_cap: editionCap,
+      });
+      setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style, source_type: "photo_scan" });
+      refresh();
+      toast.success("Scanning photo into 3D…");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
       {!user && (
@@ -170,20 +191,34 @@ export default function Studio() {
         {/* LEFT: Control Room */}
         <aside className="lg:col-span-4 space-y-4">
           <div className="glass rounded-2xl p-5">
-            <div className="flex gap-2 mb-5 bg-zinc-900/60 rounded-full p-1">
+            <div className="flex gap-1 mb-5 bg-zinc-900/60 rounded-full p-1">
               <button
                 data-testid={TID.studioModeText}
                 onClick={() => setMode("text")}
-                className={`flex-1 rounded-full py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === "text" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${mode === "text" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
               >
-                <TextT size={14} className="inline mr-1" weight="bold" /> Text → 3D
+                <TextT size={13} className="inline mr-1" weight="bold" /> Text
               </button>
               <button
                 data-testid={TID.studioModeImage}
                 onClick={() => setMode("image")}
-                className={`flex-1 rounded-full py-2 text-xs font-bold uppercase tracking-wider transition-colors ${mode === "image" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${mode === "image" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
               >
-                <ImageSquare size={14} className="inline mr-1" weight="bold" /> Image → 3D
+                <ImageSquare size={13} className="inline mr-1" weight="bold" /> Image
+              </button>
+              <button
+                data-testid="studio-mode-photo"
+                onClick={() => setMode("photo")}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors relative ${
+                  mode === "photo"
+                    ? "bg-gradient-to-r from-[#ff0055] to-[#fbbf24] text-black"
+                    : "text-zinc-400"
+                }`}
+              >
+                <Camera size={13} className="inline mr-1" weight="bold" /> Photo
+                {!isPaid && (
+                  <Lock size={9} weight="fill" className="absolute -top-0.5 -right-0.5 text-[#fbbf24]" />
+                )}
               </button>
             </div>
 
@@ -210,8 +245,45 @@ export default function Studio() {
                   ))}
                 </div>
               </>
+            ) : mode === "photo" && !isPaid ? (
+              /* Paywall — non-paid users on Photo Scan tab */
+              <div className="rounded-2xl border border-[#fbbf24]/30 bg-gradient-to-br from-[#fbbf24]/8 via-zinc-950 to-[#ff0055]/8 p-5 text-center" data-testid="photo-scanner-paywall">
+                <div className="mx-auto w-12 h-12 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/40 flex items-center justify-center mb-3">
+                  <Camera size={22} weight="duotone" className="text-[#fbbf24]" />
+                </div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#fbbf24] font-bold mb-2">Pro feature · Photo Scanner</p>
+                <h3 className="font-display text-lg font-black uppercase tracking-tighter mb-2 leading-tight">
+                  Turn real-world photos into Roblox 3D drops
+                </h3>
+                <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+                  Selfies, sneakers, props, plushies — point at anything in real life, snap a photo, and the AI scans it into a fully Roblox-ready 3D model in 60 seconds.
+                </p>
+                <ul className="text-[11px] text-zinc-300 text-left max-w-xs mx-auto mb-5 space-y-1.5">
+                  <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Photogrammetry-grade scan accuracy</li>
+                  <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Roblox-optimized topology + materials</li>
+                  <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Unlimited scans on Pro · 50/mo on Creator</li>
+                </ul>
+                <Link
+                  to="/pricing"
+                  data-testid="photo-scanner-upgrade"
+                  className="inline-block bg-[#fbbf24] text-black rounded-full px-6 py-2.5 text-xs font-black uppercase tracking-widest hover:shadow-[0_0_24px_rgba(251,191,36,0.6)] transition-all"
+                >
+                  Upgrade to unlock
+                </Link>
+                <p className="text-[10px] text-zinc-600 mt-3 uppercase tracking-widest">
+                  Starting at $15/mo · cancel anytime
+                </p>
+              </div>
             ) : (
               <>
+                {mode === "photo" && (
+                  <div className="rounded-lg border border-[#ccff00]/30 bg-[#ccff00]/5 p-2.5 mb-3 flex items-center gap-2">
+                    <Camera size={14} weight="duotone" className="text-[#ccff00] flex-shrink-0" />
+                    <p className="text-[10px] text-[#ccff00] uppercase tracking-widest font-bold">
+                      Photo Scanner · upload a real-world reference photo
+                    </p>
+                  </div>
+                )}
                 <div className="flex gap-1 mb-2 bg-zinc-900/60 rounded-full p-1 text-[10px]">
                   <button
                     onClick={() => setImageMode("upload")}
@@ -358,17 +430,27 @@ export default function Studio() {
                 </button>
               )}
               <button
-                data-testid={mode === "text" ? TID.studioGenerate : TID.studioImageGenerate}
-                onClick={mode === "text" ? generateText : generateImage}
-                disabled={generating || !user || (mode === "text" ? !prompt.trim() : !imageUrl.trim())}
-                className="btn-volt rounded-lg flex-1 py-3 text-sm flex items-center justify-center gap-2"
+                data-testid={mode === "text" ? TID.studioGenerate : mode === "photo" ? "studio-photo-generate" : TID.studioImageGenerate}
+                onClick={mode === "text" ? generateText : mode === "photo" ? generatePhoto : generateImage}
+                disabled={
+                  generating || !user ||
+                  (mode === "text" ? !prompt.trim() : !imageUrl.trim()) ||
+                  (mode === "photo" && !isPaid)
+                }
+                className={`rounded-lg flex-1 py-3 text-sm flex items-center justify-center gap-2 disabled:opacity-50 ${
+                  mode === "photo" && isPaid
+                    ? "bg-gradient-to-r from-[#ff0055] to-[#fbbf24] text-black font-black uppercase tracking-widest hover:shadow-[0_0_24px_rgba(251,191,36,0.5)]"
+                    : "btn-volt"
+                }`}
               >
-                <Sparkle size={16} weight="fill" />
+                {mode === "photo" ? <Camera size={16} weight="fill" /> : <Sparkle size={16} weight="fill" />}
                 {generating
                   ? "Submitting…"
-                  : user?.role === "admin"
-                    ? "Generate (free · admin)"
-                    : "Generate (1 credit)"}
+                  : mode === "photo"
+                    ? user?.role === "admin" ? "Scan photo (free · admin)" : "Scan photo (1 credit)"
+                    : user?.role === "admin"
+                      ? "Generate (free · admin)"
+                      : "Generate (1 credit)"}
               </button>
             </div>
           </div>

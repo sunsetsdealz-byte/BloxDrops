@@ -22,6 +22,7 @@ export const TID = {
   loginPassword: "login-password",
   loginSubmit: "login-submit",
   loginError: "login-error",
+  loginRemember: "login-remember",
   registerEmail: "register-email",
   registerPassword: "register-password",
   registerName: "register-name",

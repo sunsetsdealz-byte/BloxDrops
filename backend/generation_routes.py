@@ -26,6 +26,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
+PAID_PLANS = {"creator", "creator_annual", "pro", "pro_annual"}
+
+
+def _is_paid_or_admin(user: dict) -> bool:
+    return user.get("role") == "admin" or user.get("plan") in PAID_PLANS
+
 # Sample GLB models served by fal.ai/Google for fallback demo mode
 SAMPLE_GLBS = [
     {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
@@ -260,6 +266,44 @@ async def generate_image_to_3d(
     else:
         bg.add_task(_run_mock_generation, gen_id)
     return {"id": gen_id, "status": "pending", "demo_mode": not _has_fal_key()}
+
+
+# ============== PAID FEATURE: Real-life Photo → 3D UGC ==============
+@router.post("/generate/photo-to-3d")
+async def generate_photo_to_3d(
+    payload: ImageGenerationRequest,
+    bg: BackgroundTasks,
+    user=Depends(get_current_user),
+):
+    """Premium feature — scans a real-world photo and converts it into a
+    Roblox-ready 3D UGC model. Restricted to paid plans (Creator / Pro) + admin.
+    """
+    if not _is_paid_or_admin(user):
+        raise HTTPException(
+            status_code=402,  # Payment Required
+            detail="Photo Scanner is a Pro feature. Upgrade your plan to scan real-world photos into 3D drops.",
+        )
+    # Build a Roblox-optimized prompt for the photo's subject
+    label = (payload.attachment_type or "item").lower()
+    enhanced_prompt = (
+        f"High-fidelity Roblox-ready 3D UGC {label} generated from a real-world reference photo. "
+        f"Clean topology, accurate proportions, vibrant materials, Roblox-style color palette. "
+        f"Style influence: {payload.style or 'auto'}."
+    )
+    gen_id, doc = await _create_generation_record(
+        user,
+        enhanced_prompt,
+        "photo_scan",  # source type — tracked separately from regular image-to-3d
+        payload.attachment_type,
+        payload.style,
+        source_image_url=payload.image_url,
+        edition_cap=payload.edition_cap,
+    )
+    if _has_fal_key():
+        bg.add_task(_run_fal_generation, gen_id, enhanced_prompt, payload.image_url)
+    else:
+        bg.add_task(_run_mock_generation, gen_id)
+    return {"id": gen_id, "status": "pending", "demo_mode": not _has_fal_key(), "feature": "photo_scanner"}
 
 
 @router.get("/generate/{generation_id}")
