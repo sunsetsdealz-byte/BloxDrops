@@ -2,6 +2,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center, Html, Bounds, useBounds } from "@react-three/drei";
 import { MagnifyingGlassPlus, X } from "@phosphor-icons/react";
+import UnavailablePlaceholder from "./UnavailablePlaceholder";
 
 function Model({ url }) {
   const { scene } = useGLTF(url);
@@ -9,13 +10,10 @@ function Model({ url }) {
 }
 
 function AutoFit() {
-  // Refit the camera once on mount — drei's <Bounds> + useBounds gives clean centered framing
   const bounds = useBounds();
   React.useEffect(() => {
     const t = setTimeout(() => {
-      try {
-        bounds.refresh().clip().fit();
-      } catch (e) {}
+      try { bounds.refresh().clip().fit(); } catch (e) {}
     }, 60);
     return () => clearTimeout(t);
   }, [bounds]);
@@ -30,6 +28,27 @@ function Loader() {
   );
 }
 
+/** Catches GLB load failures (404, CORS, network) and shows the branded
+ *  placeholder instead of letting the whole viewer crash. Resets when `url`
+ *  prop changes so a successful next load still renders. */
+class ModelErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidUpdate(prev) {
+    if (prev.url !== this.props.url && this.state.failed) {
+      this.setState({ failed: false });
+    }
+  }
+  componentDidCatch() { /* swallow — placeholder communicates the failure */ }
+  render() {
+    if (this.state.failed) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 // `allowTryOn` retained as a prop name for backwards-compat; semantically it now
 // toggles the Zoom (fullscreen) button visibility.
 export default function ModelViewer({ url, height = 360, showHint = true, allowTryOn = true, allowZoom }) {
@@ -37,7 +56,6 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
   const [zoomed, setZoomed] = useState(false);
   const isFullHeight = height === "100%";
 
-  // Lock body scroll + ESC to exit when zoomed
   useEffect(() => {
     if (!zoomed) return;
     const prevOverflow = document.body.style.overflow;
@@ -61,6 +79,17 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
         background: "radial-gradient(circle at 50% 50%, #1a1a1d 0%, #0a0a0c 75%)",
       };
 
+  const placeholder = (
+    <UnavailablePlaceholder
+      title={url ? "MODEL FAILED TO LOAD" : "DROP UNAVAILABLE"}
+      hint={
+        url
+          ? "We couldn't fetch this 3D file. It may have been removed or the CDN is offline."
+          : "This 3D model is still cooking or has been removed."
+      }
+    />
+  );
+
   return (
     <div
       className={containerClass}
@@ -68,35 +97,35 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
       data-testid="model-viewer"
     >
       {url ? (
-        <Canvas
-          camera={{ position: [0, 0, 4], fov: 35 }}
-          dpr={[1, 1.5]}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <ambientLight intensity={0.55} />
-          <directionalLight position={[5, 5, 5]} intensity={1.4} color="#ccff00" />
-          <directionalLight position={[-5, -3, -5]} intensity={0.6} color="#ff0055" />
-          <Suspense fallback={<Loader />}>
-            <Bounds fit clip observe margin={zoomed ? 1.05 : 1.15}>
-              <Center>
-                <Model url={url} />
-              </Center>
-              <AutoFit />
-            </Bounds>
-            <Environment preset="city" />
-          </Suspense>
-          <OrbitControls
-            enablePan={zoomed}
-            autoRotate={!zoomed}
-            autoRotateSpeed={0.7}
-            target={[0, 0, 0]}
-            makeDefault
-          />
-        </Canvas>
+        <ModelErrorBoundary url={url} fallback={placeholder}>
+          <Canvas
+            camera={{ position: [0, 0, 4], fov: 35 }}
+            dpr={[1, 1.5]}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <ambientLight intensity={0.55} />
+            <directionalLight position={[5, 5, 5]} intensity={1.4} color="#ccff00" />
+            <directionalLight position={[-5, -3, -5]} intensity={0.6} color="#ff0055" />
+            <Suspense fallback={<Loader />}>
+              <Bounds fit clip observe margin={zoomed ? 1.05 : 1.15}>
+                <Center>
+                  <Model url={url} />
+                </Center>
+                <AutoFit />
+              </Bounds>
+              <Environment preset="city" />
+            </Suspense>
+            <OrbitControls
+              enablePan={zoomed}
+              autoRotate={!zoomed}
+              autoRotateSpeed={0.7}
+              target={[0, 0, 0]}
+              makeDefault
+            />
+          </Canvas>
+        </ModelErrorBoundary>
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm tracking-wider">
-          NO MODEL LOADED
-        </div>
+        placeholder
       )}
 
       {url && showZoomBtn && (
@@ -117,7 +146,7 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
         </button>
       )}
 
-      {showHint && (
+      {url && showHint && (
         <div className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
           drag to rotate · scroll to zoom
         </div>
