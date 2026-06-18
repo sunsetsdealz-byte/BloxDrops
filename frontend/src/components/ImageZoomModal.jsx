@@ -75,12 +75,27 @@ export default function ImageZoomModal({ item, open, onClose }) {
 
             {/* Bottom strip */}
             <div className="rounded-b-3xl bg-zinc-950/95 border border-white/10 border-t-0 px-5 py-4">
-              <p className="text-base md:text-lg font-display font-bold tracking-tight leading-snug text-white">
-                {item.original_prompt || item.prompt}
-              </p>
-              <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-zinc-400">@{item.creator_name || "anon"}</span>
-                <span className="font-mono text-zinc-500">mint · 0x{(item.signature_hash || item.mint_id || "").slice(0, 8)}…</span>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base md:text-lg font-display font-bold tracking-tight leading-snug text-white">
+                    {item.original_prompt || item.prompt}
+                  </p>
+                  <div className="flex items-center justify-between mt-2 text-xs gap-3 flex-wrap">
+                    <span className="text-zinc-400">@{item.creator_name || "anon"}</span>
+                    <span className="font-mono text-zinc-500">mint · 0x{(item.signature_hash || item.mint_id || "").slice(0, 8)}…</span>
+                  </div>
+                </div>
+                {item.release_price_usd && (
+                  <div className="rounded-xl border border-[#ccff00]/40 bg-gradient-to-br from-[#ccff00]/12 to-transparent px-4 py-2.5 flex-shrink-0">
+                    <p className="text-[9px] uppercase tracking-[0.25em] font-black text-[#ccff00] mb-0.5">
+                      {item.is_coming_soon ? "Reserve price" : "List price"}
+                    </p>
+                    <p className="font-display text-2xl font-black leading-none">
+                      ${Number(item.release_price_usd).toLocaleString()}
+                      <span className="text-zinc-500 text-xs ml-1 font-bold">USD</span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
