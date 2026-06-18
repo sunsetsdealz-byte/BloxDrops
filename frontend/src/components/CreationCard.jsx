@@ -1,5 +1,5 @@
 import React from "react";
-import { Heart, ArrowsClockwise, Crown } from "@phosphor-icons/react";
+import { Heart, ArrowsClockwise, Crown, FireSimple } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { Link } from "react-router-dom";
@@ -19,16 +19,30 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
   return (
     <RarityBorder item={item} className="group">
       <div
-        className="relative bg-zinc-900/60 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+        className="relative bg-zinc-900/70 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
         data-testid={TID.feedItem(item.id)}
       >
+        {/* TOP STRIP — drop badges (above the image, never covers avatar) */}
+        <div className="px-3 pt-3 pb-2.5 flex flex-wrap items-center gap-1.5 bg-gradient-to-b from-black/60 to-transparent border-b border-white/5">
+          <DropBadges item={item} size="sm" />
+          {item.battle_wins > 0 && (
+            <span
+              className="ml-auto text-[9px] uppercase tracking-widest font-black bg-black/70 border border-[#ff0055]/50 text-[#ff0055] rounded-full px-2 py-0.5 inline-flex items-center gap-1"
+              title={`${item.battle_wins} battle wins`}
+            >
+              <Crown size={9} weight="fill" /> {item.battle_wins}
+            </span>
+          )}
+        </div>
+
+        {/* IMAGE — fully unobstructed avatar */}
         <Link to={`/studio?view=${item.id}`}>
           <div className="aspect-[4/5] bg-gradient-to-br from-zinc-800 to-zinc-950 overflow-hidden relative">
             {item.thumbnail_url ? (
               <img
                 src={item.thumbnail_url}
                 alt={item.prompt}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
                 loading="lazy"
               />
             ) : (
@@ -37,31 +51,19 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
               </div>
             )}
 
-            {/* TOP-LEFT: Drop badges (rarity, edition, signed) */}
-            <div className="absolute top-2 left-2 max-w-[88%]">
-              <DropBadges item={item} size="sm" />
-            </div>
+            {/* Subtle bottom gradient for chip readability */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
 
-            {/* TOP-RIGHT: Battle wins counter */}
-            {item.battle_wins > 0 && (
-              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 border border-[#ff0055]/40 rounded-full px-2 py-0.5">
-                <Crown size={12} weight="fill" className="text-[#ff0055]" />
-                <span className="text-[10px] font-bold">{item.battle_wins}</span>
-              </div>
-            )}
-
-            {/* BOTTOM-LEFT: featured boost pill (below the drop badges visually) */}
+            {/* BOTTOM-LEFT (on image): featured boost pill if active */}
             {item.is_featured && (
-              <div className="absolute bottom-2 left-2">
-                <span className="text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
-                  <Crown size={10} weight="fill" /> Featured
-                </span>
-              </div>
+              <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
+                <FireSimple size={10} weight="fill" /> Featured
+              </span>
             )}
 
-            {/* BOTTOM-RIGHT: attachment + style chips */}
+            {/* BOTTOM-RIGHT (on image): type + style chips */}
             <div className="absolute bottom-2 right-2 flex gap-1.5 flex-wrap justify-end">
-              <span className="text-[10px] uppercase tracking-widest bg-black/70 border border-white/10 rounded-full px-2 py-0.5 font-bold">
+              <span className="text-[10px] uppercase tracking-widest bg-black/80 border border-white/15 rounded-full px-2 py-0.5 font-bold backdrop-blur-sm">
                 {item.attachment_type}
               </span>
               {item.style && item.style !== "auto" && (
@@ -73,14 +75,15 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
           </div>
         </Link>
 
+        {/* BOTTOM META — prompt + creator + actions */}
         <div className="p-3 space-y-2">
           <p className="text-sm line-clamp-2 text-zinc-200 leading-snug min-h-[2.5rem]">
             {item.original_prompt || item.prompt}
           </p>
           {!compact && (
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
               <span className="text-zinc-500 truncate">@{item.creator_name || "anon"}</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={handleLike}
                   data-testid={TID.feedLike(item.id)}
