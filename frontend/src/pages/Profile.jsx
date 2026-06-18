@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { api, formatApiError } from "../lib/api";
-import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected } from "@phosphor-icons/react";
+import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected, Trash } from "@phosphor-icons/react";
 import ConnectPayoutsCard from "../components/ConnectPayoutsCard";
 
 function RobloxConnectCard() {
@@ -129,6 +129,7 @@ export default function Profile() {
   const nav = useNavigate();
   const [items, setItems] = useState([]);
   const [boosting, setBoosting] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [params] = useSearchParams();
 
   const load = async () => {
@@ -189,6 +190,23 @@ export default function Profile() {
       toast.error(formatApiError(err));
     } finally {
       setBoosting(null);
+    }
+  };
+
+  const deleteCreation = async (gen) => {
+    const ok = window.confirm(
+      `Delete "${(gen.original_prompt || gen.prompt || "this creation").slice(0, 60)}"?\n\nThis permanently removes the drop, its likes and any cancelled listings. This action cannot be undone.`
+    );
+    if (!ok) return;
+    setDeletingId(gen.id);
+    try {
+      await api.delete(`/generations/${gen.id}`);
+      setItems((prev) => prev.filter((i) => i.id !== gen.id));
+      toast.success("Creation deleted");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -304,6 +322,16 @@ export default function Profile() {
                     Pinned on the feed
                   </p>
                 )}
+                <button
+                  onClick={() => deleteCreation(it)}
+                  disabled={deletingId === it.id}
+                  data-testid={`profile-delete-${it.id}`}
+                  className="w-full rounded-full py-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 hover:text-[#ff0055] hover:bg-[#ff0055]/8 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 border border-transparent hover:border-[#ff0055]/30"
+                  title="Delete creation"
+                >
+                  <Trash size={11} weight="bold" />
+                  {deletingId === it.id ? "Deleting…" : "Delete"}
+                </button>
               </div>
             </div>
           ))}

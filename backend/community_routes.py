@@ -114,6 +114,52 @@ async def my_generations(user=Depends(get_current_user), limit: int = 60):
     return {"items": items}
 
 
+@router.delete("/generations/{generation_id}")
+async def delete_my_generation(generation_id: str, user=Depends(get_current_user)):
+    """Owner (or admin) deletes a creation.
+
+    Guards:
+    - Cannot delete the Founder/1-of-1 reserved drop ($50,000 USD)
+    - Cannot delete while it has an active marketplace listing — the owner must cancel that first
+    - Cascades: removes likes, ownerships, marketplace listings (status=cancelled if not open),
+      and the generation itself.
+    """
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Creation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Creation not found")
+
+    is_admin = user.get("role") == "admin"
+    if gen.get("user_id") != user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="You can only delete your own creations")
+
+    # Protect the Founder 1/1 drop
+    if gen.get("release_price_usd") == 50000:
+        raise HTTPException(status_code=400, detail="The Founder drop is permanent and cannot be deleted")
+
+    # Block if any active listings exist for this generation
+    active = await db.marketplace_listings.find_one({
+        "generation_id": generation_id,
+        "status": "open",
+    })
+    if active:
+        raise HTTPException(
+            status_code=400,
+            detail="Cancel the active marketplace listing for this drop before deleting.",
+        )
+
+    # Cascade cleanup
+    await db.likes.delete_many({"generation_id": generation_id})
+    await db.ownerships.delete_many({"generation_id": generation_id})
+    await db.marketplace_listings.delete_many({"generation_id": generation_id})
+    await db.generations.delete_one({"_id": ObjectId(generation_id)})
+
+    return {"ok": True, "deleted_id": generation_id}
+
+
 # ============== BATTLE ==============
 @router.get("/battle/random")
 async def random_battle(user=Depends(get_optional_user)):
