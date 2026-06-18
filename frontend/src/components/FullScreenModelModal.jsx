@@ -77,7 +77,7 @@ export default function FullScreenModelModal({ item, open, onClose }) {
                   Loading 3D…
                 </div>
               }>
-                <ModelViewer url={item.model_url} height="100%" showHint={true} allowTryOn={true} />
+                <ModelViewer url={item.model_url} height="100%" showHint={true} allowZoom={false} />
               </Suspense>
             </div>
 

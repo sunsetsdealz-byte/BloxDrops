@@ -1,10 +1,7 @@
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center, Html, Bounds, useBounds } from "@react-three/drei";
-import { Person } from "@phosphor-icons/react";
-
-// Avatar try-on mannequin
-const AVATAR_URL = "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
+import { MagnifyingGlassPlus, X } from "@phosphor-icons/react";
 
 function Model({ url }) {
   const { scene } = useGLTF(url);
@@ -33,17 +30,41 @@ function Loader() {
   );
 }
 
-export default function ModelViewer({ url, height = 360, showHint = true, allowTryOn = true }) {
-  const [tryOn, setTryOn] = useState(false);
+// `allowTryOn` retained as a prop name for backwards-compat; semantically it now
+// toggles the Zoom (fullscreen) button visibility.
+export default function ModelViewer({ url, height = 360, showHint = true, allowTryOn = true, allowZoom }) {
+  const showZoomBtn = allowZoom ?? allowTryOn;
+  const [zoomed, setZoomed] = useState(false);
   const isFullHeight = height === "100%";
+
+  // Lock body scroll + ESC to exit when zoomed
+  useEffect(() => {
+    if (!zoomed) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setZoomed(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [zoomed]);
+
+  const containerClass = zoomed
+    ? "fixed inset-0 z-[100] w-screen h-screen rounded-none border-0 bg-black/95 backdrop-blur-xl"
+    : "relative w-full rounded-2xl overflow-hidden border border-white/10";
+
+  const containerStyle = zoomed
+    ? { background: "radial-gradient(circle at 50% 50%, #15151a 0%, #050507 70%)" }
+    : {
+        height: isFullHeight ? "100%" : height,
+        background: "radial-gradient(circle at 50% 50%, #1a1a1d 0%, #0a0a0c 75%)",
+      };
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden border border-white/10"
-      style={{
-        height: isFullHeight ? "100%" : height,
-        background: "radial-gradient(circle at 50% 50%, #1a1a1d 0%, #0a0a0c 75%)",
-      }}
+      className={containerClass}
+      style={containerStyle}
       data-testid="model-viewer"
     >
       {url ? (
@@ -56,9 +77,8 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
           <directionalLight position={[5, 5, 5]} intensity={1.4} color="#ccff00" />
           <directionalLight position={[-5, -3, -5]} intensity={0.6} color="#ff0055" />
           <Suspense fallback={<Loader />}>
-            <Bounds fit clip observe margin={1.15}>
+            <Bounds fit clip observe margin={zoomed ? 1.05 : 1.15}>
               <Center>
-                {tryOn && url !== AVATAR_URL && <Model url={AVATAR_URL} />}
                 <Model url={url} />
               </Center>
               <AutoFit />
@@ -66,8 +86,8 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
             <Environment preset="city" />
           </Suspense>
           <OrbitControls
-            enablePan={false}
-            autoRotate
+            enablePan={zoomed}
+            autoRotate={!zoomed}
             autoRotateSpeed={0.7}
             target={[0, 0, 0]}
             makeDefault
@@ -79,18 +99,21 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
         </div>
       )}
 
-      {url && allowTryOn && (
+      {url && showZoomBtn && (
         <button
-          onClick={() => setTryOn((v) => !v)}
-          data-testid="viewer-tryon-toggle"
-          className={`absolute top-3 right-3 z-20 rounded-full pl-2.5 pr-3.5 py-2 text-[11px] uppercase tracking-[0.18em] font-black transition-all flex items-center gap-2 backdrop-blur-md ${
-            tryOn
-              ? "bg-[#ccff00] text-black shadow-[0_0_24px_rgba(204,255,0,0.55)]"
+          onClick={() => setZoomed((v) => !v)}
+          data-testid="viewer-zoom-toggle"
+          aria-label={zoomed ? "Exit fullscreen" : "Zoom in"}
+          className={`absolute z-20 rounded-full pl-2.5 pr-3.5 py-2 text-[11px] uppercase tracking-[0.18em] font-black transition-all flex items-center gap-2 backdrop-blur-md ${
+            zoomed ? "top-5 right-5" : "top-3 right-3"
+          } ${
+            zoomed
+              ? "bg-[#ccff00] text-black shadow-[0_0_24px_rgba(204,255,0,0.55)] hover:bg-white"
               : "bg-black/75 text-white border border-white/20 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:shadow-[0_0_18px_rgba(204,255,0,0.25)]"
           }`}
         >
-          <Person size={15} weight="fill" />
-          {tryOn ? "On avatar" : "Try on avatar"}
+          {zoomed ? <X size={15} weight="bold" /> : <MagnifyingGlassPlus size={15} weight="bold" />}
+          {zoomed ? "Close" : "Zoom"}
         </button>
       )}
 
@@ -102,5 +125,3 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
     </div>
   );
 }
-
-useGLTF.preload(AVATAR_URL);
