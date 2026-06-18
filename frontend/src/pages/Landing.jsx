@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform, useMotionValue, useSpring, animate, useReducedMotion } from "framer-motion";
 import {
   ArrowRight, Sparkle, Lightning, Trophy, ChatCircle, Cube, FireSimple,
-  Cpu, Robot, Code, Lightbulb, ShareNetwork, Crown,
+  Cpu, Robot, Code, Lightbulb, ShareNetwork, Crown, UserCircle,
 } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
@@ -447,23 +447,25 @@ function HeroShowcase() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}
       >
-        <Robot size={14} weight="duotone" className="text-[#ccff00]" />
+        <UserCircle size={14} weight="duotone" className="text-[#ccff00]" />
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">engine</p>
-          <p className="text-[11px] font-bold">Tripo H3.1</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">founder</p>
+          <p className="text-[11px] font-bold">Noel Campos</p>
         </div>
       </motion.div>
 
       <motion.div
-        className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none"
+        className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none max-w-[260px]"
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.75, duration: 0.5 }}
       >
-        <Code size={14} weight="duotone" className="text-[#00f0ff]" />
+        <Lightbulb size={14} weight="duotone" className="text-[#00f0ff]" />
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">export</p>
-          <p className="text-[11px] font-bold">.GLB · 1024px PBR</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">manifesto</p>
+          <p className="text-[11px] font-bold italic leading-tight">
+            "Every kid with an idea is one prompt away from a Roblox empire."
+          </p>
         </div>
       </motion.div>
     </motion.div>
