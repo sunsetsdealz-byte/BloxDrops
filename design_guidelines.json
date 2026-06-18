@@ -1,0 +1,108 @@
+{
+  "theme": "dark",
+  "archetype": "7 (Electric & Neon) - Custom Gaming/Creator Variant",
+  "brand_name": "BloxCraft AI",
+  "target_audience": "Gen-Z (13-25), Roblox creators, gamers, 3D artists",
+  "emotion_and_tone": "High energy, competitive, playful, creator-focused, immersive",
+  "colors": {
+    "background": "#09090B",
+    "surface": "#18181B",
+    "surface_elevated": "#27272A",
+    "primary": "#CCFF00",
+    "primary_hover": "#D9FF33",
+    "secondary": "#FF0055",
+    "secondary_hover": "#FF3377",
+    "tertiary": "#00F0FF",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA",
+    "border": "#27272A",
+    "border_glow": "rgba(204, 255, 0, 0.4)",
+    "error": "#FF0055",
+    "success": "#CCFF00",
+    "card_bg": "rgba(24, 24, 27, 0.8)"
+  },
+  "typography": {
+    "heading_font": "Unbounded, sans-serif",
+    "body_font": "Outfit, sans-serif",
+    "h1": "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter uppercase",
+    "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+    "h3": "text-xl sm:text-2xl font-bold",
+    "h4": "text-lg sm:text-xl font-semibold",
+    "body": "text-base leading-relaxed text-zinc-300",
+    "small": "text-sm text-zinc-400 font-medium tracking-wide",
+    "overline": "text-xs font-bold uppercase tracking-[0.2em] text-zinc-500",
+    "font_imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Unbounded:wght@400;600;800;900&display=swap');"
+    ]
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous spacing for hero and content, but dense 'Control Room' grid for the generation dashboard and battle screens.",
+    "container_padding": "p-6 md:p-8 lg:p-12",
+    "section_gap": "gap-16 md:gap-24 lg:gap-32",
+    "radius": {
+      "sm": "rounded-lg",
+      "md": "rounded-xl",
+      "lg": "rounded-2xl",
+      "full": "rounded-full"
+    },
+    "grid_modes": {
+      "dashboard": "grid-cols-1 md:grid-cols-12 gap-4 or gap-6. Sidebars take 3 cols, main viewer takes 9 cols.",
+      "gallery": "Columns break mason-style or bento grid with asymmetric spans (col-span-4 vs col-span-8).",
+      "battle": "Split screen 50/50 layout on desktop, stacked on mobile."
+    }
+  },
+  "surface_strategies": {
+    "glassmorphism": "Used for sticky headers, floating tools, and dialogs. Class: `backdrop-blur-xl bg-black/60 border border-white/10 shadow-2xl`.",
+    "bento_cards": "Flat background (`bg-zinc-900`), 1px subtle border (`border-zinc-800`), slight inner shadow. Hover states lift (`-translate-y-1`) with a glowing border.",
+    "buttons_primary": "Solid electric color (`bg-[#CCFF00] text-black font-bold uppercase tracking-wide`). Hover creates inner white glow and outer shadow.",
+    "buttons_secondary": "Glassy dark (`bg-zinc-800 text-white hover:bg-zinc-700`).",
+    "inputs": "Dark filled (`bg-zinc-900 border-zinc-800 focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00]`)."
+  },
+  "motion_and_interactions": {
+    "hover": "Scale up slightly (1.02) and add colored drop-shadow glow (e.g., `hover:shadow-[0_0_15px_rgba(204,255,0,0.5)]`).",
+    "transitions": "Use spring-like transitions for a playful gaming feel. `transition-all duration-300 ease-out`.",
+    "page_load": "Staggered fade-up for grid items and gallery models."
+  },
+  "components_strategy": {
+    "3d_viewer": "React Three Fiber (R3F) for main product viewing. Use `<Environment preset=\"city\" />` and soft ambient lighting. Transparent background to blend with dark UI.",
+    "feed": "TikTok-style vertical snap scroll (`snap-y snap-mandatory`) for mobile. Bento grid for desktop explore.",
+    "battle_mode": "Tinder-style swipe cards (Framer Motion) or side-by-side click to vote.",
+    "icons": "Use `@phosphor-icons/react` with `weight=\"duotone\"` for a high-end gamer look.",
+    "toast": "Sonner with a dark theme and neon borders."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMDNkJTIwY29sb3JmdWwlMjBzaGFwZXxlbnwwfHx8fDE3ODE3NDQ5Nzl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract 3D colorful shape, perfect for a floating background element behind the text."
+      },
+      {
+        "category": "community_thumbnail_1",
+        "url": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwzfHwzZCUyMGdhbWUlMjBjaGFyYWN0ZXJ8ZW58MHx8fHwxNzgxNzQ0OTc5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "3D miniature character to use as a UGC generation example."
+      },
+      {
+        "category": "community_thumbnail_2",
+        "url": "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHwzZCUyMGdhbWUlMjBjaGFyYWN0ZXJ8ZW58MHx8fHwxNzgxNzQ0OTc5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "3D character in red suit, good for showcasing clothing/UGC."
+      },
+      {
+        "category": "battle_mode_accent",
+        "url": "https://images.unsplash.com/photo-1770177267441-1d8dadda4feb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwzfHxuZW9uJTIwZ2FtaW5nJTIwY29udHJvbGxlcnxlbnwwfHx8fDE3ODE3NDQ5Nzl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Glowing neon controller for gaming aesthetic in battle mode or challenges section."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install required dependencies: `yarn add @phosphor-icons/react framer-motion three @react-three/fiber @react-three/drei react-fast-marquee sonner`",
+    "Apply `bg-[#09090B] text-white` to the root body.",
+    "Implement the landing page with a massive `Unbounded` font headline and a floating 3D element alongside the abstract image background.",
+    "The header must use glassmorphism (`backdrop-blur-xl bg-black/60 border-b border-white/10`).",
+    "Implement the AI Generation dashboard using a 'Control Room' grid: Left sidebar for inputs/chat (Prompt enhancer), large center area for the React Three Fiber 3D viewer, and right sidebar for variations/recoloring.",
+    "Use pure HTML/Tailwind for marketing layouts. Use Shadcn components for complex interactions (Dropdowns, Tabs, Inputs) but heavily customize them to match the dark/neon theme.",
+    "For the community gallery, implement a grid view (bento style) and mention the vertical scrolling TikTok mode.",
+    "All interactive elements must include `data-testid` attributes (e.g., `data-testid=\"generate-btn\"`).",
+    "Avoid using any standard purple/teal AI gradients. Stick to the `#CCFF00`, `#FF0055`, and `#00F0FF` neon accents on pure dark backgrounds."
+  ]
+}
