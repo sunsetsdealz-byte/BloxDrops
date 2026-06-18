@@ -1,4 +1,4 @@
-"""BloxCraft AI — backend models & shared utilities."""
+"""BloxDrops AI — backend models & shared utilities."""
 from datetime import datetime, timezone
 from typing import Optional, List, Annotated
 from pydantic import BaseModel, Field, BeforeValidator, EmailStr, ConfigDict

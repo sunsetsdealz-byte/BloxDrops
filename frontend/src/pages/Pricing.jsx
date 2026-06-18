@@ -11,7 +11,7 @@ import { useAuth } from "../lib/auth";
 import { TID } from "../constants/testIds";
 
 /* All copy is original — does NOT replicate UGCraft's wording.
-   Every line below maps to a real feature actually implemented in BloxCraft AI. */
+   Every line below maps to a real feature actually implemented in BloxDrops AI. */
 const PLAN_DETAILS = {
   free: {
     name: "Starter",
@@ -52,7 +52,7 @@ const PLAN_DETAILS = {
       ["Hidden creations + private studio mode", true],
       ["Full commercial license — sell anywhere", true],
       ["Battle streak multiplier (2× wins toward boost)", true],
-      ["First access to every new BloxCraft feature", true],
+      ["First access to every new BloxDrops feature", true],
       ["1:1 onboarding from our team", true],
     ],
     cta: "Become a Studio",

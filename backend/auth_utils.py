@@ -1,4 +1,4 @@
-"""Auth helpers — bcrypt + PyJWT for BloxCraft AI."""
+"""Auth helpers — bcrypt + PyJWT for BloxDrops AI."""
 import os
 import bcrypt
 import jwt

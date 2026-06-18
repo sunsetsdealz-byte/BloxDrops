@@ -53,7 +53,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
   };
 
   const downloadGlb = () => {
-    const token = localStorage.getItem("bloxcraft_token");
+    const token = localStorage.getItem("bloxdrops_token");
     const a = document.createElement("a");
     a.href = `${API}/export/${generationId}/glb`;
     a.target = "_blank";
@@ -64,7 +64,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `${(manifest?.asset_name || "bloxcraft-item").replace(/\s+/g, "_")}.glb`;
+        link.download = `${(manifest?.asset_name || "bloxdrops-item").replace(/\s+/g, "_")}.glb`;
         document.body.appendChild(link);
         link.click();
         link.remove();

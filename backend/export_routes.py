@@ -74,7 +74,7 @@ async def _load_generation(generation_id: str, user: dict) -> dict:
 
 def _safe_filename(name: str) -> str:
     base = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:60].strip("_")
-    return base or "bloxcraft_item"
+    return base or "bloxdrops_item"
 
 
 @router.get("/export/{generation_id}/glb")
@@ -103,15 +103,15 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
     """Return the Roblox Asset Configuration manifest."""
     doc = await _load_generation(generation_id, user)
     attachment = doc.get("attachment_type", "auto")
-    name_base = _safe_filename((doc.get("original_prompt") or "BloxCraft Item")[:40])
+    name_base = _safe_filename((doc.get("original_prompt") or "BloxDrops Item")[:40])
     return {
         "asset_name": name_base.replace("_", " ").title(),
-        "description": doc.get("original_prompt") or "Generated with BloxCraft AI",
+        "description": doc.get("original_prompt") or "Generated with BloxDrops AI",
         "attachment_type": attachment,
         "attachment_point": ROBLOX_LIMITS["required_attachments"].get(attachment, "Auto"),
         "recommended_price_robux": ROBLOX_LIMITS["recommended_price_robux"].get(attachment, 50),
         "category": "Accessory" if attachment in ROBLOX_LIMITS["required_attachments"] else "Clothing",
-        "tags": [attachment.lower(), doc.get("style", "auto"), "bloxcraft", "ai-generated"],
+        "tags": [attachment.lower(), doc.get("style", "auto"), "bloxdrops", "ai-generated"],
         "marketplace_ready": True,
         "files": {
             "glb_url": f"/api/export/{generation_id}/glb",
@@ -151,6 +151,6 @@ async def export_checklist(generation_id: str, user=Depends(get_current_user)):
         {"name": "File size", "ok": True,
          "detail": f"Verify in Studio: ≤ {ROBLOX_LIMITS['max_file_size_mb']} MB"},
         {"name": "Commercial rights", "ok": True,
-         "detail": "Generated under BloxCraft commercial license"},
+         "detail": "Generated under BloxDrops commercial license"},
     ]
     return {"checks": checks, "passed": all(c["ok"] for c in checks), "attachment": attachment, "polygon_budget": budget}

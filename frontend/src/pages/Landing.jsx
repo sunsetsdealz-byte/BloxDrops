@@ -395,7 +395,7 @@ function HeroShowcase() {
         >
           <motion.img
             src={HERO_IMAGE}
-            alt="BloxCraft creator character — generated with AI"
+            alt="BloxDrops creator character — generated with AI"
             className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
             initial={{ scale: 0.98 }}

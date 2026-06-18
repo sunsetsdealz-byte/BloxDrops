@@ -1,4 +1,4 @@
-"""BloxCraft AI — FastAPI server entry point."""
+"""BloxDrops AI — FastAPI server entry point."""
 from dotenv import load_dotenv
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent
@@ -21,7 +21,7 @@ from auth_utils import (
     hash_password, verify_password, create_access_token, get_current_user,
 )
 
-logger = logging.getLogger("bloxcraft")
+logger = logging.getLogger("bloxdrops")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # ============== DB ==============
@@ -32,7 +32,7 @@ db = client[os.environ["DB_NAME"]]
 
 # ============== STARTUP ==============
 async def seed_admin():
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@bloxcraft.ai").lower()
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@bloxdrops.com").lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
@@ -152,7 +152,7 @@ async def seed_demo_creations():
     ]
     admin = await db.users.find_one({"role": "admin"})
     admin_id = str(admin["_id"]) if admin else "system"
-    creators = ["BloxCraft", "ShadowLord_99", "PixelPrince", "NeonDrip", "CodeKween", "MintMaster", "RobloxRoyal", "GlitchKid"]
+    creators = ["BloxDrops", "ShadowLord_99", "PixelPrince", "NeonDrip", "CodeKween", "MintMaster", "RobloxRoyal", "GlitchKid"]
     for i, s in enumerate(samples):
         h = hash(s["prompt"])
         await db.generations.insert_one({
@@ -200,9 +200,9 @@ async def lifespan(app: FastAPI):
         memdir = Path("/app/memory")
         memdir.mkdir(parents=True, exist_ok=True)
         (memdir / "test_credentials.md").write_text(
-            "# BloxCraft AI — Test Credentials\n\n"
+            "# BloxDrops AI — Test Credentials\n\n"
             "## Admin\n"
-            f"- Email: `{os.environ.get('ADMIN_EMAIL', 'admin@bloxcraft.ai')}`\n"
+            f"- Email: `{os.environ.get('ADMIN_EMAIL', 'admin@bloxdrops.com')}`\n"
             f"- Password: `{os.environ.get('ADMIN_PASSWORD', 'admin123')}`\n"
             "- Role: admin\n\n"
             "## Test Users\n"
@@ -223,7 +223,7 @@ async def lifespan(app: FastAPI):
     client.close()
 
 
-app = FastAPI(title="BloxCraft AI", lifespan=lifespan)
+app = FastAPI(title="BloxDrops AI", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -347,7 +347,7 @@ app.include_router(admin_router)
 # ============== META ==============
 @app.get("/api/")
 async def root():
-    return {"app": "BloxCraft AI", "ok": True}
+    return {"app": "BloxDrops AI", "ok": True}
 
 
 @app.get("/api/meta")

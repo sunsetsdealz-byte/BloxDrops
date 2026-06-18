@@ -30,12 +30,78 @@ export default function Header() {
       style={{ borderBottomColor: "rgba(255,255,255,0.05)" }}
     >
       <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-2" data-testid={TID.navLogo}>
-          <div className="w-8 h-8 rounded-lg bg-[#ccff00] flex items-center justify-center text-black font-black text-base">
-            B
-          </div>
-          <span className="font-display font-black tracking-tighter text-lg uppercase">
-            Blox<span className="text-[#ccff00]">Craft</span>
+        <Link
+          to="/"
+          className="brand-logo group flex items-center gap-2.5 select-none"
+          data-testid={TID.navLogo}
+        >
+          {/* 3D isometric cube mark + droplet */}
+          <span className="brand-mark relative inline-flex items-center justify-center w-9 h-9">
+            <svg
+              viewBox="0 0 40 40"
+              className="brand-mark-svg w-9 h-9"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="bd-face-top" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#e8ff66" />
+                  <stop offset="100%" stopColor="#ccff00" />
+                </linearGradient>
+                <linearGradient id="bd-face-left" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00f0ff" />
+                  <stop offset="100%" stopColor="#0098b0" />
+                </linearGradient>
+                <linearGradient id="bd-face-right" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ff3380" />
+                  <stop offset="100%" stopColor="#b3003d" />
+                </linearGradient>
+                <radialGradient id="bd-drop" cx="50%" cy="35%" r="65%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="55%" stopColor="#ccff00" />
+                  <stop offset="100%" stopColor="#79a800" />
+                </radialGradient>
+              </defs>
+              {/* Isometric cube faces */}
+              <polygon
+                points="20,4 35,12 20,20 5,12"
+                fill="url(#bd-face-top)"
+              />
+              <polygon
+                points="5,12 20,20 20,36 5,28"
+                fill="url(#bd-face-left)"
+              />
+              <polygon
+                points="35,12 20,20 20,36 35,28"
+                fill="url(#bd-face-right)"
+              />
+              {/* Edge highlights */}
+              <polyline
+                points="20,4 20,20 5,12"
+                fill="none"
+                stroke="rgba(255,255,255,0.45)"
+                strokeWidth="0.6"
+              />
+              <polyline
+                points="20,20 35,12"
+                fill="none"
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="0.6"
+              />
+              {/* Falling droplet */}
+              <path
+                className="brand-droplet"
+                d="M32 6 C 34 9, 35 11, 33 12.5 C 31 14, 30 10.5, 32 6 Z"
+                fill="url(#bd-drop)"
+              />
+            </svg>
+            <span className="brand-glow" aria-hidden="true" />
+          </span>
+
+          {/* Wordmark */}
+          <span className="brand-word font-display font-black tracking-tighter text-lg uppercase leading-none flex items-baseline">
+            <span className="brand-word-blox">Blox</span>
+            <span className="brand-dot" aria-hidden="true" />
+            <span className="brand-word-drops">Drops</span>
           </span>
         </Link>
 

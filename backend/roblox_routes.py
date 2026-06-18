@@ -147,11 +147,11 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
 
     # 2) Build the Open Cloud Create Asset request
     import json as _json
-    asset_name = (gen.get("original_prompt") or "BloxCraft Item")[:40]
+    asset_name = (gen.get("original_prompt") or "BloxDrops Item")[:40]
     request_payload = {
         "assetType": "Decal",
         "displayName": asset_name,
-        "description": f"Generated with BloxCraft AI · {gen.get('attachment_type', 'Item')} · {gen.get('style', 'auto')}",
+        "description": f"Generated with BloxDrops AI · {gen.get('attachment_type', 'Item')} · {gen.get('style', 'auto')}",
         "creationContext": {"creator": {"userId": int(creds["user_id"])}},
     }
     files = {

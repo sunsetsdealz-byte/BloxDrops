@@ -1,10 +1,10 @@
-# BloxCraft AI — Product Requirements
+# BloxDrops AI — Product Requirements
 
 ## Original problem statement
 "i want to build an ai generator" → "a better platform that does the same as https://www.ugcraft.ai/ and more"
 
 ## What it is
-BloxCraft AI is an AI Roblox UGC creator — turns text prompts and reference images into 3D Roblox-ready accessories & clothing (hats, hair, hoodies, weapons, etc.), exported as GLB. Plus community + battle + challenge features that ugcraft.ai doesn't have.
+BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference images into 3D Roblox-ready accessories & clothing (hats, hair, hoodies, weapons, etc.), exported as GLB. Plus community + battle + challenge features that ugcraft.ai doesn't have.
 
 ## User personas
 - **Roblox creators (13-25)** — want to ship marketplace items fast, no 3D experience
@@ -52,6 +52,13 @@ BloxCraft AI is an AI Roblox UGC creator — turns text prompts and reference im
 - Image upload (currently URL only)
 - Forgot/reset password
 - Social share + OG images
+
+## P2 backlog
+- Roblox marketplace direct-upload integration
+- Real-time notifications (likes, battle wins)
+- Creator analytics dashboard
+- Referral credits
+l share + OG images
 
 ## P2 backlog
 - Roblox marketplace direct-upload integration

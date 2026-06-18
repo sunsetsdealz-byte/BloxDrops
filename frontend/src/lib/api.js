@@ -3,7 +3,7 @@ import axios from "axios";
 export const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
 
-const TOKEN_KEY = "bloxcraft_token";
+const TOKEN_KEY = "bloxdrops_token";
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
