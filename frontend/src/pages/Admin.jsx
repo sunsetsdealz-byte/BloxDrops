@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Crown, MagnifyingGlass, ShieldStar, User, Lightning, CaretDown, X, Check, Storefront, Coins, TrendUp,
-  CurrencyDollar, Warning, PlugsConnected,
+  CurrencyDollar, Warning, PlugsConnected, Prohibit, Key, Trash,
 } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -96,6 +96,52 @@ export default function Admin() {
           : `${target.name || target.email} → ${plan_id} ${grant_credits ? "(+credits)" : ""}`
       );
       load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const toggleBan = async (target) => {
+    setBusy(target.id);
+    try {
+      const action = target.banned ? "unban" : "ban";
+      await api.post(`/admin/users/${target.id}/${action}`);
+      toast.success(target.banned ? `${target.email} unbanned` : `${target.email} BANNED`);
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const deleteUser = async (target) => {
+    if (!window.confirm(`PERMANENTLY DELETE ${target.email}?\n\nThis will wipe their account, drops, ownerships, listings, and BloxBucks history. This cannot be undone.`)) return;
+    setBusy(target.id);
+    try {
+      await api.delete(`/admin/users/${target.id}`);
+      toast.success(`${target.email} deleted permanently`);
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const resetPassword = async (target) => {
+    const newPwd = window.prompt(
+      `Set a new password for ${target.email}.\n\n⚠️ Existing passwords cannot be revealed (they are stored as one-way bcrypt hashes — same as Google/Stripe/every other secure service do).\n\nThe new password must be at least 6 characters. Share it with the user out-of-band (email/SMS).`,
+      ""
+    );
+    if (!newPwd) return;
+    if (newPwd.length < 6) return toast.error("Password must be at least 6 characters.");
+    setBusy(target.id);
+    try {
+      await api.post(`/admin/users/${target.id}/reset-password`, { new_password: newPwd });
+      toast.success(`Password reset for ${target.email}. Tell them the new password securely.`);
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -285,7 +331,14 @@ export default function Admin() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-white truncate">{u.name || "—"}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-white truncate">{u.name || "—"}</p>
+                          {u.banned && (
+                            <span className="inline-flex items-center gap-1 text-[8px] uppercase tracking-widest bg-[#ff0055]/15 text-[#ff0055] border border-[#ff0055]/50 rounded-full px-1.5 py-0.5 font-black flex-shrink-0">
+                              <Prohibit size={9} weight="fill" /> Banned
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-zinc-500 truncate font-mono">{u.email}</p>
                       </div>
                     </div>
@@ -397,18 +450,45 @@ export default function Admin() {
                     ) : u.id === user.id ? (
                       <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">you</span>
                     ) : (
-                      <button
-                        onClick={() => toggleRole(u)}
-                        disabled={busy === u.id}
-                        data-testid={`role-toggle-${u.id}`}
-                        className={`rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] font-black transition-all disabled:opacity-50 ${
-                          u.role === "admin"
-                            ? "bg-[#ff0055]/15 text-[#ff0055] border border-[#ff0055]/50 hover:bg-[#ff0055] hover:text-white hover:shadow-[0_0_18px_rgba(255,0,85,0.5)]"
-                            : "bg-[#ccff00] text-black border border-[#ccff00] hover:shadow-[0_0_18px_rgba(204,255,0,0.5)]"
-                        }`}
-                      >
-                        {busy === u.id ? "…" : u.role === "admin" ? "Remove admin" : "Make admin"}
-                      </button>
+                      <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                        <button
+                          onClick={() => toggleRole(u)}
+                          disabled={busy === u.id}
+                          data-testid={`role-toggle-${u.id}`}
+                          className={`rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] font-black transition-all disabled:opacity-50 ${
+                            u.role === "admin"
+                              ? "bg-[#ff0055]/15 text-[#ff0055] border border-[#ff0055]/50 hover:bg-[#ff0055] hover:text-white"
+                              : "bg-[#ccff00] text-black border border-[#ccff00] hover:shadow-[0_0_18px_rgba(204,255,0,0.5)]"
+                          }`}
+                        >
+                          {busy === u.id ? "…" : u.role === "admin" ? "Remove admin" : "Make admin"}
+                        </button>
+
+                        <IconAction
+                          title={u.banned ? "Unban this user" : "Ban this user (block login)"}
+                          onClick={() => toggleBan(u)}
+                          disabled={busy === u.id}
+                          color={u.banned ? "#fbbf24" : "#fb923c"}
+                          testId={`ban-${u.id}`}
+                          icon={<Prohibit size={13} weight={u.banned ? "regular" : "fill"} />}
+                        />
+                        <IconAction
+                          title="Reset password (existing one cannot be revealed — bcrypt)"
+                          onClick={() => resetPassword(u)}
+                          disabled={busy === u.id}
+                          color="#00f0ff"
+                          testId={`reset-pwd-${u.id}`}
+                          icon={<Key size={13} weight="fill" />}
+                        />
+                        <IconAction
+                          title="Permanently delete this user + all data"
+                          onClick={() => deleteUser(u)}
+                          disabled={busy === u.id}
+                          color="#ff0055"
+                          testId={`delete-${u.id}`}
+                          icon={<Trash size={13} weight="fill" />}
+                        />
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -422,9 +502,27 @@ export default function Admin() {
       )}
 
       <p className="text-[10px] text-zinc-600 text-center mt-6 uppercase tracking-widest">
-        Seed admin protected · "+ credits" grants the plan's monthly credits on activation
+        Seed admin protected · plus credits grants the plan&apos;s monthly credits on activation
       </p>
     </div>
+  );
+}
+
+function IconAction({ title, onClick, disabled, color, icon, testId }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={testId}
+      className="rounded-full w-7 h-7 flex items-center justify-center border transition-all disabled:opacity-40"
+      style={{ color, borderColor: `${color}55`, backgroundColor: `${color}10` }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = color; e.currentTarget.style.color = "#000"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `${color}10`; e.currentTarget.style.color = color; }}
+    >
+      {icon}
+    </button>
   );
 }
 

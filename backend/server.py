@@ -333,6 +333,10 @@ async def login(payload: LoginRequest, request: Request):
         )
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    # Banned accounts can't log in
+    if user.get("banned"):
+        raise HTTPException(status_code=403, detail="This account has been banned by an administrator.")
+
     # Clear attempts
     await db.login_attempts.delete_one({"identifier": identifier})
 

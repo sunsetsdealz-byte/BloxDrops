@@ -44,6 +44,7 @@ async def list_users(
             "role": u.get("role", "user"),
             "plan": u.get("plan", "free"),
             "credits": u.get("credits", 0),
+            "banned": bool(u.get("banned")),
             "is_seed_admin": _is_seed_admin(u["email"]),
             "created_at": (
                 u["created_at"].isoformat()
@@ -52,6 +53,105 @@ async def list_users(
             ),
         })
     return {"items": items, "count": len(items)}
+
+
+# ============== BAN / UNBAN ==============
+@router.post("/users/{user_id}/ban")
+async def ban_user(user_id: str, user=Depends(get_current_user)):
+    _require_admin(user)
+    from server import db
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if _is_seed_admin(target["email"]):
+        raise HTTPException(status_code=400, detail="Cannot ban the seed admin")
+    if str(target["_id"]) == user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot ban yourself")
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"banned": True, "banned_at": datetime.utcnow().isoformat(), "banned_by": user["id"]}},
+    )
+    return {"ok": True, "banned": True}
+
+
+@router.post("/users/{user_id}/unban")
+async def unban_user(user_id: str, user=Depends(get_current_user)):
+    _require_admin(user)
+    from server import db
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$unset": {"banned": "", "banned_at": "", "banned_by": ""}},
+    )
+    return {"ok": True, "banned": False}
+
+
+# ============== DELETE USER ==============
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, user=Depends(get_current_user)):
+    _require_admin(user)
+    from server import db
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if _is_seed_admin(target["email"]):
+        raise HTTPException(status_code=400, detail="Cannot delete the seed admin")
+    if str(target["_id"]) == user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot delete yourself")
+    # Cascade: drop owned data
+    await db.users.delete_one({"_id": ObjectId(user_id)})
+    await db.generations.delete_many({"user_id": user_id})
+    await db.bloxbucks_transactions.delete_many({"user_id": user_id})
+    await db.ownerships.delete_many({"owner_user_id": user_id})
+    await db.marketplace_listings.delete_many({"seller_user_id": user_id})
+    await db.payment_transactions.delete_many({"user_id": user_id})
+    return {"ok": True, "deleted_email": target["email"]}
+
+
+# ============== ADMIN PASSWORD RESET ==============
+class AdminResetPwdRequest(BaseModel):
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+@router.post("/users/{user_id}/reset-password")
+async def admin_reset_password(user_id: str, payload: AdminResetPwdRequest, user=Depends(get_current_user)):
+    """Admin sets a new password for any user.
+
+    NOTE: We cannot retrieve existing passwords — they're stored as one-way bcrypt
+    hashes (industry standard, required by GDPR/SOC2). Use this to issue a new
+    password and share it with the user out-of-band (email/SMS).
+    """
+    _require_admin(user)
+    from server import db
+    from auth_utils import hash_password
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "password_hash": hash_password(payload.new_password),
+            "password_reset_by_admin_at": datetime.utcnow().isoformat(),
+            "password_reset_by_admin_id": user["id"],
+        }},
+    )
+    # Clear any login attempt lockouts so the user can immediately sign in
+    await db.login_attempts.delete_many({"identifier": f"email:{target['email']}"})
+    return {"ok": True, "email": target["email"]}
 
 
 @router.post("/users/{user_id}/promote")

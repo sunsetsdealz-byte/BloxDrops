@@ -43,10 +43,12 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **Stripe Connect Express** (Phase 2.3): backend `/api/connect/onboard|status|login-link|configured` + `ConnectPayoutsCard.jsx` UI on Profile page. **LIVE as of 2026-06-18** with user's BloxDrops Sandbox.
 
 ## Key technical notes
-- `load_dotenv(override=True)` in server.py ensures backend/.env takes precedence over shell-level env vars (critical for `STRIPE_API_KEY` since the container ships with placeholder `sk_test_emergent`).
-- **🔴 LIVE MODE (2026-06-18):** `STRIPE_API_KEY` is now `sk_live_...` — Connect onboarding creates real connected accounts; payments charge real cards; payouts wire real USD.
+- `load_dotenv(override=True)` in server.py ensures backend/.env takes precedence over shell-level env vars.
+- **🔴 LIVE MODE (2026-06-18):** `STRIPE_API_KEY` is `sk_live_...` — Connect onboarding creates real connected accounts; payments charge real cards; payouts wire real USD.
+- Admin user `admin@bloxdrops.com` is fully Connect-verified (`acct_1TjbA4Rh6bf5vlv1`, charges_enabled=true).
 - Platform owner (`is_platform_owner=True`, email `noelcampos11211@yahoo.com`) automatically receives 5% of all marketplace sales.
 - Roblox Open Cloud Assets API uses per-user API keys (Profile → Roblox Connection).
+- **Admin user actions** (2026-06-18 evening): `POST /api/admin/users/{id}/ban`, `/unban`, `/reset-password`, and `DELETE /api/admin/users/{id}`. Banned users get 403 on login. Passwords are stored as bcrypt hashes — original values cannot be retrieved (industry standard); admins can only RESET passwords to a known value.
 
 ## P0 — In Progress
 (none — Phase 2.4 USD marketplace is LIVE)
