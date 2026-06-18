@@ -301,7 +301,7 @@ export default function Landing() {
                 ▍ Founder's Drop · Coming Soon
               </p>
               <h3 className="font-display text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight">
-                The first <span className="text-[#fbbf24] [text-shadow:0_0_24px_rgba(251,191,36,0.55)]">1 of 1</span> ever forged
+                The first <span className="text-[#fbbf24] tracking-normal [text-shadow:0_0_24px_rgba(251,191,36,0.55)]">1 of 1</span> ever forged
               </h3>
               <p className="text-sm text-zinc-400 mt-3 max-w-xl">
                 Hand-curated. Founder signed. Genesis flagged. Soon listed for sale — bid your interest now.
