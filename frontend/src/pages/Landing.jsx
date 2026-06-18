@@ -518,11 +518,9 @@ function HeroShowcase() {
         </div>
       </motion.div>
 
-      {/* External floating spec chips — outside the frame, NOT tilted.
-          Using solid bg instead of `glass` to avoid blur cascade from parent 3D transform. */}
+      {/* External floating spec chips — outside the frame, NOT tilted */}
       <motion.div
-        className="absolute -top-3 -left-3 rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10 pointer-events-none border border-white/10"
-        style={{ background: "rgba(9, 9, 11, 0.92)", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
+        className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10 pointer-events-none"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}
@@ -535,8 +533,7 @@ function HeroShowcase() {
       </motion.div>
 
       <motion.div
-        className="absolute -bottom-3 -right-3 rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none max-w-[260px] border border-white/10"
-        style={{ background: "rgba(9, 9, 11, 0.92)", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
+        className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none max-w-[260px]"
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.75, duration: 0.5 }}
