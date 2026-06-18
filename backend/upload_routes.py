@@ -11,6 +11,9 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
 
+# Guard against decompression-bomb attacks (Pillow default is too permissive)
+Image.MAX_IMAGE_PIXELS = 50_000_000  # ~50 MP
+
 from auth_utils import get_current_user
 
 router = APIRouter(prefix="/api")

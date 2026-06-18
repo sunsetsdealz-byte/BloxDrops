@@ -84,7 +84,7 @@ async def export_glb(generation_id: str, user=Depends(get_current_user)):
     fname = _safe_filename((doc.get("original_prompt") or "item")[:40]) + ".glb"
 
     async def stream():
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=180.0, follow_redirects=True) as client:
             async with client.stream("GET", doc["model_url"]) as r:
                 if r.status_code != 200:
                     raise HTTPException(status_code=502, detail=f"Upstream returned {r.status_code}")

@@ -307,3 +307,26 @@ async def meta():
         "plans": [{"id": k, **v} for k, v in PACKAGES.items()],
         "fal_configured": bool(os.environ.get("FAL_KEY", "").strip()),
     }
+
+
+@app.get("/api/stats")
+async def public_stats():
+    """Lightweight site-wide counters used by the landing page live ticker."""
+    total = await db.generations.count_documents({"status": "completed"})
+    pending = await db.generations.count_documents({"status": "pending"})
+    creators = len(await db.generations.distinct("user_id"))
+    battles = await db.battles.count_documents({"status": "voted"})
+    likes = await db.likes.count_documents({})
+    today_start = (now_utc().replace(hour=0, minute=0, second=0, microsecond=0)).isoformat()
+    today = await db.generations.count_documents({
+        "status": "completed",
+        "created_at": {"$gte": today_start},
+    })
+    return {
+        "total_creations": total,
+        "pending_now": pending,
+        "creators": creators,
+        "battles_settled": battles,
+        "total_likes": likes,
+        "today_creations": today,
+    }

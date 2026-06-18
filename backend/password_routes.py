@@ -6,6 +6,7 @@ this should be sent via an email provider (SendGrid / Resend).
 """
 import os
 import secrets
+import hashlib
 import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request
@@ -16,6 +17,14 @@ import bcrypt
 
 router = APIRouter(prefix="/api/auth")
 logger = logging.getLogger(__name__)
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _is_dev() -> bool:
+    return os.environ.get("ENV", "dev").lower() != "production"
 
 
 class ForgotRequest(BaseModel):
@@ -47,7 +56,7 @@ async def forgot_password(payload: ForgotRequest, request: Request):
     await db.password_reset_tokens.insert_one({
         "user_id": str(user["_id"]),
         "email": email,
-        "token": token,
+        "token_hash": _hash_token(token),  # never store plaintext
         "expires_at": expires_at,
         "used": False,
         "created_at": _now().isoformat(),
@@ -55,20 +64,23 @@ async def forgot_password(payload: ForgotRequest, request: Request):
 
     base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
     reset_link = f"{base}/reset-password?token={token}"
-    # Log the link for development. In prod, send via email.
     logger.info("Password reset link for %s: %s", email, reset_link)
 
-    return {
+    payload_out = {
         "ok": True,
         "message": "If an account exists, a reset link has been generated.",
-        "dev_reset_link": reset_link,  # In production, REMOVE this field — send via email instead.
     }
+    # Only return the link to clients in non-production. In production, send via email.
+    if _is_dev():
+        payload_out["dev_reset_link"] = reset_link
+    return payload_out
 
 
 @router.post("/reset-password")
 async def reset_password(payload: ResetRequest):
     from server import db
-    rec = await db.password_reset_tokens.find_one({"token": payload.token})
+    token_hash = _hash_token(payload.token)
+    rec = await db.password_reset_tokens.find_one({"token_hash": token_hash})
     if not rec:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
     if rec.get("used"):
