@@ -50,14 +50,25 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
-              <div
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10"
-                data-testid={TID.navCredits}
-              >
-                <Coins size={16} weight="duotone" className="text-[#ccff00]" />
-                <span className="text-sm font-bold">{user.credits}</span>
-                <span className="text-[10px] text-zinc-400 uppercase tracking-wider">credits</span>
-              </div>
+              {user.role === "admin" ? (
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/40"
+                  data-testid={TID.navCredits}
+                  title="Admin · unlimited free generations"
+                >
+                  <Coins size={16} weight="duotone" className="text-[#ccff00]" />
+                  <span className="text-[10px] font-black text-[#ccff00] uppercase tracking-widest">Admin · Free</span>
+                </div>
+              ) : (
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10"
+                  data-testid={TID.navCredits}
+                >
+                  <Coins size={16} weight="duotone" className="text-[#ccff00]" />
+                  <span className="text-sm font-bold">{user.credits}</span>
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider">credits</span>
+                </div>
+              )}
               <Link
                 to="/profile"
                 data-testid={TID.navProfile}

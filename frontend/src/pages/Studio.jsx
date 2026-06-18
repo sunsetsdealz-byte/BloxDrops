@@ -308,7 +308,11 @@ export default function Studio() {
                 className="btn-volt rounded-lg flex-1 py-3 text-sm flex items-center justify-center gap-2"
               >
                 <Sparkle size={16} weight="fill" />
-                {generating ? "Submitting…" : "Generate (1 credit)"}
+                {generating
+                  ? "Submitting…"
+                  : user?.role === "admin"
+                    ? "Generate (free · admin)"
+                    : "Generate (1 credit)"}
               </button>
             </div>
           </div>

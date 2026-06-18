@@ -152,7 +152,9 @@ async def _create_generation_record(
     original_prompt: Optional[str] = None,
 ):
     from server import db
-    if user.get("credits", 0) <= 0:
+    is_admin = user.get("role") == "admin"
+    # Admins bypass credit checks and never get charged
+    if not is_admin and user.get("credits", 0) <= 0:
         raise HTTPException(status_code=402, detail="Out of credits. Upgrade your plan.")
 
     doc = {
@@ -174,12 +176,14 @@ async def _create_generation_record(
         "remixed_from": None,
         "challenge_id": challenge_id,
         "created_at": now_utc().isoformat(),
+        "free_by_admin": is_admin,
     }
     res = await db.generations.insert_one(doc)
     gen_id = str(res.inserted_id)
 
-    # Deduct credit
-    await db.users.update_one({"_id": ObjectId(user["id"])}, {"$inc": {"credits": -1}})
+    # Only deduct credit for non-admin users
+    if not is_admin:
+        await db.users.update_one({"_id": ObjectId(user["id"])}, {"$inc": {"credits": -1}})
 
     return gen_id, doc
 
