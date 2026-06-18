@@ -364,6 +364,7 @@ from roblox_routes import router as roblox_router
 from admin_routes import router as admin_router
 from marketplace_routes import router as marketplace_router
 from bloxbucks_routes import router as bloxbucks_router
+from connect_routes import router as connect_router
 
 app.include_router(gen_router)
 app.include_router(comm_router)
@@ -375,6 +376,7 @@ app.include_router(roblox_router)
 app.include_router(admin_router)
 app.include_router(marketplace_router)
 app.include_router(bloxbucks_router)
+app.include_router(connect_router)
 
 
 # ============== META ==============

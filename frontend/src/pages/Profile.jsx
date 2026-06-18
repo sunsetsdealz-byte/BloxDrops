@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { api, formatApiError } from "../lib/api";
 import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected } from "@phosphor-icons/react";
+import ConnectPayoutsCard from "../components/ConnectPayoutsCard";
 
 function RobloxConnectCard() {
   const [status, setStatus] = useState(null);
@@ -235,6 +236,7 @@ export default function Profile() {
         <Link to="/pricing" className="btn-volt rounded-full px-5 py-2.5 text-sm">Get more credits</Link>
       </div>
 
+      <ConnectPayoutsCard />
       <RobloxConnectCard />
 
       {items.length === 0 ? (

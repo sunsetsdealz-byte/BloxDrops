@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Storefront, Coins, Tag, X, CurrencyDollar, Crown } from "@phosphor-icons/react";
+import { Storefront, Coins, Tag, X, CurrencyDollar, Crown, Lightning, Sparkle } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import CreationCard from "../components/CreationCard";
+import TopUpModal from "../components/TopUpModal";
 import { rarityOf, editionLabel } from "../lib/rarity";
 
 export default function Marketplace() {
@@ -18,6 +19,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [listingFor, setListingFor] = useState(null); // ownership item to list
   const [sort, setSort] = useState("newest");
+  const [topupOpen, setTopupOpen] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
@@ -60,6 +62,46 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* PROMO BANNER — Whale package bonus */}
+      {user && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative overflow-hidden border-b border-[#fbbf24]/30 bg-gradient-to-r from-[#fbbf24]/15 via-[#ff0055]/10 to-[#00f0ff]/10"
+          data-testid="promo-banner"
+        >
+          {/* Animated shimmer */}
+          <motion.div
+            className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none"
+            animate={{ x: ["-100%", "300%"] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
+          />
+          <div className="relative max-w-7xl mx-auto px-5 md:px-8 py-3 flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <Sparkle size={20} weight="fill" className="text-[#fbbf24] animate-pulse flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="font-display text-sm md:text-base font-black uppercase tracking-tight leading-tight">
+                  <span className="text-[#fbbf24]">+25% Bonus BloxBucks</span>{" "}
+                  <span className="text-white">on the Whale pack</span>{" "}
+                  <span className="text-zinc-400 hidden sm:inline">· Limited time</span>
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">
+                  10,000 BB for $79.99 · best value · ships instantly
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setTopupOpen(true)}
+              data-testid="promo-cta"
+              className="bg-[#fbbf24] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest hover:shadow-[0_0_22px_rgba(251,191,36,0.7)] transition-all flex items-center gap-1.5 flex-shrink-0"
+            >
+              <Lightning size={12} weight="fill" /> Claim bonus
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Hero strip */}
       <section className="relative max-w-7xl mx-auto px-5 md:px-8 pt-12 pb-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -75,11 +117,21 @@ export default function Marketplace() {
             </p>
           </div>
           {user && (
-            <div className="rounded-2xl border border-[#fbbf24]/40 bg-gradient-to-br from-[#fbbf24]/15 to-transparent px-5 py-3">
-              <p className="text-[10px] uppercase tracking-widest text-[#fbbf24]/80 font-bold">Your Balance</p>
-              <p className="font-display text-3xl font-black text-[#fbbf24]" data-testid="bb-balance">
-                {balance.toLocaleString()} <span className="text-base text-[#fbbf24]/70">BB</span>
-              </p>
+            <div className="rounded-2xl border border-[#fbbf24]/40 bg-gradient-to-br from-[#fbbf24]/15 to-transparent px-5 py-3 flex items-center gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#fbbf24]/80 font-bold">Your Balance</p>
+                <p className="font-display text-3xl font-black text-[#fbbf24]" data-testid="bb-balance">
+                  {balance.toLocaleString()} <span className="text-base text-[#fbbf24]/70">BB</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setTopupOpen(true)}
+                data-testid="marketplace-topup"
+                className="self-stretch px-3 rounded-xl border border-[#fbbf24]/50 text-[#fbbf24] hover:bg-[#fbbf24] hover:text-black transition-all flex items-center gap-1.5 text-xs font-black uppercase tracking-widest"
+                title="Top up BloxBucks"
+              >
+                <Coins size={14} weight="fill" /> Top up
+              </button>
             </div>
           )}
         </div>
@@ -177,6 +229,9 @@ export default function Marketplace() {
           />
         )}
       </AnimatePresence>
+
+      {/* Top-up modal */}
+      <TopUpModal open={topupOpen} onClose={() => setTopupOpen(false)} onPurchased={() => { setTopupOpen(false); refresh(); }} />
     </div>
   );
 }
