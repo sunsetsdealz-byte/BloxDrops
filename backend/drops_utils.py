@@ -38,20 +38,25 @@ def make_signature(user_id: str, mint_id: str, created_at: str) -> str:
 
 
 def compute_rarity_tier(doc: Dict[str, Any]) -> str:
-    """Auto-grade rarity from engagement + scarcity."""
+    """Auto-grade rarity from engagement + scarcity + provenance."""
     likes = int(doc.get("likes") or 0)
     wins = int(doc.get("battle_wins") or 0)
     remixes = int(doc.get("remix_count") or 0)
     score = likes + wins * 3 + remixes * 2
 
     edition_cap = doc.get("edition_cap")
-    # 1-of-1 drops are inherently scarce — minimum Epic
+    is_founder_signed = bool(doc.get("is_founder_signed"))
+
+    # 1-of-1 drops are inherently scarce — minimum Legendary.
+    # 1-of-1 + founder-signed = automatic Mythic (top of provenance).
     if edition_cap == 1:
-        if score >= 30:
+        if is_founder_signed:
             return "mythic"
-        if score >= 10:
+        if score >= 20:
+            return "mythic"
+        if score >= 5:
             return "legendary"
-        return "epic"
+        return "legendary"
 
     # Limited (10 or 50 cap) — minimum Rare
     if edition_cap in (10, 50):
@@ -98,6 +103,8 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
         doc["is_founder_signed"] = bool(doc.get("free_by_admin"))
     if "is_genesis" not in doc:
         doc["is_genesis"] = False
+    if "is_coming_soon" not in doc:
+        doc["is_coming_soon"] = False
 
     tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]

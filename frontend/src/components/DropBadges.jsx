@@ -1,10 +1,9 @@
 import React from "react";
-import { Sparkle, Hash, Crown, Star } from "@phosphor-icons/react";
+import { Sparkle, Hash, Crown, Star, Lock } from "@phosphor-icons/react";
 import { rarityOf, editionLabel } from "../lib/rarity";
 
 /**
- * Compact drop badges row: GENESIS + rarity tier + edition number + founder signed.
- * Stacks horizontally; pass `size="sm"` for use inside cards.
+ * Compact drop badges row: COMING SOON + GENESIS + rarity tier + edition + signed.
  */
 export default function DropBadges({ item, size = "md" }) {
   if (!item) return null;
@@ -13,6 +12,7 @@ export default function DropBadges({ item, size = "md" }) {
   const ed = editionLabel(item);
   const isSigned = !!item.is_founder_signed;
   const isGenesis = !!item.is_genesis;
+  const isComingSoon = !!item.is_coming_soon;
 
   const small = size === "sm";
   const padY = small ? "py-0.5" : "py-1";
@@ -22,7 +22,17 @@ export default function DropBadges({ item, size = "md" }) {
 
   return (
     <div className="flex flex-wrap gap-1.5 items-center" data-testid="drop-badges">
-      {/* Genesis — first 100 ever minted */}
+      {/* Coming soon / Release soon — highest priority */}
+      {isComingSoon && (
+        <span
+          className={`coming-soon-pill ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}
+          data-testid="coming-soon"
+          title="Release coming soon — not yet for sale"
+        >
+          <Lock size={iconSize} weight="fill" /> Release Soon
+        </span>
+      )}
+
       {isGenesis && (
         <span
           className={`genesis-pill ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}
@@ -33,7 +43,6 @@ export default function DropBadges({ item, size = "md" }) {
         </span>
       )}
 
-      {/* Rarity tier */}
       <span
         className={`rarity-pill rarity-pill-${tier} ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}
         data-testid={`rarity-${tier}`}
@@ -41,7 +50,6 @@ export default function DropBadges({ item, size = "md" }) {
         <Sparkle size={iconSize} weight="fill" /> {r.label}
       </span>
 
-      {/* Edition number */}
       <span
         className={`edition-pill ${padX} ${padY} ${textSize} uppercase tracking-widest font-bold rounded-full inline-flex items-center gap-1 bg-black/70 border border-white/20 text-white`}
         data-testid="edition-badge"
@@ -49,12 +57,11 @@ export default function DropBadges({ item, size = "md" }) {
         <Hash size={iconSize} weight="bold" /> {ed}
       </span>
 
-      {/* Founder signed */}
       {isSigned && (
         <span
           className={`signed-pill ${padX} ${padY} ${textSize} uppercase tracking-widest font-black rounded-full inline-flex items-center gap-1`}
           data-testid="founder-signed"
-          title="Founder Signed — minted by an admin / founder account"
+          title="Founder Signed — minted by the founder"
         >
           <Crown size={iconSize} weight="fill" /> Signed
         </span>

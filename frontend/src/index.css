@@ -468,6 +468,21 @@ body {
   box-shadow: 0 0 10px rgba(251,191,36,0.45), inset 0 0 8px rgba(251,191,36,0.10);
 }
 
+/* COMING SOON pill — animated cyan/magenta locked release */
+.coming-soon-pill {
+  position: relative;
+  background: linear-gradient(90deg, #00f0ff, #c084fc, #ff0055, #00f0ff);
+  background-size: 280% 100%;
+  animation: legendaryShine 2.6s linear infinite;
+  color: #0a0a0f;
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow:
+    0 0 14px rgba(0,240,255,0.5),
+    0 0 18px rgba(255,0,85,0.35),
+    inset 0 0 5px rgba(255,255,255,0.4);
+  text-shadow: 0 0 4px rgba(255,255,255,0.55);
+}
+
 /* GENESIS pill — premium animated chrome/gold (top-tier provenance) */
 .genesis-pill {
   position: relative;

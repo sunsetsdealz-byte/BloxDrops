@@ -8,6 +8,8 @@ import {
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
 import ModelViewer from "../components/ModelViewer";
+import MonetizationSection from "../components/MonetizationSection";
+import CreationCard from "../components/CreationCard";
 
 const HERO_IMAGE = "/hero/character.png";
 
@@ -241,7 +243,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* GALLERY STRIP */}
+      {/* === NFT / MONETIZATION EXPLAINER === */}
+      <MonetizationSection />
+
+      {/* GENESIS · FOUNDER DROP — featured "1/1 release soon" hero spotlight */}
       {feed.length > 0 && (
         <section className="max-w-7xl mx-auto px-5 md:px-8 pb-20">
           <motion.div
@@ -252,30 +257,63 @@ export default function Landing() {
             className="flex items-end justify-between mb-6"
           >
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#00f0ff] font-bold mb-2">▍ The Drop</p>
-              <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter">
-                Fresh from the studio
+              <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#fbbf24] font-bold mb-2">
+                ▍ Founder's Drop · Coming Soon
+              </p>
+              <h3 className="font-display text-3xl md:text-5xl font-black uppercase tracking-tighter">
+                The first <span className="text-[#fbbf24] [text-shadow:0_0_24px_rgba(251,191,36,0.55)]">1 of 1</span> ever forged
               </h3>
+              <p className="text-sm text-zinc-400 mt-3 max-w-xl">
+                Hand-curated. Founder signed. Genesis flagged. Soon listed for sale — bid your interest now.
+              </p>
             </div>
-            <Link to="/feed" className="text-sm font-bold text-[#ccff00] flex items-center gap-1">
-              See all <ArrowRight size={14} weight="bold" />
+            <Link to="/feed" className="hidden md:flex text-sm font-bold text-[#ccff00] items-center gap-1">
+              See feed <ArrowRight size={14} weight="bold" />
             </Link>
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-            {feed.slice(0, 6).map((g, i) => (
-              <motion.div
-                key={g.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                className="holo-border aspect-[4/5] rounded-xl bg-zinc-900 border border-white/8 overflow-hidden group"
-              >
-                {g.thumbnail_url && (
-                  <img src={g.thumbnail_url} alt={g.prompt} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                )}
-              </motion.div>
-            ))}
+          <div className="grid md:grid-cols-12 gap-6 items-center">
+            {/* Big featured card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.7 }}
+              className="md:col-span-5 max-w-md mx-auto md:mx-0 w-full"
+            >
+              <CreationCard item={feed[0]} compact={false} />
+            </motion.div>
+
+            {/* Spec sheet beside the card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="md:col-span-7 grid grid-cols-2 gap-3"
+            >
+              {[
+                { k: "Edition", v: "1 / 1", c: "#ff0055" },
+                { k: "Rarity",  v: "Mythic", c: "#ff0055" },
+                { k: "Status",  v: "Coming Soon", c: "#00f0ff" },
+                { k: "Genesis", v: "Yes · #001", c: "#fbbf24" },
+                { k: "Signed",  v: "Founder ✓", c: "#fbbf24" },
+                { k: "Mint ID", v: feed[0]?.mint_id?.slice(0,8) + "…" || "—", c: "#ccff00" },
+              ].map((s) => (
+                <div key={s.k} className="rounded-xl border border-white/8 bg-zinc-950/80 p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">{s.k}</p>
+                  <p className="font-display text-xl font-black uppercase tracking-tight mt-1" style={{ color: s.c }}>
+                    {s.v}
+                  </p>
+                </div>
+              ))}
+              <div className="col-span-2 rounded-xl border border-[#fbbf24]/40 bg-gradient-to-r from-[#fbbf24]/10 to-transparent p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-[#fbbf24] font-black mb-1">Reserve price</p>
+                  <p className="font-display text-2xl font-black">$499 <span className="text-zinc-500 text-base">/ 50,000 R$</span></p>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Phase 2 launch</span>
+              </div>
+            </motion.div>
           </div>
         </section>
       )}
