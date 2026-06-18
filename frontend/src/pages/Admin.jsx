@@ -1,10 +1,20 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { Crown, MagnifyingGlass, ShieldCheck, ShieldStar, User, Lightning } from "@phosphor-icons/react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Crown, MagnifyingGlass, ShieldStar, User, Lightning, CaretDown, X, Check,
+} from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+
+const PLAN_OPTIONS = [
+  { id: "free", label: "Free", color: "#a1a1aa", desc: "Disable subscription" },
+  { id: "creator", label: "Indie · monthly", color: "#ccff00", desc: "$15/mo · 300 credits" },
+  { id: "creator_annual", label: "Indie · annual", color: "#ccff00", desc: "$108/yr · 300 credits" },
+  { id: "pro", label: "Studio · monthly", color: "#ff0055", desc: "$30/mo · 700 credits" },
+  { id: "pro_annual", label: "Studio · annual", color: "#ff0055", desc: "$216/yr · 700 credits" },
+];
 
 export default function Admin() {
   const { user } = useAuth();
@@ -13,6 +23,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(null);
+  const [planMenu, setPlanMenu] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,11 +57,33 @@ export default function Admin() {
     }
   };
 
+  const setPlan = async (target, plan_id, grant_credits) => {
+    setBusy(target.id);
+    setPlanMenu(null);
+    try {
+      const { data } = await api.post(`/admin/users/${target.id}/set-plan`, {
+        plan_id,
+        grant_credits,
+      });
+      toast.success(
+        plan_id === "free"
+          ? `Subscription disabled for ${target.name || target.email}`
+          : `${target.name || target.email} → ${plan_id} ${grant_credits ? "(+credits)" : ""}`
+      );
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   if (!user || user.role !== "admin") return null;
   const adminCount = users.filter((u) => u.role === "admin").length;
+  const paidCount = users.filter((u) => u.plan && u.plan !== "free").length;
 
   return (
-    <div className="max-w-6xl mx-auto px-5 md:px-8 py-8 md:py-12">
+    <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -65,7 +98,7 @@ export default function Admin() {
             User Management
           </h1>
           <p className="text-zinc-400 text-sm mt-2">
-            {users.length} users · {adminCount} admins
+            {users.length} users · {adminCount} admins · {paidCount} paid subscriptions
           </p>
         </div>
 
@@ -84,12 +117,12 @@ export default function Admin() {
       {loading ? (
         <div className="text-zinc-500 text-sm py-10 text-center">Loading…</div>
       ) : (
-        <div className="bg-zinc-950/70 border border-white/8 rounded-2xl overflow-hidden">
+        <div className="bg-zinc-950/70 border border-white/8 rounded-2xl overflow-visible">
           <table className="w-full text-sm" data-testid="admin-users-table">
             <thead className="bg-white/[0.03] text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">
               <tr>
                 <th className="text-left p-4">User</th>
-                <th className="text-left p-4 hidden md:table-cell">Plan</th>
+                <th className="text-left p-4">Subscription</th>
                 <th className="text-left p-4 hidden sm:table-cell">Credits</th>
                 <th className="text-left p-4">Role</th>
                 <th className="text-right p-4">Action</th>
@@ -113,14 +146,97 @@ export default function Admin() {
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 hidden md:table-cell">
-                    <span className="text-[10px] uppercase tracking-widest bg-white/5 border border-white/8 rounded-full px-2 py-0.5 font-bold">
-                      {u.plan}
-                    </span>
+
+                  {/* SUBSCRIPTION cell — interactive dropdown */}
+                  <td className="p-4 relative">
+                    <button
+                      onClick={() => setPlanMenu(planMenu === u.id ? null : u.id)}
+                      data-testid={`plan-toggle-${u.id}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-widest font-black border transition-colors ${
+                        u.plan === "free"
+                          ? "bg-zinc-900 text-zinc-300 border-white/10 hover:border-white/30"
+                          : u.plan?.startsWith("pro")
+                            ? "bg-[#ff0055]/15 text-[#ff0055] border-[#ff0055]/40"
+                            : "bg-[#ccff00]/15 text-[#ccff00] border-[#ccff00]/40"
+                      }`}
+                    >
+                      {u.plan || "free"}
+                      <CaretDown size={10} weight="bold" />
+                    </button>
+
+                    <AnimatePresence>
+                      {planMenu === u.id && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute z-30 top-full left-4 mt-1 w-72 bg-zinc-950 border border-white/15 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.7)] overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+                            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Set plan</p>
+                            <button onClick={() => setPlanMenu(null)} className="text-zinc-400 hover:text-white">
+                              <X size={14} weight="bold" />
+                            </button>
+                          </div>
+                          <div className="py-1">
+                            {PLAN_OPTIONS.map((p) => {
+                              const isActive = u.plan === p.id;
+                              const isFree = p.id === "free";
+                              return (
+                                <div
+                                  key={p.id}
+                                  className={`px-4 py-2.5 ${isActive ? "bg-white/[0.04]" : "hover:bg-white/[0.025]"}`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-sm" style={{ color: p.color }}>{p.label}</span>
+                                        {isActive && <Check size={12} weight="bold" className="text-[#ccff00]" />}
+                                      </div>
+                                      <p className="text-[10px] text-zinc-500 mt-0.5">{p.desc}</p>
+                                    </div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      {!isActive && (
+                                        <button
+                                          onClick={() => setPlan(u, p.id, false)}
+                                          disabled={busy === u.id}
+                                          data-testid={`set-plan-${u.id}-${p.id}`}
+                                          className={`rounded-full px-2.5 py-1 text-[9px] uppercase tracking-widest font-black border ${
+                                            isFree
+                                              ? "bg-zinc-900 text-zinc-200 border-white/15 hover:bg-zinc-800"
+                                              : "bg-white/[0.04] text-white border-white/15 hover:bg-white/10"
+                                          }`}
+                                        >
+                                          {isFree ? "Disable" : "Activate"}
+                                        </button>
+                                      )}
+                                      {!isFree && (
+                                        <button
+                                          onClick={() => setPlan(u, p.id, true)}
+                                          disabled={busy === u.id}
+                                          data-testid={`set-plan-${u.id}-${p.id}-grant`}
+                                          className="rounded-full px-2.5 py-1 text-[9px] uppercase tracking-widest font-black bg-[#ccff00] text-black hover:shadow-[0_0_16px_rgba(204,255,0,0.5)]"
+                                          title="Activate plan AND grant the plan's credits"
+                                        >
+                                          + credits
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </td>
+
                   <td className="p-4 hidden sm:table-cell text-zinc-300 font-mono">
                     {u.role === "admin" ? "—" : u.credits.toLocaleString()}
                   </td>
+
                   <td className="p-4">
                     {u.role === "admin" ? (
                       <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/40 rounded-full px-2 py-0.5 font-black">
@@ -130,6 +246,7 @@ export default function Admin() {
                       <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">user</span>
                     )}
                   </td>
+
                   <td className="p-4 text-right">
                     {u.is_seed_admin ? (
                       <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">protected</span>
@@ -161,7 +278,7 @@ export default function Admin() {
       )}
 
       <p className="text-[10px] text-zinc-600 text-center mt-6 uppercase tracking-widest">
-        The seed admin (<code className="font-mono">{user.email}</code>) is protected from demotion.
+        Seed admin protected · "+ credits" grants the plan's monthly credits on activation
       </p>
     </div>
   );

@@ -1,10 +1,12 @@
-"""Admin-only user management — promote / demote roles."""
+"""Admin-only user management — promote / demote roles + manage subscriptions."""
 import os
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel, Field
 from bson import ObjectId
 
 from auth_utils import get_current_user
+from models import PACKAGES
 
 router = APIRouter(prefix="/api/admin")
 
@@ -90,3 +92,49 @@ async def demote_user(user_id: str, user=Depends(get_current_user)):
         {"$set": {"role": "user"}},
     )
     return {"ok": True, "role": "user"}
+
+
+# ============== SUBSCRIPTION MANAGEMENT ==============
+ALLOWED_PLANS = {"free"} | set(PACKAGES.keys())  # free + every paid plan
+
+
+class SetPlanRequest(BaseModel):
+    plan_id: str = Field(description="free | creator | creator_annual | pro | pro_annual")
+    grant_credits: bool = False
+    set_credits: int | None = None  # optional explicit credit count
+
+
+@router.post("/users/{user_id}/set-plan")
+async def set_plan(user_id: str, payload: SetPlanRequest, user=Depends(get_current_user)):
+    """Activate or disable a subscription for any user. plan_id='free' disables."""
+    _require_admin(user)
+    if payload.plan_id not in ALLOWED_PLANS:
+        raise HTTPException(status_code=400, detail=f"Unknown plan: {payload.plan_id}")
+    from server import db
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update = {"plan": payload.plan_id, "plan_activated_at": datetime.utcnow().isoformat()}
+    inc = {}
+    pkg = PACKAGES.get(payload.plan_id)
+    if payload.set_credits is not None:
+        update["credits"] = max(0, int(payload.set_credits))
+    elif payload.grant_credits and pkg:
+        # Grant the credits attached to the plan (incremental)
+        inc["credits"] = int(pkg["credits"])
+
+    ops = {"$set": update}
+    if inc:
+        ops["$inc"] = inc
+
+    await db.users.update_one({"_id": ObjectId(user_id)}, ops)
+    updated = await db.users.find_one({"_id": ObjectId(user_id)})
+    return {
+        "ok": True,
+        "plan": updated.get("plan"),
+        "credits": updated.get("credits", 0),
+    }
