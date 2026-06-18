@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from bson import ObjectId
 
 from auth_utils import get_current_user
-from models import CheckoutRequest, PACKAGES, now_utc
+from models import CheckoutRequest, BoostCheckoutRequest, PACKAGES, BOOST_PRICE, BOOST_DURATION_HOURS, now_utc
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -131,4 +131,92 @@ async def webhook_stripe(request: Request):
 
 @router.get("/pricing/plans")
 async def list_plans():
-    return {"plans": [{"id": k, **v} for k, v in PACKAGES.items()]}
+    return {
+        "plans": [{"id": k, **v} for k, v in PACKAGES.items()],
+        "boost": {"price": BOOST_PRICE, "duration_hours": BOOST_DURATION_HOURS},
+    }
+
+
+# ============== FEATURED FOR ROBUX BOOST ==============
+@router.post("/boost/checkout")
+async def boost_checkout(payload: BoostCheckoutRequest, request: Request, user=Depends(get_current_user)):
+    """Create a Stripe checkout to pin a creation to the top of the feed for 24h."""
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(payload.generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if gen.get("user_id") != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You can only boost your own creations")
+
+    origin = payload.origin_url.rstrip("/")
+    success_url = f"{origin}/profile?boost_session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/profile?status=cancelled"
+
+    from emergentintegrations.payments.stripe.checkout import CheckoutSessionRequest
+    client = _checkout_client(str(request.base_url))
+    req = CheckoutSessionRequest(
+        amount=float(BOOST_PRICE),
+        currency="usd",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "user_id": user["id"],
+            "generation_id": payload.generation_id,
+            "kind": "boost",
+        },
+    )
+    session = await client.create_checkout_session(req)
+
+    await db.payment_transactions.insert_one({
+        "user_id": user["id"],
+        "session_id": session.session_id,
+        "amount": BOOST_PRICE,
+        "currency": "usd",
+        "kind": "boost",
+        "generation_id": payload.generation_id,
+        "status": "initiated",
+        "payment_status": "pending",
+        "metadata": {"user_id": user["id"], "generation_id": payload.generation_id, "kind": "boost"},
+        "created_at": now_utc().isoformat(),
+    })
+
+    return {"url": session.url, "session_id": session.session_id}
+
+
+@router.get("/boost/status/{session_id}")
+async def boost_status(session_id: str, request: Request, user=Depends(get_current_user)):
+    """Poll boost checkout status — on first 'paid' transition, pin the creation for 24h."""
+    from server import db
+    from datetime import timedelta
+
+    client = _checkout_client(str(request.base_url))
+    status_resp = await client.get_checkout_status(session_id)
+    tx = await db.payment_transactions.find_one({"session_id": session_id, "kind": "boost"})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Boost transaction not found")
+
+    already_paid = tx.get("payment_status") == "paid"
+
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {
+            "status": status_resp.status,
+            "payment_status": status_resp.payment_status,
+            "updated_at": now_utc().isoformat(),
+        }},
+    )
+
+    if status_resp.payment_status == "paid" and not already_paid:
+        featured_until = (now_utc() + timedelta(hours=BOOST_DURATION_HOURS)).isoformat()
+        await db.generations.update_one(
+            {"_id": ObjectId(tx["generation_id"])},
+            {"$set": {"is_featured": True, "featured_until": featured_until}},
+        )
+
+    return {
+        "status": status_resp.status,
+        "payment_status": status_resp.payment_status,
+    }

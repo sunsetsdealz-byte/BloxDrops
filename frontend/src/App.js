@@ -13,6 +13,7 @@ import Battle from "@/pages/Battle";
 import Challenges from "@/pages/Challenges";
 import Pricing from "@/pages/Pricing";
 import Profile from "@/pages/Profile";
+import ScrollFeed from "@/pages/ScrollFeed";
 
 function Layout() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/studio" element={<Studio />} />
             <Route path="/feed" element={<Feed />} />
+            <Route path="/feed/scroll" element={<ScrollFeed />} />
             <Route path="/battle" element={<Battle />} />
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/pricing" element={<Pricing />} />

@@ -33,7 +33,12 @@ export default function CreationCard({ item, onLikeToggle, onRemix, compact = fa
               {item.status === "pending" ? "GENERATING…" : "NO PREVIEW"}
             </div>
           )}
-          <div className="absolute top-2 left-2 flex gap-1.5">
+          <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
+            {item.is_featured && (
+              <span className="text-[10px] uppercase tracking-widest bg-[#00f0ff] text-black rounded-full px-2 py-0.5 font-black flex items-center gap-1">
+                <Crown size={10} weight="fill" /> Featured
+              </span>
+            )}
             <span className="text-[10px] uppercase tracking-widest bg-black/70 border border-white/10 rounded-full px-2 py-0.5 font-bold">
               {item.attachment_type}
             </span>

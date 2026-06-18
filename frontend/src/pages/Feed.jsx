@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ListBullets, ArrowsVertical } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import CreationCard from "../components/CreationCard";
 import { TID } from "../constants/testIds";
@@ -51,7 +52,16 @@ export default function Feed() {
           </h1>
           <p className="text-zinc-400 text-sm mt-2">Every creation. Every creator. Like, remix, and ship.</p>
         </div>
-        <div className="flex gap-1 bg-zinc-900/60 rounded-full p-1 border border-white/8">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/feed/scroll"
+            data-testid="feed-scroll-mode"
+            className="btn-ghost rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+            title="Scroll mode"
+          >
+            <ArrowsVertical size={14} weight="bold" /> Scroll
+          </Link>
+          <div className="flex gap-1 bg-zinc-900/60 rounded-full p-1 border border-white/8">
           {[
             ["recent", "Recent", TID.feedSortRecent],
             ["popular", "Popular", TID.feedSortPopular],
@@ -68,6 +78,7 @@ export default function Feed() {
               {label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

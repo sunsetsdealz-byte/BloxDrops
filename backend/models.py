@@ -114,15 +114,26 @@ class ChallengePublic(BaseModel):
 
 # ============== PAYMENTS ==============
 class CheckoutRequest(BaseModel):
-    plan_id: str  # creator | pro
+    plan_id: str  # creator | pro | creator_annual | pro_annual
+    origin_url: str
+
+
+class BoostCheckoutRequest(BaseModel):
+    generation_id: str
     origin_url: str
 
 
 # Subscription packages (fixed server-side — never trust client price)
 PACKAGES = {
-    "creator": {"name": "Creator", "price": 9.0, "credits": 300, "currency": "usd"},
-    "pro": {"name": "Pro", "price": 18.0, "credits": 700, "currency": "usd"},
+    "creator": {"name": "Creator", "price": 15.0, "credits": 300, "currency": "usd", "interval": "month", "ai_edits": 1},
+    "creator_annual": {"name": "Creator (Annual)", "price": 108.0, "credits": 300, "currency": "usd", "interval": "year", "ai_edits": 1},
+    "pro": {"name": "Pro", "price": 30.0, "credits": 700, "currency": "usd", "interval": "month", "ai_edits": 3},
+    "pro_annual": {"name": "Pro (Annual)", "price": 216.0, "credits": 700, "currency": "usd", "interval": "year", "ai_edits": 3},
 }
+
+# Featured-for-Robux boost — pin a creation to the top of the feed for 24h
+BOOST_PRICE = 1.99
+BOOST_DURATION_HOURS = 24
 
 # Style options
 STYLES = ["auto", "anime", "gothic", "streetwear", "cyberpunk", "realistic", "fantasy", "kawaii", "horror", "y2k"]

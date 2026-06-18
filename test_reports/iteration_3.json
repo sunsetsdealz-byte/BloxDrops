@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 3: 4 new features verified. Backend 37/37 pytest PASS (25 regression + 12 new). New tests added in /app/backend/tests/test_new_features.py covering: 4-plan pricing + boost meta, annual Stripe checkout returns stripe.com URL, image upload (auth/contentType/size/serve), boost checkout (own/403/404), feed pinning (pin-first + stale-sweep), and battle-milestone auto-boost at 5 wins (verified via Mongo: battle_wins flips 4->5, is_featured=true, featured_until ~24h in the future). Frontend e2e: /pricing — monthly/annual toggles work; annual shows $18 (was $30) and $9 (was $15) with strike-through ($30 and $15 confirmed in <del>/line-through). Logged-in click on pricing-plan-creator with annual ON redirects to https://checkout.stripe.com/c/pay/cs_test_... — verified. /feed/scroll — scroll-feed container mounted, 31 cards rendered, each with scroll-like-{id} + scroll-remix-{id}, container is snap-scroll (scrollTop went 0->1016 after one viewport scroll), close X navigates to /feed; first card in regular /feed is FEATURED pinned (the boost-test-hat from API test) confirming pin-first behaviour. /studio image mode — switching to studio-mode-image then UPLOAD sub-tab reveals studio-image-file input; set_input_files(tiny PNG) uploads to /api/uploads/... and preview <img> appears; studio-image-generate becomes enabled; clicking it generates a model that renders in <canvas> (credits 20->19). viewer-tryon-toggle is present and clicks do NOT crash the canvas. NOTE: toggle text label appears to stay 'Try on avatar' across clicks (didn't observe 'On avatar' state) — visually the .GLB badge overlaps the toggle button area in the viewer; reporting as a minor UI bug for main agent to verify.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ModelViewer / viewer-tryon-toggle", "issue": "Toggle text did not swap between 'Try on avatar' and 'On avatar' across two consecutive clicks. The canvas does NOT crash so functional fallback is OK, but the visual state indicator is broken. Possible cause: the .GLB filename badge in the viewer overlay is rendered on top of the toggle button (visible overlap in screenshot), which may intercept clicks. Suggest z-index/position fix or moving the .GLB badge away from the toggle.", "selector": "[data-testid=\"viewer-tryon-toggle\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/studio Image-to-3D viewer", "issues": [".GLB filename badge and TRY ON AVATAR button overlap in the top-right of the canvas overlay — they should be stacked or spaced apart."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/it3_all.xml"
+  ],
+  "action_items": [
+    "Investigate ModelViewer viewer-tryon-toggle: text label should switch between 'Try on avatar' / 'On avatar' on click. Also fix .GLB badge / toggle overlap z-index in the viewer overlay."
+  ],
+  "critical_code_review_comments": [
+    "payment_routes._checkout_client still uses request.base_url for the webhook URL — behind K8s ingress this will be the internal pod hostname, so Stripe will not be able to deliver webhooks in prod. Add PUBLIC_BASE_URL env (already used in upload_routes.py for public file URLs — be consistent).",
+    "community_routes.vote_battle only triggers the milestone 24h boost when battle_wins lands EXACTLY on 5/25/100 AND is_featured is currently false. If the doc happens to be featured at that moment (e.g. from a paid boost) the milestone is silently skipped instead of extending — minor edge case but worth documenting.",
+    "upload_routes.upload_image reads the entire body into memory before checking size — at 8MB cap this is fine but it does no MIME sniffing (only trusts the multipart content_type header), so a hostile client can upload arbitrary bytes as image/png. Consider using Pillow to validate the image is decodable.",
+    "feed pin order is purely by featured_until DESC (no created_at tiebreaker) — multiple pinned items with identical featured_until could swap order between requests."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py (new — 12 tests)"
+  ],
+  "success_rate": {"backend": "100% (37/37)", "frontend": "~90% — all 4 new features functional; one minor toggle-label issue"},
+  "test_credentials": "Admin: admin@bloxcraft.ai / BloxCraft2026!. New users via POST /api/auth/register. Token in localStorage key 'bloxcraft_token'.",
+  "seed_data_creation": "Tests register fresh @example.com users (it3_*, st_*, st2_*) and create generations via demo-mode (no API key required). Feed-pinning test directly manipulates Mongo (generations.is_featured/featured_until). Battle-milestone test inserts an open battle doc directly.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 4 new features (boost-for-Robux, image upload, scroll feed, avatar try-on) are wired and the backend is fully tested via /app/backend/tests/test_new_features.py. The only outstanding UI issue is the viewer-tryon-toggle visual state not flipping label between 'Try on avatar' and 'On avatar' — model still renders, no crash. The .GLB badge in ModelViewer overlaps the toggle button in the top-right corner of the canvas — likely an overlay z-index/positioning issue. Demo mode for fal.ai remains active; Stripe sandbox returns valid checkout.stripe.com URLs (do NOT complete payments).",
+  "rca of the issue": "viewer-tryon-toggle text-label stagnation: the toggle's text_content() returned 'Try on avatar' on all 3 successive clicks. Two likely causes: (a) React state for 'on avatar' is not being toggled by the button onClick (the same useState bool isn't flipping), or (b) the .GLB filename badge in the viewer overlay covers part of the toggle and Playwright's force-click is landing on the badge instead of the button — observed visually in the screenshot where '.GLB' and 'TRY ON AVATAR' text occupy the same top-right overlay region. Main agent should: (1) inspect ModelViewer.jsx button onClick handler + the boolean state used to compute label, and (2) add z-index isolation between the badge and toggle, or reposition the .GLB badge to the opposite corner."
+}

@@ -26,6 +26,8 @@ export default function Studio() {
   const [mode, setMode] = useState("text"); // text | image
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageMode, setImageMode] = useState("url"); // url | upload
+  const [uploading, setUploading] = useState(false);
   const [attachment, setAttachment] = useState("Hat");
   const [style, setStyle] = useState("auto");
   const [generating, setGenerating] = useState(false);
@@ -33,6 +35,27 @@ export default function Studio() {
   const [currentGen, setCurrentGen] = useState(null);
   const [history, setHistory] = useState([]);
   const pollRef = useRef(null);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) return toast.error("Max 8 MB.");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/uploads/image", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const fullUrl = data.url.startsWith("http") ? data.url : `${process.env.REACT_APP_BACKEND_URL}${data.url}`;
+      setImageUrl(fullUrl);
+      toast.success("Uploaded.");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const loadHistory = async () => {
     try {
@@ -173,15 +196,49 @@ export default function Studio() {
               </>
             ) : (
               <>
-                <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Image URL</label>
-                <input
-                  data-testid={TID.studioImageInput}
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/concept-art.png"
-                  className="input-dark w-full rounded-lg px-4 py-3 mt-1 text-sm"
-                />
+                <div className="flex gap-1 mb-2 bg-zinc-900/60 rounded-full p-1 text-[10px]">
+                  <button
+                    onClick={() => setImageMode("upload")}
+                    className={`flex-1 rounded-full py-1.5 font-bold uppercase tracking-wider transition-colors ${imageMode === "upload" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+                  >
+                    Upload
+                  </button>
+                  <button
+                    onClick={() => setImageMode("url")}
+                    className={`flex-1 rounded-full py-1.5 font-bold uppercase tracking-wider transition-colors ${imageMode === "url" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+                  >
+                    Paste URL
+                  </button>
+                </div>
+                {imageMode === "upload" ? (
+                  <label
+                    data-testid="studio-image-file"
+                    className="block border-2 border-dashed border-white/15 hover:border-[#ccff00]/60 rounded-xl p-6 text-center cursor-pointer transition-colors bg-zinc-900/40"
+                  >
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-zinc-300">
+                      {uploading ? "Uploading…" : imageUrl ? "Replace image" : "Drop image or click to upload"}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 mt-1">PNG / JPG / WEBP · max 8 MB</p>
+                  </label>
+                ) : (
+                  <>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Image URL</label>
+                    <input
+                      data-testid={TID.studioImageInput}
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/concept-art.png"
+                      className="input-dark w-full rounded-lg px-4 py-3 mt-1 text-sm"
+                    />
+                  </>
+                )}
                 {imageUrl && (
                   <div className="mt-3 rounded-lg overflow-hidden border border-white/10 max-h-48">
                     <img src={imageUrl} alt="ref" className="w-full object-contain" />

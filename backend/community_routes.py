@@ -29,6 +29,12 @@ async def feed(
     user=Depends(get_optional_user),
 ):
     from server import db
+    # Expire stale boosts before reading the feed
+    await db.generations.update_many(
+        {"is_featured": True, "featured_until": {"$lt": now_utc().isoformat()}},
+        {"$set": {"is_featured": False}},
+    )
+
     q = {"status": "completed"}
     if challenge_id:
         q["challenge_id"] = challenge_id
@@ -38,17 +44,27 @@ async def feed(
     elif sort == "trending":
         sort_spec = [("battle_wins", -1), ("likes", -1)]
 
-    cursor = db.generations.find(q).sort(sort_spec).skip(skip).limit(limit)
-    items = []
+    # Always pin featured first
+    pinned_cursor = db.generations.find({**q, "is_featured": True}).sort([("featured_until", -1)]).limit(8)
+    pinned = [d async for d in pinned_cursor]
+    pinned_ids = {p["_id"] for p in pinned}
+
+    rest_cursor = db.generations.find(
+        {**q, "_id": {"$nin": list(pinned_ids)}}
+    ).sort(sort_spec).skip(skip).limit(limit)
+
+    docs = pinned + [d async for d in rest_cursor]
+
     liked_ids = set()
     if user:
         my_likes = await db.likes.find({"user_id": user["id"]}).to_list(500)
         liked_ids = {l["generation_id"] for l in my_likes}
 
-    async for doc in cursor:
-        d = _hydrate(doc)
-        d["is_liked"] = d["id"] in liked_ids
-        items.append(d)
+    items = []
+    for d in docs:
+        item = _hydrate(d)
+        item["is_liked"] = item["id"] in liked_ids
+        items.append(item)
     return {"items": items, "count": len(items)}
 
 
@@ -123,6 +139,7 @@ async def random_battle(user=Depends(get_optional_user)):
 @router.post("/battle/vote")
 async def vote_battle(payload: BattleVoteRequest, user=Depends(get_current_user)):
     from server import db
+    from datetime import timedelta
     try:
         battle = await db.battles.find_one({"_id": ObjectId(payload.battle_id)})
     except Exception:
@@ -147,6 +164,16 @@ async def vote_battle(payload: BattleVoteRequest, user=Depends(get_current_user)
     )
     await db.generations.update_one({"_id": ObjectId(payload.winner_id)}, {"$inc": {"battle_wins": 1}})
     await db.generations.update_one({"_id": ObjectId(loser_id)}, {"$inc": {"battle_losses": 1}})
+
+    # Auto-grant a free 24h boost when a creation crosses 5, 25, or 100 wins (milestone rewards)
+    winner = await db.generations.find_one({"_id": ObjectId(payload.winner_id)})
+    if winner and winner.get("battle_wins", 0) in (5, 25, 100) and not winner.get("is_featured"):
+        featured_until = (now_utc() + timedelta(hours=24)).isoformat()
+        await db.generations.update_one(
+            {"_id": ObjectId(payload.winner_id)},
+            {"$set": {"is_featured": True, "featured_until": featured_until, "free_boost_reason": f"{winner['battle_wins']}_wins"}},
+        )
+
     return {"ok": True, "winner_id": payload.winner_id}
 
 
