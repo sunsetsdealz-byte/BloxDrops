@@ -220,8 +220,8 @@ async def lifespan(app: FastAPI):
 
     await seed_admin()
     await seed_challenges()
-    # NOTE: demo creations seeding intentionally disabled — feed is real-creator only.
-    # await seed_demo_creations()
+    # Demo creations seeded so the Feed/Battle aren't empty for new visitors
+    await seed_demo_creations()
     await seed_genesis_collection()
 
     # Write test credentials

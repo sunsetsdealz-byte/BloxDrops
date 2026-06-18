@@ -12,6 +12,7 @@ export default function Battle() {
   const [battle, setBattle] = useState(null);
   const [voted, setVoted] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [empty, setEmpty] = useState(false);
 
   const next = useCallback(async () => {
     setLoading(true);
@@ -19,8 +20,14 @@ export default function Battle() {
     try {
       const { data } = await api.get("/battle/random");
       setBattle(data);
+      setEmpty(false);
     } catch (err) {
-      toast.error(formatApiError(err));
+      if (err?.response?.status === 404) {
+        setEmpty(true);
+        setBattle(null);
+      } else {
+        toast.error(formatApiError(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -65,7 +72,22 @@ export default function Battle() {
         </button>
       </div>
 
-      {!battle ? (
+      {empty ? (
+        <div className="text-center py-20 max-w-md mx-auto" data-testid="battle-empty">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-[#ff0055]/10 border border-[#ff0055]/30 flex items-center justify-center mb-5">
+            <Sword size={28} weight="duotone" className="text-[#ff0055]" />
+          </div>
+          <h2 className="font-display text-2xl font-black uppercase tracking-tighter mb-2">
+            The arena is empty
+          </h2>
+          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+            Need at least two completed drops to start a battle. Mint one in Studio and invite a friend to vote.
+          </p>
+          <Link to="/studio" className="inline-block btn-volt rounded-full px-6 py-3 text-sm font-black uppercase tracking-widest">
+            Mint a drop
+          </Link>
+        </div>
+      ) : !battle ? (
         <div className="text-center py-20 text-zinc-500">{loading ? "Loading battle…" : "No battle"}</div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4 md:gap-6">

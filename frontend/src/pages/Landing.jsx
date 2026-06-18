@@ -349,7 +349,7 @@ export default function Landing() {
               <div className="col-span-2 rounded-xl border border-[#fbbf24]/40 bg-gradient-to-r from-[#fbbf24]/10 to-transparent p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-[#fbbf24] font-black mb-1">Reserve price</p>
-                  <p className="font-display text-2xl font-black">$50,000 <span className="text-zinc-500 text-base">/ 50,000 R$</span></p>
+                  <p className="font-display text-2xl font-black">$50,000 <span className="text-zinc-500 text-base">USD</span></p>
                 </div>
                 <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Phase 2 launch</span>
               </div>

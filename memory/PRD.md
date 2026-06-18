@@ -49,12 +49,21 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - Roblox Open Cloud Assets API uses per-user API keys (Profile → Roblox Connection).
 
 ## P0 — In Progress
-- **Phase 2.4** — USD Marketplace listings & Stripe Transfers (price_usd + Stripe Checkout → automatic Transfer 90% to seller's Connect account + 5% royalty as BB + 5% platform fee retained)
+(none — Phase 2.4 USD marketplace is LIVE)
+
+## What's been implemented — appended
+**2026-06-18 (later)**
+- **Phase 2.4 — USD Marketplace + Stripe Transfers**: USD listings via Stripe Checkout with Connect destination charges (90% to seller / 5% creator royalty as BB / 5% platform fee retained as USD). Endpoints: `POST /api/marketplace/buy_usd/{listing_id}`, `GET /api/marketplace/buy_usd/status/{session_id}`. UI: dual BB+USD listing modal in Marketplace.jsx with auto-detection of seller Connect KYC status.
+- **Admin Creator Connect KYC Panel**: `GET /api/admin/creators-connect-status` returns onboarded/pending/never_started buckets. UI section "KYC PIPELINE" on /admin with 3 status columns + count chips.
+- **Landing "How BloxBucks Work" deep link**: yellow CTA banner on Landing page → /marketplace#bloxbucks-explainer with smooth-scroll.
+- **Battle Arena fix**: Re-enabled `seed_demo_creations()` so Feed/Battle have 12 starter drops + added empty-state UI for Battle (no more stacked error toasts).
+- **Founder reserve price**: removed misleading "50,000 R$" — now shows "$50,000 USD" only.
 
 ## P1 — Backlog
-- Admin Platform Earnings panel showing creator KYC status (who has completed Connect onboarding vs pending)
-- "How BloxBucks Work" link/button on Landing page → BloxBucksExplainer
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)
+- Admin: encourage-email/notif tool for creators in "never_started" bucket
+- Refactor: extract `_stripe()` helper to shared `stripe_utils.py` (currently duplicated in connect_routes.py + marketplace_routes.py)
+- Refactor: wrap `_settle_purchase` in a Mongo transaction or compensating rollback for atomicity
 - Refactor massive Landing.jsx into smaller components
 
 ## P2 — Future
