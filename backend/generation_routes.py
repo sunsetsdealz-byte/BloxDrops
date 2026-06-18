@@ -54,10 +54,6 @@ SAMPLE_GLBS = [
      "thumb": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=700&q=80"},
     {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb",
      "thumb": "https://images.unsplash.com/photo-1770177267441-1d8dadda4feb?w=700&q=80"},
-    {"url": "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-     "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=700&q=80"},
-    {"url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-     "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=700&q=80"},
 ]
 
 

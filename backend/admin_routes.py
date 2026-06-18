@@ -408,3 +408,50 @@ async def admin_audit_log(user=Depends(get_current_user), limit: int = 100):
         r["id"] = str(r.pop("_id"))
         items.append(r)
     return {"items": items, "count": len(items)}
+
+
+
+# ============== ONE-SHOT DB CLEANUP ==============
+@router.post("/cleanup-stale-models")
+async def cleanup_stale_models(user=Depends(get_current_user)):
+    """Idempotent cleanup: removes any generations still pointing at the public
+    `modelviewer.dev` Astronaut / RobotExpressive placeholder GLBs (left over
+    from earlier seeds) and re-points the Founder $50K 1/1 to the latest HD/PBR
+    tripo model.
+
+    Safe to call any number of times. Admin-only.
+    """
+    _require_admin(user)
+    from server import db
+
+    stale_urls = [
+        "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+    ]
+    founder_glb = (
+        "https://v3b.fal.media/files/b/0a9ed7e2/"
+        "Q8Bo19MzdvvhsrSiyu1Nj_tripo_pbr_model_15f6c82a-5bb1-46af-861c-16498dc53ea2.glb"
+    )
+
+    # 1) Re-point the Founder drop if it still has a stale model URL
+    founder_res = await db.generations.update_one(
+        {"release_price_usd": 50000, "model_url": {"$in": stale_urls + [None, ""]}},
+        {"$set": {"model_url": founder_glb}},
+    )
+
+    # 2) Delete any other gens still using those stale placeholder GLBs
+    del_res = await db.generations.delete_many({
+        "model_url": {"$in": stale_urls},
+        "release_price_usd": {"$ne": 50000},
+    })
+
+    await _log(db, user, "cleanup_stale_models", None, {
+        "founder_repointed": founder_res.modified_count,
+        "stale_deleted": del_res.deleted_count,
+    })
+
+    return {
+        "ok": True,
+        "founder_repointed": founder_res.modified_count,
+        "stale_deleted": del_res.deleted_count,
+    }

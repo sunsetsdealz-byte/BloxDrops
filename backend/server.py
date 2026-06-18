@@ -109,10 +109,7 @@ async def seed_demo_creations():
          "type": "Hat", "style": "cyberpunk",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
          "thumb": "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=700&q=80"},
-        {"prompt": "Anime spiky red-and-black hair with golden tips",
-         "type": "Hair", "style": "anime",
-         "model_url": "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-         "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=700&q=80"},
+        # Torso / layered clothing
         {"prompt": "Pastel kawaii bunny-ear headband with cherry-blossom bows",
          "type": "Hat", "style": "kawaii",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb",
@@ -121,8 +118,6 @@ async def seed_demo_creations():
          "type": "Hair", "style": "y2k",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF-Binary/BarramundiFish.glb",
          "thumb": "https://images.unsplash.com/photo-1734779205618-5b8e1c2ad88a?w=700&q=80"},
-
-        # Torso / layered clothing
         {"prompt": "Gothic black hoodie with red demon eyes and stitched smile",
          "type": "Hoodie", "style": "gothic",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF-Binary/BoomBox.glb",
@@ -153,10 +148,6 @@ async def seed_demo_creations():
          "type": "Back", "style": "fantasy",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb",
          "thumb": "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=700&q=80"},
-        {"prompt": "Vintage astronaut helmet with chrome trim, retro-future vibe",
-         "type": "Hat", "style": "realistic",
-         "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-         "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=700&q=80"},
     ]
     admin = await db.users.find_one({"role": "admin"})
     admin_id = str(admin["_id"]) if admin else "system"
@@ -214,6 +205,34 @@ async def seed_genesis_collection():
         logger.info("Marked %d drops as GENESIS (total Genesis now: %d)", len(ids), already + len(ids))
 
 
+# Stale public placeholder GLBs from an earlier seed iteration. Generations
+# still pointing at these get either re-pointed (Founder $50K 1/1) or deleted.
+_STALE_MODEL_URLS = [
+    "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+    "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+]
+_FOUNDER_GLB = (
+    "https://v3b.fal.media/files/b/0a9ed7e2/"
+    "Q8Bo19MzdvvhsrSiyu1Nj_tripo_pbr_model_15f6c82a-5bb1-46af-861c-16498dc53ea2.glb"
+)
+
+
+async def _scrub_stale_model_urls():
+    """Run on startup. Idempotent — no-op once the DB is clean."""
+    founder_res = await db.generations.update_one(
+        {"release_price_usd": 50000, "model_url": {"$in": _STALE_MODEL_URLS + [None, ""]}},
+        {"$set": {"model_url": _FOUNDER_GLB}},
+    )
+    del_res = await db.generations.delete_many({
+        "model_url": {"$in": _STALE_MODEL_URLS},
+        "release_price_usd": {"$ne": 50000},
+    })
+    if founder_res.modified_count or del_res.deleted_count:
+        logger.info(
+            "Scrubbed stale model URLs (founder repointed: %d, demo deleted: %d)",
+            founder_res.modified_count, del_res.deleted_count,
+        )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -231,6 +250,10 @@ async def lifespan(app: FastAPI):
     # Demo creations seeding intentionally disabled — feed is real-creator only.
     # await seed_demo_creations()
     await seed_genesis_collection()
+    # Self-heal: scrub any leftover modelviewer.dev placeholder GLBs (astronaut /
+    # robot) so users only ever see real generations and the Founder drop loads
+    # its proper HD/PBR model on first request.
+    await _scrub_stale_model_urls()
 
     # Write test credentials
     try:
