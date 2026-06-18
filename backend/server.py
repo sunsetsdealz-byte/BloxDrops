@@ -230,8 +230,12 @@ async def register(payload: RegisterRequest):
 @auth_router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginRequest, request: Request):
     email = payload.email.lower().strip()
-    ip = request.client.host if request.client else "unknown"
-    identifier = f"{ip}:{email}"
+    # Use forwarded IP if available, fall back to email-only bucket so K8s ingress
+    # rotating upstream IPs cannot bypass the 5-attempt cap.
+    fwd = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    ip = fwd or (request.client.host if request.client else "unknown")
+    identifier = f"email:{email}"  # primary bucket — email-only
+    _ip_bucket = f"ip:{ip}:{email}"  # secondary, for analytics only
 
     attempt = await db.login_attempts.find_one({"identifier": identifier})
     if attempt and attempt.get("locked_until"):

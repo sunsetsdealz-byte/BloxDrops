@@ -112,18 +112,28 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
 async def _run_mock_generation(generation_id: str):
     """Fake the fal.ai pipeline — wait briefly and assign a sample GLB."""
     from server import db
-    await asyncio.sleep(4)
-    sample = SAMPLE_GLBS[hash(generation_id) % len(SAMPLE_GLBS)]
-    await db.generations.update_one(
-        {"_id": ObjectId(generation_id)},
-        {"$set": {
-            "status": "completed",
-            "model_url": sample["url"],
-            "thumbnail_url": sample["thumb"],
-            "completed_at": now_utc().isoformat(),
-            "demo_mode": True,
-        }},
-    )
+    try:
+        await asyncio.sleep(4)
+        sample = SAMPLE_GLBS[hash(generation_id) % len(SAMPLE_GLBS)]
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {
+                "status": "completed",
+                "model_url": sample["url"],
+                "thumbnail_url": sample["thumb"],
+                "completed_at": now_utc().isoformat(),
+                "demo_mode": True,
+            }},
+        )
+    except Exception as e:
+        logger.exception("mock generation failed: %s", e)
+        try:
+            await db.generations.update_one(
+                {"_id": ObjectId(generation_id)},
+                {"$set": {"status": "failed", "error": str(e)[:300]}},
+            )
+        except Exception:
+            pass
 
 
 async def _create_generation_record(

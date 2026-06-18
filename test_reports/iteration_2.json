@@ -1,0 +1,30 @@
+{
+  "summary": "BloxCraft AI full e2e verification after R3F v9 + drei v10 upgrade. Backend regression: 25/25 pytest PASSED including the new email-only brute-force lockout (test_brute_force_lockout_429 passes with 5 wrong attempts -> 429). Frontend now FULLY functional end-to-end: Landing renders hero + 3D astronaut GLB via Canvas; Register -> /studio with token stored in localStorage key 'bloxcraft_token'; nav-credits shows 20 for new users, nav-profile + nav-logout visible; Studio prompt+style+attachment work, AI Boost (Claude via Emergent LLM) expanded 'cool red hat' -> 269-char prompt; Generate flow: spinner appears, demo GLB renders (canvas mounted), credits decrement (9999 -> 9998); Image-to-3D mode accepts Unsplash URL, button enables; Feed sort changes order (recent vs popular vs trending give different first-5 IDs), like toggle changes button HTML/heart-fill; Battle shows battle-a/battle-b/battle-next, clicking battle-a records vote and auto-advances within ~1s, battle-next manually skips; Challenges page shows active 'CYBERPUNK STREETWEAR' banner, all themes grid, and TOP CREATIONS leaderboard sidebar; Pricing renders 3 plan cards (Free/Creator/Pro), clicking pricing-plan-creator redirects to checkout.stripe.com/c/pay/cs_test_... (Stripe Checkout URL); Login admin@bloxcraft.ai/BloxCraft2026! -> /studio; nav-logout clears token and redirects to / with nav-login visible. ALL acceptance criteria pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Challenges sidebar", "issues": ["Sidebar is titled 'TOP CREATIONS' instead of 'Leaderboard'. Functionally a leaderboard (ranked 1..N with win counts), just naming differs from the spec wording. Not a defect — flagging for clarity."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Pricing 'Free' plan has no data-testid (only Creator + Pro do). Matches behaviour (Free has no checkout) but consider adding pricing-plan-free for symmetry with the testIds constants.",
+    "Carry-overs still unresolved from iteration_1 (not blocking shipping, but worth tracking): payment_routes.host_url derived from request.base_url -> Stripe webhook will hit internal pod URL, not public host. Use PUBLIC_BASE_URL env. Also: community_routes.random_battle inserts a new battle doc on each GET -> unbounded growth; add rate-limit or TTL on open battles. And: _run_mock_generation lacks try/except, stale 'pending' generations possible on Mongo hiccup."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (25/25)", "frontend": "100% (all 13 acceptance items verified)"},
+  "test_credentials": "Admin: admin@bloxcraft.ai / BloxCraft2026!  | New users: any unique @example.com + 6+ char password. Token key in localStorage = 'bloxcraft_token'.",
+  "seed_data_creation": "Backend lifespan seeds admin, 7 challenges, 6 demo generations. Tests register fresh @example.com users.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Everything green. R3F v9 + drei v10 are confirmed compatible with React 19 (Canvas mounts, GLB loads via useGLTF, OrbitControls work). Demo mode for fal.ai is intentional and produces a valid GLB after ~4s. If main agent later wires real fal.ai or Stripe live keys, just re-run /app/backend/tests/backend_test.py and the same UI flows; no test changes needed."
+}

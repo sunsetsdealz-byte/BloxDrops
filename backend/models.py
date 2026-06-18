@@ -66,7 +66,7 @@ class ImageGenerationRequest(BaseModel):
 
 
 class PromptEnhanceRequest(BaseModel):
-    prompt: str = Field(min_length=2, max_length=200)
+    prompt: str = Field(min_length=2, max_length=500)
     attachment_type: str = "Hat"
     style: str = "auto"
 
