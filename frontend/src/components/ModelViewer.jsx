@@ -62,7 +62,7 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
         <button
           onClick={() => setTryOn((v) => !v)}
           data-testid="viewer-tryon-toggle"
-          className={`absolute top-3 right-3 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] font-bold transition-all flex items-center gap-1.5 ${
+          className={`absolute top-3 right-3 z-20 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] font-bold transition-all flex items-center gap-1.5 ${
             tryOn ? "bg-[#ccff00] text-black" : "bg-black/70 text-white border border-white/15 hover:border-white/40"
           }`}
         >
