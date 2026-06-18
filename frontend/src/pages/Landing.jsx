@@ -363,7 +363,7 @@ function HeroShowcase() {
         }}
         onTouchEnd={onLeave}
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="relative rounded-2xl overflow-hidden border border-white/10 aspect-square w-full max-w-[480px] mx-auto cursor-grab active:cursor-grabbing"
+        className="relative rounded-2xl overflow-hidden border border-white/10 aspect-square w-full max-w-[480px] mx-auto"
       >
         {/* Background gradient — sits at depth 0 */}
         <div
