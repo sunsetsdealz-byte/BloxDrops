@@ -78,6 +78,11 @@ export default function Login() {
           New here?{" "}
           <Link to="/register" className="text-[#ccff00] font-bold">Create an account</Link>
         </p>
+        <p className="text-sm text-zinc-400 mt-2">
+          <Link to="/forgot-password" className="text-zinc-300 hover:text-[#ccff00]" data-testid="login-forgot">
+            Forgot your password?
+          </Link>
+        </p>
       </div>
     </div>
   );

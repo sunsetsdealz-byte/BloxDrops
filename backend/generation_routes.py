@@ -68,10 +68,10 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
         import fal_client
 
         if image_url:
-            model = "fal-ai/tripo3d/tripo/v2.5/image-to-3d"
-            args = {"image_url": image_url, "style": "person:person2cartoon"}
+            model = "tripo3d/tripo/v2.5/image-to-3d"
+            args = {"image_url": image_url}
         else:
-            model = "fal-ai/tripo3d/tripo/v2.5/text-to-3d"
+            model = "tripo3d/h3.1/text-to-3d"
             args = {"prompt": prompt}
 
         handler = await fal_client.submit_async(model, arguments=args)

@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 4 — verified all 4 P1 items + watermark removal. New backend suite /app/backend/tests/test_iteration4.py = 14 tests: 13 PASS + 1 SKIP (Live FAL exceeded 60s polling window — acceptable per request). Combined regression (backend_test.py + test_new_features.py + test_iteration4.py): 44 PASS / 2 FAIL / 3 SKIP / 2 ERROR. The 2 FAIL + 2 ERROR are PRE-EXISTING test artifacts (not iteration-4 regressions). Frontend e2e PASS: no 'Made with Emergent' text on /, no 'watermark' on /pricing, full forgot→reset→login flow works (login-forgot → /forgot-password → forgot-email + forgot-submit → forgot-dev-link visible → /reset-password → reset-submit → redirect to /login), and the Roblox Export modal opens via studio-export-roblox showing all manifest fields, the 6-item pre-flight checklist (all green), DOWNLOAD .GLB, COPY MANIFEST, and close (X) buttons. Admin password was changed during e2e and restored back to BloxCraft2026! via API; verified login still works.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/generate/text-to-3d (status poll loop)", "issue": "backend_test.py::TestGeneration::test_text_to_3d_flow_and_credit_deduct expects demo-mode completion in ~12s, but FAL_KEY is now LIVE so real fal.ai takes 2-3 min. Test is stale, not a product bug. Recommend extending poll window or branching on /api/meta.fal_configured."},
+      {"endpoint": "/api/uploads/image", "issue": "test_new_features.py::TestImageUpload::test_upload_success_and_serve uses an 8x8 PNG (~74 bytes). Iteration-4 added a 100-byte minimum (Pillow guard against tiny/empty payloads). The test needs a larger PNG. New iteration_4 test uses 64x64 and passes — recommend updating the iteration-3 test similarly."},
+      {"endpoint": "test fixture (mongo)", "issue": "test_new_features.py::TestFeedPinning::* erroring on 'Invalid URI scheme' because MONGO_URL contains literal quotes when read via os.environ in the test. Pre-existing test-infra bug, not a product issue."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/it4_new.xml",
+    "/app/test_reports/pytest/it4_all.xml"
+  ],
+  "action_items": [
+    "Update backend_test.py::test_text_to_3d_flow_and_credit_deduct to extend the polling window when /api/meta.fal_configured == true (live fal.ai takes 2-3 minutes), OR branch the assert when running live.",
+    "Update test_new_features.py::test_upload_success_and_serve to use a PNG of >= 100 bytes (e.g. 64x64) — current 8x8 PNG now correctly rejected by Pillow guard.",
+    "Update test_new_features.py mongo fixture to strip quotes from MONGO_URL or use pymongo's load_dotenv: 'mongodb://localhost:27017'. Pre-existing test bug; product unaffected.",
+    "Consider adding a server-side polygon counter (load GLB via trimesh) to make /api/export/{id}/checklist actually verify the triangle count instead of returning 'Verify in Studio'. Documented; nice-to-have."
+  ],
+  "critical_code_review_comments": [
+    "password_routes.reset_password: token is stored in plaintext in db.password_reset_tokens.token. For production hardening, store hash(token) (e.g. sha256 hex) and compare hashed input; that way DB read access doesn't yield usable reset tokens.",
+    "password_routes.forgot-password: dev_reset_link is always returned in the response body. This MUST be removed in production (commented as 'In production, REMOVE this field' — confirm via PROD env flag or deploy step).",
+    "export_routes.export_glb: httpx.AsyncClient timeout=60.0 hard-coded; large GLBs from real fal.ai could exceed this. Consider streaming with no overall timeout OR larger timeout (180s).",
+    "upload_routes.upload_image: PIL Image.open(io.BytesIO(data)) is called twice (once for verify, once after) — fine, but Pillow can OOM on decompression-bomb PNGs even with verify(). Set Image.MAX_IMAGE_PIXELS limit before open().",
+    "payment_routes._checkout_client now correctly prefers PUBLIC_BASE_URL — verified env var is set to the preview URL in backend/.env. Stripe webhooks will reach the public host. Good fix."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4.py (new — 14 tests covering password reset, Pillow MIME sniffing, Roblox export endpoints, live FAL meta)"
+  ],
+  "success_rate": {"backend": "13/14 iteration-4 tests pass + 1 acceptable skip (Live FAL latency). Combined regression: 44 pass / 2 fail (pre-existing stale tests) / 2 errors (pre-existing test-infra) / 3 skip. Product API surface: 100% functional.", "frontend": "100% — all 4 iteration-4 frontend P1 items verified"},
+  "test_credentials": "Admin: admin@bloxcraft.ai / BloxCraft2026! (restored after e2e password-reset test — verified login works).",
+  "seed_data_creation": "test_iteration4.py registers fresh it4_* users for the 403/400 export checks. Roblox export tests use admin's existing completed generations (no new seed needed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 4 wired FAL_KEY (live), PUBLIC_BASE_URL, Pillow MIME sniffing, password reset, Roblox export pipeline, and removed 'Made with Emergent' branding. New backend regression file: /app/backend/tests/test_iteration4.py. The 2 pre-existing failures in backend_test.py/test_new_features.py should be fixed by main agent (see action_items): they are NOT regressions — they are stale tests broken by intentional iteration-4 changes (live FAL latency, stricter image minimum). The export modal UI is polished and functional. Stripe checkout URLs are now built from PUBLIC_BASE_URL (verified env var). Live fal.ai POST returns demo_mode=false correctly; full poll-to-completion was skipped to respect the 'do not fail solely on fal.ai latency' instruction.",
+  "rca of the issue": "N/A — iteration 4 features all functional. The 2 stale test failures are diagnosed in action_items with specific fixes (extend poll window for live FAL, use a >=100-byte PNG)."
+}

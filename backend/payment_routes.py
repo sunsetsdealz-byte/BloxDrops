@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 def _checkout_client(host_url: str):
     from emergentintegrations.payments.stripe.checkout import StripeCheckout
     api_key = os.environ["STRIPE_API_KEY"]
-    webhook_url = f"{host_url.rstrip('/')}/api/webhook/stripe"
+    base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/") or host_url.rstrip("/")
+    webhook_url = f"{base}/api/webhook/stripe"
     return StripeCheckout(api_key=api_key, webhook_url=webhook_url)
 
 

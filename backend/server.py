@@ -282,11 +282,15 @@ from generation_routes import router as gen_router
 from community_routes import router as comm_router
 from payment_routes import router as pay_router
 from upload_routes import router as upload_router
+from export_routes import router as export_router
+from password_routes import router as password_router
 
 app.include_router(gen_router)
 app.include_router(comm_router)
 app.include_router(pay_router)
 app.include_router(upload_router)
+app.include_router(export_router)
+app.include_router(password_router)
 
 
 # ============== META ==============

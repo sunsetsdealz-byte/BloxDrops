@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
+import RobloxExportModal from "../components/RobloxExportModal";
 import { TID } from "../constants/testIds";
 
 const ATTACHMENTS = ["Hat", "Hair", "Back", "Neck", "Face", "Shoulder", "Hoodie", "Shirt", "Jacket", "auto"];
@@ -34,11 +35,13 @@ export default function Studio() {
   const [enhancing, setEnhancing] = useState(false);
   const [currentGen, setCurrentGen] = useState(null);
   const [history, setHistory] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const pollRef = useRef(null);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const uploadFile = async (file) => {
     if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please drop an image file");
     if (file.size > 8 * 1024 * 1024) return toast.error("Max 8 MB.");
     setUploading(true);
     try {
@@ -56,6 +59,8 @@ export default function Studio() {
       setUploading(false);
     }
   };
+
+  const handleFileUpload = (e) => uploadFile(e.target.files?.[0]);
 
   const loadHistory = async () => {
     try {
@@ -213,7 +218,19 @@ export default function Studio() {
                 {imageMode === "upload" ? (
                   <label
                     data-testid="studio-image-file"
-                    className="block border-2 border-dashed border-white/15 hover:border-[#ccff00]/60 rounded-xl p-6 text-center cursor-pointer transition-colors bg-zinc-900/40"
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) uploadFile(f);
+                    }}
+                    className={`block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors touch-manipulation ${
+                      dragOver
+                        ? "border-[#ccff00] bg-[#ccff00]/10"
+                        : "border-white/15 hover:border-[#ccff00]/60 bg-zinc-900/40"
+                    }`}
                   >
                     <input
                       type="file"
@@ -222,7 +239,7 @@ export default function Studio() {
                       className="hidden"
                     />
                     <p className="text-xs uppercase tracking-[0.2em] font-bold text-zinc-300">
-                      {uploading ? "Uploading…" : imageUrl ? "Replace image" : "Drop image or click to upload"}
+                      {uploading ? "Uploading…" : imageUrl ? "Replace image" : "Tap or drop image"}
                     </p>
                     <p className="text-[10px] text-zinc-500 mt-1">PNG / JPG / WEBP · max 8 MB</p>
                   </label>
@@ -338,7 +355,7 @@ export default function Studio() {
               </div>
             )}
             {currentGen?.status === "completed" && (
-              <div className="absolute top-4 left-4 flex gap-2">
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                 <a
                   href={currentGen.model_url}
                   download
@@ -348,9 +365,23 @@ export default function Studio() {
                 >
                   <Download size={14} weight="bold" /> .GLB
                 </a>
+                <button
+                  onClick={() => setExporting(true)}
+                  data-testid="studio-export-roblox"
+                  className="bg-[#ccff00] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-shadow"
+                >
+                  <Robot size={14} weight="fill" /> Export to Roblox
+                </button>
               </div>
             )}
           </div>
+
+          {exporting && currentGen?.id && (
+            <RobloxExportModal
+              generationId={currentGen.id}
+              onClose={() => setExporting(false)}
+            />
+          )}
 
           {currentGen && currentGen.status === "completed" && (
             <div className="glass rounded-2xl p-5">
