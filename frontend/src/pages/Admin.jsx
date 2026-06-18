@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Crown, MagnifyingGlass, ShieldStar, User, Lightning, CaretDown, X, Check, Storefront, Coins, TrendUp,
+  CurrencyDollar, Warning, PlugsConnected,
 } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -39,6 +40,7 @@ export default function Admin() {
   const [busy, setBusy] = useState(null);
   const [planMenu, setPlanMenu] = useState(null);
   const [platformStats, setPlatformStats] = useState(null);
+  const [connectStatus, setConnectStatus] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +61,9 @@ export default function Admin() {
       load();
       api.get("/admin/platform-stats")
         .then((r) => setPlatformStats(r.data))
+        .catch(() => {});
+      api.get("/admin/creators-connect-status")
+        .then((r) => setConnectStatus(r.data))
         .catch(() => {});
     }
   }, [user, load, nav]);
@@ -174,6 +179,82 @@ export default function Admin() {
               </div>
             </div>
           )}
+        </motion.div>
+      )}
+
+      {/* CREATOR CONNECT STATUS PANEL */}
+      {connectStatus && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
+          className="mb-8 rounded-2xl border border-[#ccff00]/25 bg-gradient-to-br from-[#ccff00]/8 via-zinc-950/80 to-zinc-950/80 p-5 md:p-7"
+          data-testid="creators-connect-panel"
+        >
+          <div className="flex items-start justify-between flex-wrap gap-4 mb-5">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.3em] font-bold text-[#ccff00] mb-2 flex items-center gap-2">
+                <CurrencyDollar size={12} weight="fill" /> Creator USD Payouts · Stripe Connect
+              </p>
+              <h2 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter">
+                KYC Pipeline
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <CountChip label="Onboarded" value={connectStatus.counts.onboarded} color="#ccff00" icon={<PlugsConnected size={16} weight="fill" />} />
+              <CountChip label="Pending" value={connectStatus.counts.pending} color="#fbbf24" icon={<Warning size={16} weight="fill" />} />
+              <CountChip label="Not started" value={connectStatus.counts.never_started} color="#71717a" icon={<User size={16} weight="fill" />} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <ConnectColumn
+              title="Onboarded"
+              accent="#ccff00"
+              empty="No creator has finished onboarding yet."
+              items={connectStatus.onboarded}
+              renderItem={(c) => (
+                <CreatorRow
+                  key={c.id}
+                  name={c.name}
+                  email={c.email}
+                  rightLabel="USD ready"
+                  rightColor="#ccff00"
+                  meta={`Onboarded ${c.onboarded_at ? new Date(c.onboarded_at).toLocaleDateString() : '—'}`}
+                />
+              )}
+            />
+            <ConnectColumn
+              title="Pending KYC"
+              accent="#fbbf24"
+              empty="No accounts pending KYC."
+              items={connectStatus.pending}
+              renderItem={(c) => (
+                <CreatorRow
+                  key={c.id}
+                  name={c.name}
+                  email={c.email}
+                  rightLabel={c.details_submitted ? "Review" : "Started"}
+                  rightColor="#fbbf24"
+                  meta={c.stripe_account_id?.slice(0, 16) + "…"}
+                />
+              )}
+            />
+            <ConnectColumn
+              title="Never started"
+              accent="#71717a"
+              empty="Every active creator has at least started Connect."
+              items={connectStatus.never_started}
+              renderItem={(c) => (
+                <CreatorRow
+                  key={c.id}
+                  name={c.name}
+                  email={c.email}
+                  rightLabel="Encourage"
+                  rightColor="#71717a"
+                  meta="No Stripe account yet"
+                />
+              )}
+            />
+          </div>
         </motion.div>
       )}
 
@@ -346,3 +427,49 @@ export default function Admin() {
     </div>
   );
 }
+
+function CountChip({ label, value, color, icon }) {
+  return (
+    <div className="rounded-xl border bg-black/40 px-3 py-2 min-w-[90px]" style={{ borderColor: `${color}40` }}>
+      <div className="flex items-center gap-1.5" style={{ color }}>
+        {icon}
+        <span className="font-display text-xl font-black leading-none">{value}</span>
+      </div>
+      <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mt-1">{label}</p>
+    </div>
+  );
+}
+
+function ConnectColumn({ title, accent, items, empty, renderItem }) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/40 p-3">
+      <p className="text-[10px] uppercase tracking-[0.25em] font-black mb-3 pb-2 border-b border-white/8" style={{ color: accent }}>
+        {title} <span className="text-zinc-600">· {items.length}</span>
+      </p>
+      <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+        {items.length === 0 ? (
+          <p className="text-[11px] text-zinc-600 italic py-2">{empty}</p>
+        ) : items.map(renderItem)}
+      </div>
+    </div>
+  );
+}
+
+function CreatorRow({ name, email, rightLabel, rightColor, meta }) {
+  return (
+    <div className="bg-zinc-950/70 border border-white/5 rounded-lg px-2.5 py-2 flex items-center justify-between gap-2">
+      <div className="min-w-0">
+        <p className="text-xs font-bold truncate">{name}</p>
+        <p className="text-[10px] text-zinc-500 truncate font-mono">{email}</p>
+        {meta && <p className="text-[9px] text-zinc-600 mt-0.5 truncate font-mono">{meta}</p>}
+      </div>
+      <span
+        className="text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full border flex-shrink-0"
+        style={{ color: rightColor, borderColor: `${rightColor}50`, backgroundColor: `${rightColor}10` }}
+      >
+        {rightLabel}
+      </span>
+    </div>
+  );
+}
+

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform, useMotionValue, useSpring, animate, useReducedMotion } from "framer-motion";
 import {
   ArrowRight, Sparkle, Lightning, Trophy, ChatCircle, Cube, FireSimple,
-  Cpu, Robot, Code, Lightbulb, ShareNetwork, Crown, UserCircle,
+  Cpu, Robot, Code, Lightbulb, ShareNetwork, Crown, UserCircle, Coins,
 } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
@@ -245,6 +245,46 @@ export default function Landing() {
 
       {/* === NFT / MONETIZATION EXPLAINER === */}
       <MonetizationSection />
+
+      {/* === "How BloxBucks Work" deep-link banner === */}
+      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-3xl border border-[#fbbf24]/30 bg-gradient-to-br from-[#fbbf24]/12 via-zinc-950/80 to-[#00f0ff]/8 p-6 md:p-8"
+          data-testid="bb-explainer-cta"
+        >
+          {/* shimmer accent */}
+          <motion.div
+            className="absolute inset-y-0 w-1/4 bg-gradient-to-r from-transparent via-white/8 to-transparent pointer-events-none"
+            animate={{ x: ["-100%", "500%"] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+          />
+          <div className="relative flex items-center justify-between flex-wrap gap-5">
+            <div className="min-w-0 max-w-2xl">
+              <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[#fbbf24] font-bold mb-2">
+                NEW · The BloxBucks economy
+              </p>
+              <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter leading-tight">
+                Wondering how creators get paid?
+              </h3>
+              <p className="text-zinc-300 mt-2 text-sm md:text-base">
+                Top up BloxBucks · trade drops · cash out USD via Stripe.
+                See the entire economy in 60 seconds.
+              </p>
+            </div>
+            <Link
+              to="/marketplace#bloxbucks-explainer"
+              data-testid="landing-how-bb-works"
+              className="bg-[#fbbf24] text-black rounded-full px-6 py-3 text-sm font-black uppercase tracking-widest hover:shadow-[0_0_26px_rgba(251,191,36,0.65)] transition-all flex items-center gap-2 flex-shrink-0"
+            >
+              <Coins size={16} weight="fill" /> How BloxBucks Work
+            </Link>
+          </div>
+        </motion.div>
+      </section>
 
       {/* GENESIS · FOUNDER DROP — featured "1/1 release soon" hero spotlight */}
       {feed.length > 0 && (

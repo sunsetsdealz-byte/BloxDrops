@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Storefront, Coins, Tag, X, CurrencyDollar, Crown, Lightning, Sparkle } from "@phosphor-icons/react";
+import { Storefront, Coins, Tag, X, CurrencyDollar, Crown, Lightning, Sparkle, ShieldCheck } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -13,6 +13,7 @@ import { rarityOf, editionLabel } from "../lib/rarity";
 export default function Marketplace() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState("browse"); // browse | collection
   const [listings, setListings] = useState([]);
   const [collection, setCollection] = useState([]);
@@ -21,23 +22,67 @@ export default function Marketplace() {
   const [listingFor, setListingFor] = useState(null); // ownership item to list
   const [sort, setSort] = useState("newest");
   const [topupOpen, setTopupOpen] = useState(false);
+  const [connectStatus, setConnectStatus] = useState(null);
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const [m, bb, c] = await Promise.all([
+      const [m, bb, c, cs] = await Promise.all([
         api.get(`/marketplace?sort=${sort}`),
         user ? api.get("/bloxbucks/me") : Promise.resolve({ data: { balance: 0 } }),
         user ? api.get("/me/collection") : Promise.resolve({ data: { items: [] } }),
+        user ? api.get("/connect/status").catch(() => ({ data: null })) : Promise.resolve({ data: null }),
       ]);
       setListings(m.data?.items || []);
       setBalance(bb.data?.balance || 0);
       setCollection(c.data?.items || []);
+      setConnectStatus(cs.data);
     } catch (e) { toast.error(formatApiError(e)); }
     setLoading(false);
   };
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user, sort]);
+
+  // Scroll to #bloxbucks-explainer when arriving via deep link
+  useEffect(() => {
+    if (window.location.hash === "#bloxbucks-explainer") {
+      const t = setTimeout(() => {
+        document.getElementById("bloxbucks-explainer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // Poll USD purchase return
+  useEffect(() => {
+    const sid = params.get("usd_session_id");
+    const status = params.get("usd_status");
+    if (status === "cancelled") {
+      toast.info("USD purchase cancelled.");
+      params.delete("usd_status");
+      setParams(params, { replace: true });
+      return;
+    }
+    if (!sid || !user) return;
+    let n = 0;
+    const poll = async () => {
+      n++;
+      try {
+        const { data } = await api.get(`/marketplace/buy_usd/status/${sid}`);
+        if (data.settled) {
+          toast.success("Purchase complete! The drop is now in your collection.");
+          params.delete("usd_session_id");
+          setParams(params, { replace: true });
+          setTab("collection");
+          refresh();
+          return;
+        }
+      } catch {}
+      if (n < 8) setTimeout(poll, 1500);
+    };
+    poll();
+    // eslint-disable-next-line
+  }, [params.get("usd_session_id"), user]);
 
   const buy = async (listing) => {
     if (!user) return navigate("/login");
@@ -49,6 +94,16 @@ export default function Marketplace() {
       const { data } = await api.post(`/marketplace/buy/${listing.id}`, { currency: "bloxbucks" });
       toast.success(`Purchased! New balance: ${data.buyer_balance_after.toLocaleString()} BB`);
       refresh();
+    } catch (e) { toast.error(formatApiError(e)); }
+  };
+
+  const buyUsd = async (listing) => {
+    if (!user) return navigate("/login");
+    try {
+      const { data } = await api.post(`/marketplace/buy_usd/${listing.id}`, {
+        origin_url: window.location.origin,
+      });
+      window.location.href = data.url;
     } catch (e) { toast.error(formatApiError(e)); }
   };
 
@@ -114,7 +169,7 @@ export default function Marketplace() {
               Trade <span className="text-[#fbbf24] [text-shadow:0_0_24px_rgba(251,191,36,0.5)]">collectible</span> drops
             </h1>
             <p className="text-zinc-400 mt-3 max-w-2xl">
-              Buy and sell drops with <strong className="text-[#fbbf24]">BloxBucks</strong>. Every resale auto-pays <strong className="text-[#ccff00]">5% royalty</strong> to the original creator. USD checkout coming Phase 2.4.
+              Buy and sell drops with <strong className="text-[#fbbf24]">BloxBucks</strong> or real <strong className="text-[#ccff00]">USD</strong>. Every resale auto-pays <strong className="text-[#ccff00]">5% royalty</strong> to the original creator + <strong className="text-[#ff0055]">5% platform fee</strong>.
             </p>
           </div>
           {user && (
@@ -186,7 +241,13 @@ export default function Marketplace() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
               {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} onBuy={() => buy(l)} canBuy={user && user.id !== l.seller_user_id} />
+                <ListingCard
+                  key={l.id}
+                  listing={l}
+                  onBuyBB={() => buy(l)}
+                  onBuyUSD={() => buyUsd(l)}
+                  canBuy={user && user.id !== l.seller_user_id}
+                />
               ))}
             </div>
           )
@@ -221,13 +282,16 @@ export default function Marketplace() {
       </main>
 
       {/* === HOW BLOXBUCKS WORK · educational section === */}
-      <BloxBucksExplainer />
+      <div id="bloxbucks-explainer" className="scroll-mt-20">
+        <BloxBucksExplainer />
+      </div>
 
       {/* Listing modal */}
       <AnimatePresence>
         {listingFor && (
           <ListForSaleModal
             ownership={listingFor}
+            connectStatus={connectStatus}
             onClose={() => setListingFor(null)}
             onListed={() => { setListingFor(null); refresh(); setTab("browse"); }}
           />
@@ -257,30 +321,74 @@ function EmptyState({ icon, title, body, cta }) {
   );
 }
 
-function ListingCard({ listing, onBuy, canBuy }) {
+function ListingCard({ listing, onBuyBB, onBuyUSD, canBuy }) {
   const drop = listing.drop;
+  const bb = listing.price_bloxbucks;
+  const usd = listing.price_usd_cents;
   return (
     <div className="flex flex-col gap-3" data-testid={`listing-${listing.id}`}>
       <CreationCard item={drop} compact />
-      <div className="rounded-xl border border-white/8 bg-zinc-950/70 p-3 flex items-center justify-between">
-        <div>
-          <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Price</p>
-          <p className="font-display text-lg font-black text-[#fbbf24]">
-            {listing.price_bloxbucks.toLocaleString()} <span className="text-zinc-500 text-xs">BB</span>
-          </p>
+      <div className="rounded-xl border border-white/8 bg-zinc-950/70 p-3 space-y-2">
+        {/* Prices row */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            {bb != null && (
+              <div className="flex items-center gap-1.5">
+                <Coins size={13} weight="fill" className="text-[#fbbf24]" />
+                <span className="font-display text-base font-black text-[#fbbf24]">
+                  {bb.toLocaleString()}<span className="text-zinc-500 text-[10px] ml-1">BB</span>
+                </span>
+              </div>
+            )}
+            {usd != null && (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <CurrencyDollar size={13} weight="fill" className="text-[#ccff00]" />
+                <span className="font-display text-base font-black text-[#ccff00]">
+                  ${(usd / 100).toFixed(2)}<span className="text-zinc-500 text-[10px] ml-1">USD</span>
+                </span>
+              </div>
+            )}
+          </div>
+          {listing.seller_name && (
+            <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold truncate max-w-[80px] text-right">
+              by @{listing.seller_name}
+            </p>
+          )}
         </div>
-        <button
-          onClick={onBuy}
-          disabled={!canBuy}
-          data-testid={`buy-${listing.id}`}
-          className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
-            canBuy
-              ? "bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)]"
-              : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-          }`}
-        >
-          {canBuy ? "Buy" : "Yours"}
-        </button>
+        {/* Buy buttons */}
+        <div className="flex gap-2">
+          {bb != null && (
+            <button
+              onClick={onBuyBB}
+              disabled={!canBuy}
+              data-testid={`buy-bb-${listing.id}`}
+              className={`flex-1 rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${
+                canBuy
+                  ? "bg-[#fbbf24] text-black hover:shadow-[0_0_16px_rgba(251,191,36,0.55)]"
+                  : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+              }`}
+            >
+              <Coins size={11} weight="fill" /> Buy · BB
+            </button>
+          )}
+          {usd != null && (
+            <button
+              onClick={onBuyUSD}
+              disabled={!canBuy}
+              data-testid={`buy-usd-${listing.id}`}
+              className={`flex-1 rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${
+                canBuy
+                  ? "bg-[#ccff00] text-black hover:shadow-[0_0_16px_rgba(204,255,0,0.55)]"
+                  : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+              }`}
+            >
+              <CurrencyDollar size={11} weight="fill" /> Buy · USD
+            </button>
+          )}
+        </div>
+        {!canBuy && (bb != null || usd != null) && (
+          <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold text-center">Your listing</p>
+        )}
       </div>
     </div>
   );
@@ -288,22 +396,31 @@ function ListingCard({ listing, onBuy, canBuy }) {
 
 function CollectionCard({ ownership, onList, onUnlist }) {
   const drop = ownership.drop;
+  const bb = ownership.listing_price_bb;
+  const usd = ownership.listing_price_usd_cents;
   return (
     <div className="flex flex-col gap-3" data-testid={`owned-${ownership.ownership_id}`}>
       <CreationCard item={drop} compact />
       <div className="rounded-xl border border-white/8 bg-zinc-950/70 p-3">
         {ownership.is_listed ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] uppercase tracking-widest text-[#ccff00] font-bold">Listed</p>
-              <p className="font-display text-base font-black text-[#fbbf24]">
-                {ownership.listing_price_bb?.toLocaleString()} BB
-              </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-widest text-[#ccff00] font-bold mb-0.5">Listed</p>
+              {bb != null && (
+                <p className="font-display text-sm font-black text-[#fbbf24]">
+                  {bb.toLocaleString()} <span className="text-[10px] text-zinc-500">BB</span>
+                </p>
+              )}
+              {usd != null && (
+                <p className="font-display text-sm font-black text-[#ccff00]">
+                  ${(usd / 100).toFixed(2)} <span className="text-[10px] text-zinc-500">USD</span>
+                </p>
+              )}
             </div>
             <button
               onClick={onUnlist}
               data-testid={`unlist-${ownership.ownership_id}`}
-              className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-zinc-800 text-zinc-300 hover:bg-[#ff0055] hover:text-white transition-colors"
+              className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-zinc-800 text-zinc-300 hover:bg-[#ff0055] hover:text-white transition-colors flex-shrink-0"
             >
               Cancel
             </button>
@@ -327,19 +444,33 @@ function CollectionCard({ ownership, onList, onUnlist }) {
   );
 }
 
-function ListForSaleModal({ ownership, onClose, onListed }) {
+function ListForSaleModal({ ownership, connectStatus, onClose, onListed }) {
   const drop = ownership.drop;
-  const [price, setPrice] = useState(500);
+  const [priceBB, setPriceBB] = useState(500);
+  const [priceUSD, setPriceUSD] = useState(""); // dollars (as string, e.g. "9.99")
+  const [enableBB, setEnableBB] = useState(true);
+  const [enableUSD, setEnableUSD] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const connectReady = !!(connectStatus?.charges_enabled);
+
   const submit = async () => {
-    if (price < 100) return toast.error("Minimum listing is 100 BB");
+    if (!enableBB && !enableUSD) return toast.error("Pick at least one price.");
+    if (enableBB && (!priceBB || priceBB < 100)) return toast.error("BB price must be ≥ 100");
+    let usdCents = null;
+    if (enableUSD) {
+      const dollars = parseFloat(priceUSD || "0");
+      if (!dollars || dollars < 1) return toast.error("USD price must be ≥ $1.00");
+      usdCents = Math.round(dollars * 100);
+      if (!connectReady) return toast.error("Complete Stripe Connect on your Profile first.");
+    }
     setSubmitting(true);
     try {
       await api.post("/marketplace/list", {
         generation_id: drop.id,
         edition_number: ownership.edition_number,
-        price_bloxbucks: parseInt(price, 10),
+        price_bloxbucks: enableBB ? parseInt(priceBB, 10) : null,
+        price_usd_cents: usdCents,
       });
       toast.success("Listed for sale!");
       onListed();
@@ -356,7 +487,7 @@ function ListForSaleModal({ ownership, onClose, onListed }) {
     >
       <motion.div
         initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-        className="relative w-full max-w-md bg-zinc-950 border border-white/10 rounded-3xl p-6"
+        className="relative w-full max-w-md bg-zinc-950 border border-white/10 rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black border border-white/10 flex items-center justify-center hover:bg-[#ff0055] hover:border-[#ff0055]">
@@ -371,21 +502,82 @@ function ListForSaleModal({ ownership, onClose, onListed }) {
         </p>
 
         <div className="space-y-3">
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Price (BloxBucks)</span>
-            <div className="relative mt-1">
+          {/* BloxBucks price */}
+          <div className={`rounded-xl border p-3 transition-colors ${enableBB ? "border-[#fbbf24]/50 bg-[#fbbf24]/5" : "border-white/8 bg-zinc-900/40"}`}>
+            <label className="flex items-center gap-2 mb-2 cursor-pointer">
               <input
-                type="number"
-                min={100}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="input-dark w-full rounded-lg pl-10 pr-3 py-3 text-lg font-black"
-                data-testid="list-price-input"
+                type="checkbox"
+                checked={enableBB}
+                onChange={(e) => setEnableBB(e.target.checked)}
+                data-testid="enable-bb-price"
+                className="accent-[#fbbf24] w-4 h-4"
               />
-              <Coins size={18} weight="duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#fbbf24]" />
-            </div>
-            <p className="text-[10px] text-zinc-500 mt-1">Min 100 BB. Sale gives original creator 5% royalty automatically.</p>
-          </label>
+              <span className="text-xs uppercase tracking-[0.2em] font-black text-[#fbbf24] flex items-center gap-1">
+                <Coins size={12} weight="fill" /> Accept BloxBucks
+              </span>
+            </label>
+            {enableBB && (
+              <div className="relative">
+                <input
+                  type="number"
+                  min={100}
+                  value={priceBB}
+                  onChange={(e) => setPriceBB(e.target.value)}
+                  className="input-dark w-full rounded-lg pl-10 pr-3 py-2.5 text-lg font-black"
+                  data-testid="list-price-bb-input"
+                />
+                <Coins size={16} weight="duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#fbbf24]" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-widest font-bold text-zinc-500">BB · min 100</span>
+              </div>
+            )}
+          </div>
+
+          {/* USD price */}
+          <div className={`rounded-xl border p-3 transition-colors ${enableUSD ? "border-[#ccff00]/50 bg-[#ccff00]/5" : "border-white/8 bg-zinc-900/40"}`}>
+            <label className="flex items-center gap-2 mb-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableUSD}
+                onChange={(e) => setEnableUSD(e.target.checked)}
+                data-testid="enable-usd-price"
+                disabled={!connectReady}
+                className="accent-[#ccff00] w-4 h-4 disabled:opacity-40"
+              />
+              <span className={`text-xs uppercase tracking-[0.2em] font-black flex items-center gap-1 ${connectReady ? "text-[#ccff00]" : "text-zinc-500"}`}>
+                <CurrencyDollar size={12} weight="fill" /> Accept USD
+              </span>
+              {connectReady && <ShieldCheck size={12} weight="fill" className="text-[#ccff00] ml-auto" />}
+            </label>
+            {!connectReady ? (
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                Complete <Link to="/profile" className="text-[#ccff00] underline">Stripe Connect</Link> onboarding to accept real USD with auto-payout (90% to you).
+              </p>
+            ) : enableUSD && (
+              <>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={1}
+                    value={priceUSD}
+                    onChange={(e) => setPriceUSD(e.target.value)}
+                    placeholder="9.99"
+                    className="input-dark w-full rounded-lg pl-10 pr-3 py-2.5 text-lg font-black"
+                    data-testid="list-price-usd-input"
+                  />
+                  <CurrencyDollar size={16} weight="duotone" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ccff00]" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-widest font-bold text-zinc-500">USD · min $1</span>
+                </div>
+                <p className="text-[10px] text-zinc-500 mt-1.5">
+                  You receive 90% via Stripe. 5% royalty + 5% platform fee auto-deducted.
+                </p>
+              </>
+            )}
+          </div>
+
+          <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
+            5% royalty goes to the original creator on every resale. 5% platform fee supports BloxDrops.
+          </p>
         </div>
 
         <button
@@ -394,7 +586,7 @@ function ListForSaleModal({ ownership, onClose, onListed }) {
           data-testid="confirm-list"
           className="w-full mt-5 bg-[#fbbf24] text-black rounded-full py-3 font-black uppercase tracking-widest text-sm hover:shadow-[0_0_24px_rgba(251,191,36,0.6)] transition-all disabled:opacity-60"
         >
-          {submitting ? "Listing…" : `List for ${parseInt(price || 0, 10).toLocaleString()} BB`}
+          {submitting ? "Listing…" : "Confirm listing"}
         </button>
       </motion.div>
     </motion.div>

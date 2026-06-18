@@ -195,3 +195,74 @@ async def platform_stats(user=Depends(get_current_user)):
         "total_topup_revenue_usd": round(total_topup_usd, 2),
         "recent_fee_transactions": recent,
     }
+
+
+@router.get("/creators-connect-status")
+async def creators_connect_status(user=Depends(get_current_user)):
+    """List all users with Stripe Connect accounts + their KYC state.
+
+    Returns three buckets:
+      - onboarded: charges_enabled = True (can receive USD payouts)
+      - pending: stripe_account_id exists but charges_enabled = False
+      - never_started: no stripe_account_id at all (creators with at least one drop)
+    """
+    _require_admin(user)
+    from server import db
+
+    onboarded = []
+    pending = []
+    async for u in db.users.find(
+        {"stripe_account_id": {"$exists": True, "$ne": None}},
+        {"_id": 1, "email": 1, "name": 1, "stripe_account_id": 1,
+         "stripe_charges_enabled": 1, "stripe_payouts_enabled": 1,
+         "stripe_details_submitted": 1, "stripe_account_created_at": 1,
+         "stripe_onboarded_at": 1},
+    ):
+        row = {
+            "id": str(u["_id"]),
+            "email": u.get("email"),
+            "name": u.get("name") or u.get("email", "").split("@")[0],
+            "stripe_account_id": u.get("stripe_account_id"),
+            "charges_enabled": bool(u.get("stripe_charges_enabled")),
+            "payouts_enabled": bool(u.get("stripe_payouts_enabled")),
+            "details_submitted": bool(u.get("stripe_details_submitted")),
+            "created_at": u.get("stripe_account_created_at"),
+            "onboarded_at": u.get("stripe_onboarded_at"),
+        }
+        if row["charges_enabled"]:
+            onboarded.append(row)
+        else:
+            pending.append(row)
+
+    # Creators (have at least one generation) without any Stripe account
+    creator_ids = set()
+    async for gen in db.generations.find({"status": "completed"}, {"user_id": 1}):
+        if gen.get("user_id"):
+            creator_ids.add(gen["user_id"])
+
+    never_started = []
+    for cid in creator_ids:
+        try:
+            uobj = await db.users.find_one(
+                {"_id": ObjectId(cid), "stripe_account_id": {"$in": [None, "", False]}},
+                {"_id": 1, "email": 1, "name": 1},
+            )
+            if uobj:
+                never_started.append({
+                    "id": str(uobj["_id"]),
+                    "email": uobj.get("email"),
+                    "name": uobj.get("name") or uobj.get("email", "").split("@")[0],
+                })
+        except Exception:
+            continue
+
+    return {
+        "onboarded": onboarded,
+        "pending": pending,
+        "never_started": never_started,
+        "counts": {
+            "onboarded": len(onboarded),
+            "pending": len(pending),
+            "never_started": len(never_started),
+        },
+    }
