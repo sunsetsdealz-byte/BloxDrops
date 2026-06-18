@@ -83,35 +83,81 @@ async def seed_challenges():
 
 
 async def seed_demo_creations():
-    """Seed a few sample creations so the gallery & battle screens aren't empty."""
-    if await db.generations.count_documents({}) > 0:
+    """Seed a diverse set of unique sample creations for the gallery + battle.
+
+    Each seed uses a unique public GLB so no two creations share a model.
+    Re-seeds when the v2 marker is missing (lets us upgrade old demos).
+    """
+    has_v2 = await db.generations.count_documents({"demo_seed_v": 2}) > 0
+    if has_v2:
         return
+
+    # Wipe the old cycling demo set so the feed is clean
+    await db.generations.delete_many({"demo_mode": True})
+
     samples = [
-        {"prompt": "Glowing neon cyberpunk visor with circuit patterns", "type": "Hat", "style": "cyberpunk",
-         "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-         "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=600&q=80"},
-        {"prompt": "Anime spiky red and black hair with golden tips", "type": "Hair", "style": "anime",
+        # Roblox UGC head/hair/face
+        {"prompt": "Glowing cyberpunk LED visor with shifting circuit patterns",
+         "type": "Hat", "style": "cyberpunk",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
-         "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=600&q=80"},
-        {"prompt": "Gothic black hoodie with red demon eyes and stitched smile", "type": "Hoodie", "style": "gothic",
+         "thumb": "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=700&q=80"},
+        {"prompt": "Anime spiky red-and-black hair with golden tips",
+         "type": "Hair", "style": "anime",
+         "model_url": "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+         "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=700&q=80"},
+        {"prompt": "Pastel kawaii bunny-ear headband with cherry-blossom bows",
+         "type": "Hat", "style": "kawaii",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb",
+         "thumb": "https://images.unsplash.com/photo-1770177267441-1d8dadda4feb?w=700&q=80"},
+        {"prompt": "Y2K chrome butterfly hair clips with pink glitter",
+         "type": "Hair", "style": "y2k",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF-Binary/BarramundiFish.glb",
+         "thumb": "https://images.unsplash.com/photo-1734779205618-5b8e1c2ad88a?w=700&q=80"},
+
+        # Torso / layered clothing
+        {"prompt": "Gothic black hoodie with red demon eyes and stitched smile",
+         "type": "Hoodie", "style": "gothic",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF-Binary/BoomBox.glb",
-         "thumb": "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=600&q=80"},
-        {"prompt": "Pastel kawaii bunny ears headband with bows", "type": "Hat", "style": "kawaii",
+         "thumb": "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=700&q=80"},
+        {"prompt": "Holographic streetwear puffer jacket with neon zippers",
+         "type": "Jacket", "style": "streetwear",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb",
+         "thumb": "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=700&q=80"},
+        {"prompt": "Horror-style ragged trench coat with bleeding seams",
+         "type": "Jacket", "style": "horror",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/AntiqueCamera/glTF-Binary/AntiqueCamera.glb",
+         "thumb": "https://images.unsplash.com/photo-1614583224978-f05ce51ef5fa?w=700&q=80"},
+
+        # Back / accessories / weapons
+        {"prompt": "Flaming twin-handle battle axe with crystal core",
+         "type": "Back", "style": "fantasy",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/ToyCar/glTF-Binary/ToyCar.glb",
+         "thumb": "https://images.unsplash.com/photo-1604871000636-074fa5117945?w=700&q=80"},
+        {"prompt": "Mecha jetpack with twin glowing thrusters",
+         "type": "Back", "style": "cyberpunk",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb",
+         "thumb": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=700&q=80"},
+        {"prompt": "Dragon-scale shoulder pads with smoldering embers",
+         "type": "Shoulder", "style": "fantasy",
          "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb",
-         "thumb": "https://images.unsplash.com/photo-1770177267441-1d8dadda4feb?w=600&q=80"},
-        {"prompt": "Flaming axe with crystal handle, Genshin style", "type": "Back", "style": "fantasy",
+         "thumb": "https://images.unsplash.com/photo-1614624533253-fae8b1716069?w=700&q=80"},
+        {"prompt": "Cosmic galaxy water-bottle backpack with star particles",
+         "type": "Back", "style": "fantasy",
+         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb",
+         "thumb": "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=700&q=80"},
+        {"prompt": "Vintage astronaut helmet with chrome trim, retro-future vibe",
+         "type": "Hat", "style": "realistic",
          "model_url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-         "thumb": "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=600&q=80"},
-        {"prompt": "Y2K chrome butterfly hair clips with pink glitter", "type": "Hair", "style": "y2k",
-         "model_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
-         "thumb": "https://images.unsplash.com/photo-1734779205618-5b8e1c2ad88a?w=600&q=80"},
+         "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=700&q=80"},
     ]
     admin = await db.users.find_one({"role": "admin"})
     admin_id = str(admin["_id"]) if admin else "system"
-    for s in samples:
+    creators = ["BloxCraft", "ShadowLord_99", "PixelPrince", "NeonDrip", "CodeKween", "MintMaster", "RobloxRoyal", "GlitchKid"]
+    for i, s in enumerate(samples):
+        h = hash(s["prompt"])
         await db.generations.insert_one({
             "user_id": admin_id,
-            "creator_name": "BloxCraft",
+            "creator_name": creators[i % len(creators)],
             "prompt": s["prompt"],
             "original_prompt": s["prompt"],
             "type": "text",
@@ -121,16 +167,17 @@ async def seed_demo_creations():
             "model_url": s["model_url"],
             "thumbnail_url": s["thumb"],
             "status": "completed",
-            "likes": int(20 + 80 * (hash(s["prompt"]) % 7) / 7),
-            "battle_wins": int(5 + (hash(s["prompt"]) % 15)),
-            "battle_losses": int(2 + (hash(s["prompt"]) % 8)),
-            "remix_count": int(hash(s["prompt"]) % 10),
+            "likes": int(20 + 80 * (abs(h) % 7) / 7),
+            "battle_wins": int(5 + (abs(h) % 15)),
+            "battle_losses": int(2 + (abs(h) % 8)),
+            "remix_count": int(abs(h) % 10),
             "remixed_from": None,
             "challenge_id": None,
             "created_at": now_utc().isoformat(),
             "demo_mode": True,
+            "demo_seed_v": 2,
         })
-    logger.info("Seeded %d demo creations", len(samples))
+    logger.info("Seeded %d unique demo creations", len(samples))
 
 
 @asynccontextmanager

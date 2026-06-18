@@ -28,22 +28,30 @@ router = APIRouter(prefix="/api")
 
 # Sample GLB models served by fal.ai/Google for fallback demo mode
 SAMPLE_GLBS = [
-    {
-        "url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-        "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=600&q=80",
-    },
-    {
-        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
-        "thumb": "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=600&q=80",
-    },
-    {
-        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF-Binary/BoomBox.glb",
-        "thumb": "https://images.unsplash.com/photo-1734779205618-5b8e1c2ad88a?w=600&q=80",
-    },
-    {
-        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb",
-        "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=600&q=80",
-    },
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
+     "thumb": "https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF-Binary/BoomBox.glb",
+     "thumb": "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb",
+     "thumb": "https://images.unsplash.com/photo-1614624533253-fae8b1716069?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb",
+     "thumb": "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/WaterBottle/glTF-Binary/WaterBottle.glb",
+     "thumb": "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/AntiqueCamera/glTF-Binary/AntiqueCamera.glb",
+     "thumb": "https://images.unsplash.com/photo-1614583224978-f05ce51ef5fa?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF-Binary/BarramundiFish.glb",
+     "thumb": "https://images.unsplash.com/photo-1734779205618-5b8e1c2ad88a?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/ToyCar/glTF-Binary/ToyCar.glb",
+     "thumb": "https://images.unsplash.com/photo-1604871000636-074fa5117945?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF-Binary/Buggy.glb",
+     "thumb": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=700&q=80"},
+    {"url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb",
+     "thumb": "https://images.unsplash.com/photo-1770177267441-1d8dadda4feb?w=700&q=80"},
+    {"url": "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+     "thumb": "https://images.unsplash.com/photo-1741177479787-f6c63266af14?w=700&q=80"},
+    {"url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+     "thumb": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=700&q=80"},
 ]
 
 
