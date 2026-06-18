@@ -134,7 +134,7 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.05 }}
-                className="font-display text-5xl sm:text-6xl lg:text-7xl font-black uppercase leading-[0.92] tracking-tighter"
+                className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-[0.95] tracking-tighter"
               >
                 <span className="block">From prompt</span>
                 <span className="block">to marketplace</span>
@@ -294,20 +294,20 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
-            className="flex items-end justify-between mb-6"
+            className="flex items-end justify-between mb-6 gap-4"
           >
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#fbbf24] font-bold mb-2">
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em] sm:tracking-[0.3em] text-[#fbbf24] font-bold mb-2">
                 ▍ Founder's Drop · Coming Soon
               </p>
-              <h3 className="font-display text-3xl md:text-5xl font-black uppercase tracking-tighter">
+              <h3 className="font-display text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight">
                 The first <span className="text-[#fbbf24] [text-shadow:0_0_24px_rgba(251,191,36,0.55)]">1 of 1</span> ever forged
               </h3>
               <p className="text-sm text-zinc-400 mt-3 max-w-xl">
                 Hand-curated. Founder signed. Genesis flagged. Soon listed for sale — bid your interest now.
               </p>
             </div>
-            <Link to="/feed" className="hidden md:flex text-sm font-bold text-[#ccff00] items-center gap-1">
+            <Link to="/feed" className="hidden md:flex text-sm font-bold text-[#ccff00] items-center gap-1 flex-shrink-0">
               See feed <ArrowRight size={14} weight="bold" />
             </Link>
           </motion.div>
@@ -329,7 +329,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="md:col-span-7 grid grid-cols-2 gap-3"
+              className="md:col-span-7 grid grid-cols-2 gap-2.5 sm:gap-3"
             >
               {[
                 { k: "Edition", v: "1 / 1", c: "#ff0055" },
@@ -339,19 +339,19 @@ export default function Landing() {
                 { k: "Signed",  v: "Founder ✓", c: "#fbbf24" },
                 { k: "Mint ID", v: feed[0]?.mint_id?.slice(0,8) + "…" || "—", c: "#ccff00" },
               ].map((s) => (
-                <div key={s.k} className="rounded-xl border border-white/8 bg-zinc-950/80 p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">{s.k}</p>
-                  <p className="font-display text-xl font-black uppercase tracking-tight mt-1" style={{ color: s.c }}>
+                <div key={s.k} className="rounded-xl border border-white/8 bg-zinc-950/80 p-3 sm:p-4 min-w-0">
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-zinc-500 font-bold">{s.k}</p>
+                  <p className="font-display text-sm sm:text-xl font-black uppercase tracking-tight mt-1 truncate" style={{ color: s.c }}>
                     {s.v}
                   </p>
                 </div>
               ))}
-              <div className="col-span-2 rounded-xl border border-[#fbbf24]/40 bg-gradient-to-r from-[#fbbf24]/10 to-transparent p-4 flex items-center justify-between">
-                <div>
+              <div className="col-span-2 rounded-xl border border-[#fbbf24]/40 bg-gradient-to-r from-[#fbbf24]/10 to-transparent p-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-widest text-[#fbbf24] font-black mb-1">Reserve price</p>
-                  <p className="font-display text-2xl font-black">$50,000 <span className="text-zinc-500 text-base">USD</span></p>
+                  <p className="font-display text-xl sm:text-2xl font-black">$50,000 <span className="text-zinc-500 text-sm sm:text-base">USD</span></p>
                 </div>
-                <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Phase 2 launch</span>
+                <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold flex-shrink-0">Phase 2 launch</span>
               </div>
             </motion.div>
           </div>
@@ -518,9 +518,11 @@ function HeroShowcase() {
         </div>
       </motion.div>
 
-      {/* External floating spec chips — outside the frame, NOT tilted */}
+      {/* External floating spec chips — outside the frame, NOT tilted.
+          Using solid bg instead of `glass` to avoid blur cascade from parent 3D transform. */}
       <motion.div
-        className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10 pointer-events-none"
+        className="absolute -top-3 -left-3 rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10 pointer-events-none border border-white/10"
+        style={{ background: "rgba(9, 9, 11, 0.92)", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}
@@ -533,16 +535,17 @@ function HeroShowcase() {
       </motion.div>
 
       <motion.div
-        className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none max-w-[260px]"
+        className="absolute -bottom-3 -right-3 rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none max-w-[260px] border border-white/10"
+        style={{ background: "rgba(9, 9, 11, 0.92)", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.75, duration: 0.5 }}
       >
-        <Lightbulb size={14} weight="duotone" className="text-[#00f0ff]" />
+        <Lightbulb size={14} weight="duotone" className="text-[#00f0ff] flex-shrink-0" />
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">manifesto</p>
           <p className="text-[11px] font-bold italic leading-tight">
-            "Every kid with an idea is one prompt away from a Roblox empire."
+            &ldquo;Every kid with an idea is one prompt away from a Roblox empire.&rdquo;
           </p>
         </div>
       </motion.div>

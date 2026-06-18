@@ -321,7 +321,7 @@ export default function Admin() {
       {loading ? (
         <div className="text-zinc-500 text-sm py-10 text-center">Loading…</div>
       ) : (
-        <div className="bg-zinc-950/70 border border-white/8 rounded-2xl overflow-visible">
+        <div className="bg-zinc-950/70 border border-white/8 rounded-2xl overflow-hidden">
           {/* Filter chips */}
           <div className="flex items-center gap-1.5 px-3 py-3 border-b border-white/8 flex-wrap" data-testid="user-filter-chips">
             {[
@@ -351,7 +351,8 @@ export default function Admin() {
               );
             })}
           </div>
-          <table className="w-full text-sm" data-testid="admin-users-table">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]" data-testid="admin-users-table">
             <thead className="bg-white/[0.03] text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">
               <tr>
                 <th className="text-left p-4">User</th>
@@ -545,6 +546,7 @@ export default function Admin() {
               ))}
             </tbody>
           </table>
+          </div>
           {users.length === 0 && (
             <div className="p-10 text-center text-zinc-500 text-sm">No users match.</div>
           )}

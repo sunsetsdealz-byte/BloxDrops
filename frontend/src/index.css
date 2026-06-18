@@ -35,6 +35,16 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Crisp text inside 3D-transformed parents — prevents the blur cascade caused by
+   combining transform-style:preserve-3d with backdrop-filter on child elements. */
+.crisp-text {
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  backface-visibility: hidden;
+}
+
 .btn-volt {
   background: #ccff00;
   color: #000;

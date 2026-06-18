@@ -10,6 +10,7 @@ export const TID = {
   navLogin: "nav-login",
   navRegister: "nav-register",
   navLogout: "nav-logout",
+  navMobileToggle: "nav-mobile-toggle",
   navCredits: "nav-credits",
 
   // Landing
