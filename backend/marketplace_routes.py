@@ -185,12 +185,17 @@ async def marketplace_browse(sort: str = "newest", limit: int = 40):
         enrich_drop(gen)
         listing["id"] = str(listing.pop("_id"))
         listing["drop"] = gen
-        # Seller name (best-effort) for "by @username" display
+        # Seller info — name + Connect verified state (USD-ready badge)
         try:
-            seller = await db.users.find_one({"_id": ObjectId(listing["seller_user_id"])}, {"name": 1})
+            seller = await db.users.find_one(
+                {"_id": ObjectId(listing["seller_user_id"])},
+                {"name": 1, "stripe_charges_enabled": 1},
+            )
             listing["seller_name"] = (seller or {}).get("name") or "creator"
+            listing["seller_verified"] = bool((seller or {}).get("stripe_charges_enabled"))
         except Exception:
             listing["seller_name"] = "creator"
+            listing["seller_verified"] = False
         items.append(listing)
     return {"items": items, "count": len(items)}
 

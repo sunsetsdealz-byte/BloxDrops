@@ -59,6 +59,9 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **Battle Arena fix**: Re-enabled `seed_demo_creations()` so Feed/Battle have 12 starter drops + added empty-state UI for Battle (no more stacked error toasts).
 - **Founder reserve price**: removed misleading "50,000 R$" — now shows "$50,000 USD" only.
 
+- **Verified Creator badge** (2026-06-18): Marketplace listing cards display a green `✓ Verified` chip when the seller has completed Stripe Connect KYC (`stripe_charges_enabled=true`). `/api/marketplace` browse now returns `seller_verified` per listing.
+- **Removed demo seed**: All 12 fake demo creations wiped from DB. Battle Arena's empty-state UI now correctly displays for new users until real drops exist.
+
 ## P1 — Backlog
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)
 - Admin: encourage-email/notif tool for creators in "never_started" bucket

@@ -77,7 +77,7 @@ export default function Marketplace() {
           refresh();
           return;
         }
-      } catch {}
+      } catch { /* keep polling */ }
       if (n < 8) setTimeout(poll, 1500);
     };
     poll();
@@ -350,9 +350,20 @@ function ListingCard({ listing, onBuyBB, onBuyUSD, canBuy }) {
             )}
           </div>
           {listing.seller_name && (
-            <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold truncate max-w-[80px] text-right">
-              by @{listing.seller_name}
-            </p>
+            <div className="flex flex-col items-end gap-0.5">
+              <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold truncate max-w-[90px] text-right">
+                by @{listing.seller_name}
+              </p>
+              {listing.seller_verified && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] text-[8px] uppercase tracking-widest font-black"
+                  title="Verified — Stripe Connect KYC complete. Can receive USD payouts."
+                  data-testid={`verified-${listing.id}`}
+                >
+                  <ShieldCheck size={9} weight="fill" /> Verified
+                </span>
+              )}
+            </div>
           )}
         </div>
         {/* Buy buttons */}
