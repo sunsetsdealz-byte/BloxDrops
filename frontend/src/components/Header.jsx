@@ -216,6 +216,7 @@ export default function Header() {
           )}
         </div>
       </div>
+      <TopUpModal open={topupOpen} onClose={() => setTopupOpen(false)} onPurchased={() => setTopupOpen(false)} />
     </header>
   );
 }

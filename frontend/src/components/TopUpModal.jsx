@@ -133,7 +133,7 @@ export default function TopUpModal({ open, onClose, onPurchased }) {
           </button>
 
           <p className="text-[10px] text-zinc-500 text-center mt-3 uppercase tracking-widest">
-            Test mode · use card 4242 4242 4242 4242
+            Secure checkout · powered by Stripe
           </p>
         </motion.div>
       </motion.div>

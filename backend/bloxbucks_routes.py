@@ -20,10 +20,11 @@ router = APIRouter(prefix="/api")
 
 
 # Server-defined packages (NEVER trust frontend amounts)
+# Bonus math: Starter is the baseline (50 BB/$). Pro and Whale stack BB-per-$ for value.
 BB_PACKAGES = {
-    "starter": {"bb": 1000,  "usd": 9.99,  "label": "Starter",  "perk": ""},
-    "pro":     {"bb": 5000,  "usd": 44.99, "label": "Pro",      "perk": "+10% bonus included"},
-    "whale":   {"bb": 10000, "usd": 79.99, "label": "Whale",    "perk": "+25% bonus included · best value"},
+    "starter": {"bb": 1000,  "usd": 19.99,  "label": "Starter",     "perk": ""},
+    "pro":     {"bb": 5000,  "usd": 49.99,  "label": "Pro",         "perk": "+100% bonus value"},
+    "whale":   {"bb": 25000, "usd": 199.99, "label": "Whale Pack",  "perk": "+150% bonus · best value"},
 }
 
 

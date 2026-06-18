@@ -42,6 +42,11 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **BloxBucksExplainer**: visual Framer Motion explanation of the BB economy
 - **Stripe Connect Express** (Phase 2.3): backend `/api/connect/onboard|status|login-link|configured` + `ConnectPayoutsCard.jsx` UI on Profile page. **LIVE as of 2026-06-18** with user's BloxDrops Sandbox.
 
+- **BloxBucks pricing** (2026-06-18 evening): Starter $19.99 / 1,000 BB · Pro $49.99 / 5,000 BB (+100% value) · Whale Pack $199.99 / 25,000 BB (+150% value).
+- **Header + button** correctly opens TopUpModal (was previously broken — modal state existed but `<TopUpModal>` was never rendered in Header.jsx). Removed `Test mode · use card 4242 4242 4242 4242` hint since we're in live mode.
+- **Admin user management** (2026-06-18): `/api/admin/users/{id}/ban|unban|reset-password|DELETE`. Banned users get 403 on login. Passwords are bcrypt-hashed (one-way) — admins can RESET to a known value but not READ originals. Seed admin protected.
+- **Banned filter chips** + **Audit log**: User table has filter chips (All / Active / Banned / Admins) with counts. New `admin_audit_log` collection captures every admin action (ban/unban/delete/reset_password/promote/demote) with actor+target email+timestamp. UI section "LAST N ACTIONS" with color-coded badges below the user table.
+
 ## Key technical notes
 - `load_dotenv(override=True)` in server.py ensures backend/.env takes precedence over shell-level env vars.
 - **🔴 LIVE MODE (2026-06-18):** `STRIPE_API_KEY` is `sk_live_...` — Connect onboarding creates real connected accounts; payments charge real cards; payouts wire real USD.

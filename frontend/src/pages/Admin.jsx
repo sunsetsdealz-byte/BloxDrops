@@ -41,6 +41,8 @@ export default function Admin() {
   const [planMenu, setPlanMenu] = useState(null);
   const [platformStats, setPlatformStats] = useState(null);
   const [connectStatus, setConnectStatus] = useState(null);
+  const [auditLog, setAuditLog] = useState([]);
+  const [userFilter, setUserFilter] = useState("all"); // all | active | banned | admin
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,8 +67,17 @@ export default function Admin() {
       api.get("/admin/creators-connect-status")
         .then((r) => setConnectStatus(r.data))
         .catch(() => {});
+      api.get("/admin/audit-log?limit=50")
+        .then((r) => setAuditLog(r.data?.items || []))
+        .catch(() => {});
     }
   }, [user, load, nav]);
+
+  const refreshAudit = () => {
+    api.get("/admin/audit-log?limit=50")
+      .then((r) => setAuditLog(r.data?.items || []))
+      .catch(() => {});
+  };
 
   const toggleRole = async (target) => {
     setBusy(target.id);
@@ -75,6 +86,7 @@ export default function Admin() {
       await api.post(`/admin/users/${target.id}/${endpoint}`);
       toast.success(target.role === "admin" ? `${target.name || target.email} removed as admin` : `${target.name || target.email} promoted to admin`);
       load();
+      refreshAudit();
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -110,6 +122,7 @@ export default function Admin() {
       await api.post(`/admin/users/${target.id}/${action}`);
       toast.success(target.banned ? `${target.email} unbanned` : `${target.email} BANNED`);
       load();
+      refreshAudit();
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -124,6 +137,7 @@ export default function Admin() {
       await api.delete(`/admin/users/${target.id}`);
       toast.success(`${target.email} deleted permanently`);
       load();
+      refreshAudit();
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -308,6 +322,35 @@ export default function Admin() {
         <div className="text-zinc-500 text-sm py-10 text-center">Loading…</div>
       ) : (
         <div className="bg-zinc-950/70 border border-white/8 rounded-2xl overflow-visible">
+          {/* Filter chips */}
+          <div className="flex items-center gap-1.5 px-3 py-3 border-b border-white/8 flex-wrap" data-testid="user-filter-chips">
+            {[
+              { id: "all",    label: "All",    n: users.length },
+              { id: "active", label: "Active", n: users.filter((u) => !u.banned).length, color: "#ccff00" },
+              { id: "banned", label: "Banned", n: users.filter((u) => u.banned).length, color: "#ff0055" },
+              { id: "admin",  label: "Admins", n: users.filter((u) => u.role === "admin").length, color: "#fbbf24" },
+            ].map((f) => {
+              const active = userFilter === f.id;
+              const accent = f.color || "#a1a1aa";
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setUserFilter(f.id)}
+                  data-testid={`filter-${f.id}`}
+                  className="rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] font-black border transition-colors flex items-center gap-1.5"
+                  style={{
+                    color: active ? "#000" : accent,
+                    borderColor: active ? accent : `${accent}55`,
+                    backgroundColor: active ? accent : `${accent}10`,
+                  }}
+                >
+                  {f.label}
+                  <span className="text-[9px] font-bold" style={{ opacity: active ? 0.7 : 0.6 }}>· {f.n}</span>
+                </button>
+              );
+            })}
+          </div>
           <table className="w-full text-sm" data-testid="admin-users-table">
             <thead className="bg-white/[0.03] text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">
               <tr>
@@ -319,7 +362,14 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
+              {users
+                .filter((u) => {
+                  if (userFilter === "active") return !u.banned;
+                  if (userFilter === "banned") return u.banned;
+                  if (userFilter === "admin")  return u.role === "admin";
+                  return true;
+                })
+                .map((u, i) => (
                 <tr key={u.id} className={i % 2 ? "bg-white/[0.015]" : ""}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -501,9 +551,79 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ADMIN AUDIT LOG */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+        className="mt-8 rounded-2xl border border-white/8 bg-zinc-950/70 p-5 md:p-7"
+        data-testid="audit-log"
+      >
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.3em] font-bold text-zinc-400 mb-1 flex items-center gap-2">
+              <ShieldStar size={12} weight="fill" /> Admin Audit Log
+            </p>
+            <h3 className="font-display text-lg font-black uppercase tracking-tighter">
+              Last {auditLog.length} actions
+            </h3>
+          </div>
+          <button
+            onClick={refreshAudit}
+            data-testid="audit-refresh"
+            className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 hover:text-[#ccff00] transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {auditLog.length === 0 ? (
+          <p className="text-zinc-600 italic text-xs py-6 text-center">No admin actions recorded yet. Try banning, deleting, or resetting a password to start the log.</p>
+        ) : (
+          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+            {auditLog.map((row) => (
+              <AuditRow key={row.id} row={row} />
+            ))}
+          </div>
+        )}
+      </motion.div>
+
       <p className="text-[10px] text-zinc-600 text-center mt-6 uppercase tracking-widest">
         Seed admin protected · plus credits grants the plan&apos;s monthly credits on activation
       </p>
+    </div>
+  );
+}
+
+const ACTION_META = {
+  ban:            { label: "Ban",            color: "#fb923c" },
+  unban:          { label: "Unban",          color: "#fbbf24" },
+  delete_user:    { label: "Delete user",    color: "#ff0055" },
+  reset_password: { label: "Reset password", color: "#00f0ff" },
+  promote:        { label: "Promote → admin",color: "#ccff00" },
+  demote:         { label: "Demote → user",  color: "#ff0055" },
+};
+
+function AuditRow({ row }) {
+  const meta = ACTION_META[row.action] || { label: row.action, color: "#a1a1aa" };
+  const date = row.created_at ? new Date(row.created_at) : null;
+  return (
+    <div className="bg-black/40 border border-white/5 rounded-lg px-3 py-2 flex items-center justify-between gap-3" data-testid={`audit-row-${row.id}`}>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full border flex-shrink-0"
+            style={{ color: meta.color, borderColor: `${meta.color}55`, backgroundColor: `${meta.color}10` }}
+          >
+            {meta.label}
+          </span>
+          <span className="text-xs font-bold text-zinc-200 truncate">{row.target_email || "—"}</span>
+        </div>
+        <p className="text-[10px] text-zinc-500 truncate mt-0.5 font-mono">
+          by {row.actor_email || "system"}
+        </p>
+      </div>
+      <span className="text-[10px] text-zinc-600 font-mono flex-shrink-0 text-right">
+        {date ? date.toLocaleString() : ""}
+      </span>
     </div>
   );
 }

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from bson import ObjectId
 
 from auth_utils import get_current_user
-from models import PACKAGES
+from models import PACKAGES, now_utc
 
 router = APIRouter(prefix="/api/admin")
 
@@ -18,6 +18,29 @@ def _require_admin(user):
 
 def _is_seed_admin(email: str) -> bool:
     return (email or "").lower() == os.environ.get("ADMIN_EMAIL", "").lower()
+
+
+async def _log(db, actor: dict, action: str, target: dict | None = None, meta: dict | None = None):
+    """Insert a single audit-log row for an admin action.
+
+    Schema:
+      _id, action, actor_id, actor_email, target_user_id, target_email, meta, created_at (iso)
+    """
+    doc = {
+        "_id": ObjectId(),
+        "action": action,
+        "actor_id": actor.get("id"),
+        "actor_email": actor.get("email"),
+        "target_user_id": (target or {}).get("id"),
+        "target_email": (target or {}).get("email"),
+        "meta": meta or {},
+        "created_at": now_utc().isoformat(),
+    }
+    try:
+        await db.admin_audit_log.insert_one(doc)
+    except Exception:
+        # Never fail an admin action because logging blew up
+        pass
 
 
 @router.get("/users")
@@ -74,6 +97,7 @@ async def ban_user(user_id: str, user=Depends(get_current_user)):
         {"_id": ObjectId(user_id)},
         {"$set": {"banned": True, "banned_at": datetime.utcnow().isoformat(), "banned_by": user["id"]}},
     )
+    await _log(db, user, "ban", {"id": user_id, "email": target.get("email")})
     return {"ok": True, "banned": True}
 
 
@@ -91,6 +115,7 @@ async def unban_user(user_id: str, user=Depends(get_current_user)):
         {"_id": ObjectId(user_id)},
         {"$unset": {"banned": "", "banned_at": "", "banned_by": ""}},
     )
+    await _log(db, user, "unban", {"id": user_id, "email": target.get("email")})
     return {"ok": True, "banned": False}
 
 
@@ -116,6 +141,7 @@ async def delete_user(user_id: str, user=Depends(get_current_user)):
     await db.ownerships.delete_many({"owner_user_id": user_id})
     await db.marketplace_listings.delete_many({"seller_user_id": user_id})
     await db.payment_transactions.delete_many({"user_id": user_id})
+    await _log(db, user, "delete_user", {"id": user_id, "email": target["email"]})
     return {"ok": True, "deleted_email": target["email"]}
 
 
@@ -151,6 +177,7 @@ async def admin_reset_password(user_id: str, payload: AdminResetPwdRequest, user
     )
     # Clear any login attempt lockouts so the user can immediately sign in
     await db.login_attempts.delete_many({"identifier": f"email:{target['email']}"})
+    await _log(db, user, "reset_password", {"id": user_id, "email": target["email"]})
     return {"ok": True, "email": target["email"]}
 
 
@@ -168,6 +195,7 @@ async def promote_user(user_id: str, user=Depends(get_current_user)):
         {"_id": ObjectId(user_id)},
         {"$set": {"role": "admin"}},
     )
+    await _log(db, user, "promote", {"id": user_id, "email": target.get("email")})
     return {"ok": True, "role": "admin"}
 
 
@@ -191,6 +219,7 @@ async def demote_user(user_id: str, user=Depends(get_current_user)):
         {"_id": ObjectId(user_id)},
         {"$set": {"role": "user"}},
     )
+    await _log(db, user, "demote", {"id": user_id, "email": target.get("email")})
     return {"ok": True, "role": "user"}
 
 
@@ -366,3 +395,16 @@ async def creators_connect_status(user=Depends(get_current_user)):
             "never_started": len(never_started),
         },
     }
+
+
+# ============== ADMIN AUDIT LOG ==============
+@router.get("/audit-log")
+async def admin_audit_log(user=Depends(get_current_user), limit: int = 100):
+    """Latest admin actions: who did what to whom and when."""
+    _require_admin(user)
+    from server import db
+    items = []
+    async for r in db.admin_audit_log.find({}).sort([("created_at", -1)]).limit(limit):
+        r["id"] = str(r.pop("_id"))
+        items.append(r)
+    return {"items": items, "count": len(items)}
