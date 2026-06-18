@@ -1,7 +1,7 @@
 import React, { Suspense, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Center, Html, Bounds, useBounds } from "@react-three/drei";
-import { UserCircle, Cube } from "@phosphor-icons/react";
+import { Person } from "@phosphor-icons/react";
 
 // Avatar try-on mannequin
 const AVATAR_URL = "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
@@ -83,11 +83,13 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
         <button
           onClick={() => setTryOn((v) => !v)}
           data-testid="viewer-tryon-toggle"
-          className={`absolute top-3 right-3 z-20 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] font-bold transition-all flex items-center gap-1.5 ${
-            tryOn ? "bg-[#ccff00] text-black" : "bg-black/70 text-white border border-white/15 hover:border-white/40"
+          className={`absolute top-3 right-3 z-20 rounded-full pl-2.5 pr-3.5 py-2 text-[11px] uppercase tracking-[0.18em] font-black transition-all flex items-center gap-2 backdrop-blur-md ${
+            tryOn
+              ? "bg-[#ccff00] text-black shadow-[0_0_24px_rgba(204,255,0,0.55)]"
+              : "bg-black/75 text-white border border-white/20 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:shadow-[0_0_18px_rgba(204,255,0,0.25)]"
           }`}
         >
-          {tryOn ? <UserCircle size={12} weight="fill" /> : <Cube size={12} weight="fill" />}
+          <Person size={15} weight="fill" />
           {tryOn ? "On avatar" : "Try on avatar"}
         </button>
       )}
