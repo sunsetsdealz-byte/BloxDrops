@@ -17,6 +17,7 @@ import ScrollFeed from "@/pages/ScrollFeed";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import Admin from "@/pages/Admin";
+import Marketplace from "@/pages/Marketplace";
 
 function Layout() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/marketplace" element={<Marketplace />} />
           </Route>
         </Routes>
       </BrowserRouter>

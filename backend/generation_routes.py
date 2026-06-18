@@ -203,6 +203,17 @@ async def _create_generation_record(
     res = await db.generations.insert_one(doc)
     gen_id = str(res.inserted_id)
 
+    # Create ownership row for the creator (edition #1)
+    await db.ownerships.insert_one({
+        "_id": ObjectId(),
+        "generation_id": gen_id,
+        "edition_number": 1,
+        "owner_user_id": user["id"],
+        "acquired_at": created_iso,
+        "acquisition_type": "mint",
+        "source_listing_id": None,
+    })
+
     # Only deduct credit for non-admin users
     if not is_admin:
         await db.users.update_one({"_id": ObjectId(user["id"])}, {"$inc": {"credits": -1}})

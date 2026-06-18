@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
-import { Coins, SignOut, User, ShieldStar } from "@phosphor-icons/react";
+import { Coins, SignOut, User, ShieldStar, Storefront } from "@phosphor-icons/react";
 
 function NavItem({ to, children, testid }) {
   return (
@@ -23,6 +24,16 @@ function NavItem({ to, children, testid }) {
 export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [bbBalance, setBbBalance] = useState(null);
+
+  useEffect(() => {
+    if (!user) { setBbBalance(null); return; }
+    let live = true;
+    api.get("/bloxbucks/me")
+      .then((r) => { if (live) setBbBalance(r.data?.balance ?? 0); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [user]);
 
   return (
     <header
@@ -111,6 +122,7 @@ export default function Header() {
           <NavItem to="/battle" testid={TID.navBattle}>Battle</NavItem>
           <NavItem to="/challenges" testid={TID.navChallenges}>Challenges</NavItem>
           <NavItem to="/pricing" testid={TID.navPricing}>Pricing</NavItem>
+          <NavItem to="/marketplace" testid="nav-marketplace">Marketplace</NavItem>
           {user?.role === "admin" && (
             <NavLink
               to="/admin"
@@ -129,6 +141,20 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
+              {/* BloxBucks balance pill (always shown for logged-in users) */}
+              <Link
+                to="/marketplace"
+                data-testid="header-bloxbucks"
+                title={`${bbBalance ?? 0} BloxBucks`}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#fbbf24]/15 to-[#ff0055]/10 border border-[#fbbf24]/40 hover:border-[#fbbf24] transition-colors"
+              >
+                <Storefront size={16} weight="duotone" className="text-[#fbbf24]" />
+                <span className="text-sm font-black text-[#fbbf24] tracking-tight">
+                  {bbBalance === null ? "—" : bbBalance.toLocaleString()}
+                </span>
+                <span className="text-[9px] text-[#fbbf24]/75 uppercase tracking-widest font-bold">BB</span>
+              </Link>
+
               {user.role === "admin" ? (
                 <div
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/40"
