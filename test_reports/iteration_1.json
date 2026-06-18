@@ -1,0 +1,55 @@
+{
+  "summary": "Backend: 25/25 pytest tests PASSED covering health/meta, auth (register/login/me/lockout/admin), generation flow (demo mode + credit deduction + 402), prompt enhance (Claude via Emergent LLM), feed/like/remix, battle/vote (incl. double-vote 400), leaderboard, challenges, pricing & Stripe checkout. Frontend: BLOCKED — Landing page crashes on mount with 'Cannot read properties of undefined (reading ReactCurrentOwner)' thrown from @react-three/fiber. Root cause: React 19.0.0 used with @react-three/fiber@8.x — fiber v8 references React internals (ReactCurrentOwner) that no longer exist in React 19. The dev-overlay error blocks the whole UI so no further UI flow could be tested.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/auth/login",
+        "issue": "Brute-force lockout key is f'{request.client.host}:{email}'. Behind K8s ingress requests rotate between multiple upstream IPs (e.g. 10.232.129.197 and 10.232.133.130 observed in backend logs), so 5 wrong attempts get split into 2-3 buckets and the lockout often does NOT trigger from a single external client. Test only saw 429 after ~12 attempts (vs spec'd 5). Use email-only or X-Forwarded-For from trusted proxy as the bucket key."
+      },
+      {
+        "endpoint": "GET /api/me/generations",
+        "issue": "Does not exclude or convert MongoDB `_id`. The _hydrate helper renames `_id` -> `id`, so this is fine for the list — verified — but newly-created records via /api/generate/text-to-3d return a synthetic `{id, status}` without the rest of the document. UI must rely on polling /api/generate/{id} (which it does), so no functional issue."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Landing (and any page that mounts ModelViewer / Canvas)",
+        "issue": "Uncaught TypeError: Cannot read properties of undefined (reading 'ReactCurrentOwner') thrown from @react-three/fiber 8.x reconciler. React 19 removed the internal __SECRET_INTERNALS_DO_NOT_USE.ReactCurrentOwner symbol that R3F 8 depends on. The entire landing page is replaced by the red 'Uncaught runtime errors' overlay; no UI elements (hero-cta-primary, nav, etc.) become interactable. ALL downstream UI tests (register, studio, feed, battle, challenges, pricing) were blocked by this.",
+        "selector": "[data-testid='hero-cta-primary'] (never visible due to crash)",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "FRONTEND CRITICAL: Upgrade to @react-three/fiber@^9 (React 19 compatible) AND @react-three/drei@^10 (which pairs with R3F v9). Alternatively pin react/react-dom to ^18.3 if you must keep R3F 8/drei 9.x. After yarn install, restart frontend and reload the landing page — the ReactCurrentOwner error should be gone. Without this fix the whole UI is unusable.",
+    "BACKEND (security, low-medium): change brute-force lockout bucket from '{client_ip}:{email}' to just email (or read X-Forwarded-For). Behind multi-replica ingress the current scheme is partially bypassable.",
+    "Re-run the full Playwright UI suite once R3F is upgraded so that register→studio→generate→feed→battle→pricing flows can be validated end-to-end."
+  ],
+  "critical_code_review_comments": [
+    "auth_utils.get_current_user imports `from server import db` inside the function — works but creates a circular-import smell. Consider moving db to a separate db.py module.",
+    "generation_routes._run_mock_generation runs as a BackgroundTask but updates the DB directly without try/except — a Mongo hiccup would leave the generation stuck in 'pending' forever and no retry. Add error handling and a TTL/cleanup job for stale pending docs.",
+    "community_routes.random_battle inserts a NEW battle doc on every GET — bots could fill the `battles` collection unbounded. Consider rate-limiting or a TTL index on `created_at` for open battles.",
+    "models.py PromptEnhanceRequest.prompt max_length=200 while GenerationRequest.prompt is 500 — inconsistent and the studio UI doesn't surface this limit (will 422 silently).",
+    "payment_routes derives `host_url` from `request.base_url` (internal pod URL like http://0.0.0.0:8001/) for the Stripe webhook_url — webhooks from Stripe will never reach this address. Use a public URL from env (e.g. PUBLIC_BASE_URL).",
+    "CORS is open ('*') with allow_credentials=False; fine for now, but tighten before production."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "0% (blocked by R3F/React 19 incompat)"},
+  "test_credentials": "Admin: admin@bloxcraft.ai / BloxCraft2026!. New users registered freely via /api/auth/register; each starts with 20 credits.",
+  "seed_data_creation": "Backend lifespan seeds admin user, 7 challenges, and 6 demo generations on first start. Pytest creates fresh users per session with @example.com (the .test TLD is rejected by pydantic EmailStr).",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Backend is solid (25/25 passing). The ONLY blocker is @react-three/fiber 8 vs React 19. Once main agent bumps fiber/drei (or downgrades React), re-run /app/backend/tests/backend_test.py for regression and re-run the Playwright flow that was prepared in this iteration (register → studio generate → feed sort/like → battle vote → pricing checkout). Note for Playwright: use @example.com for register emails (pydantic EmailStr rejects @bloxcraft.test).",
+  "rca_of_the_issue": "Landing.jsx (and Studio.jsx) render the <ModelViewer/> component which mounts a <Canvas> from @react-three/fiber@8.18. fiber 8's reconciler reads `React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE.ReactCurrentOwner` (or the older `__SECRET_INTERNALS_…`) to wire up its custom renderer. React 19 removed this symbol — accessing it returns undefined, so `ReactCurrentOwner.current` throws. Fix: yarn add @react-three/fiber@^9 @react-three/drei@^10 (R3F v9 was released specifically for React 19 support). After upgrade, no code changes are required in ModelViewer.jsx (the public API is backwards compatible)."
+}
