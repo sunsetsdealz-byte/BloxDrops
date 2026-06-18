@@ -138,3 +138,60 @@ async def set_plan(user_id: str, payload: SetPlanRequest, user=Depends(get_curre
         "plan": updated.get("plan"),
         "credits": updated.get("credits", 0),
     }
+
+
+
+@router.get("/platform-stats")
+async def platform_stats(user=Depends(get_current_user)):
+    """Lifetime + 24h totals of platform fees + royalties earned by the Blox platform owner."""
+    _require_admin(user)
+    from server import db
+    from datetime import timedelta
+    from models import now_utc
+
+    owner = await db.users.find_one({"is_platform_owner": True}, {"_id": 1, "bloxbucks_balance": 1})
+    if not owner:
+        owner = await db.users.find_one({"role": "admin", "name": {"$regex": "^blox$", "$options": "i"}}, {"_id": 1, "bloxbucks_balance": 1})
+    if not owner:
+        return {"platform_owner": None, "lifetime_fees_bb": 0, "lifetime_royalties_bb": 0, "fees_24h_bb": 0, "balance_bb": 0, "recent": []}
+
+    owner_id = str(owner["_id"])
+    cutoff_24h = (now_utc() - timedelta(hours=24)).isoformat()
+
+    # Aggregate platform_fee tx (Blox earns these as the owner)
+    lifetime_fees = 0
+    fees_24h = 0
+    async for t in db.bloxbucks_transactions.find({"user_id": owner_id, "kind": "platform_fee"}):
+        lifetime_fees += int(t.get("amount") or 0)
+        if t.get("created_at", "") >= cutoff_24h:
+            fees_24h += int(t.get("amount") or 0)
+
+    # Total royalties paid out across the platform (analytics, not Blox's earnings)
+    total_royalties = 0
+    async for t in db.bloxbucks_transactions.find({"kind": "royalty"}):
+        total_royalties += int(t.get("amount") or 0)
+
+    # Recent platform-fee tx for Blox
+    recent = []
+    async for t in db.bloxbucks_transactions.find({"user_id": owner_id, "kind": "platform_fee"}).sort([("created_at", -1)]).limit(10):
+        t["id"] = str(t.pop("_id"))
+        recent.append(t)
+
+    # Sales count
+    sales_count = await db.marketplace_listings.count_documents({"status": "sold"})
+
+    # USD top-up revenue (from payment_transactions)
+    total_topup_usd = 0
+    async for tx in db.payment_transactions.find({"kind": "bloxbucks_topup", "payment_status": "paid"}):
+        total_topup_usd += float(tx.get("amount") or 0)
+
+    return {
+        "platform_owner_id": owner_id,
+        "balance_bb": int(owner.get("bloxbucks_balance") or 0),
+        "lifetime_fees_bb": lifetime_fees,
+        "fees_24h_bb": fees_24h,
+        "total_royalties_bb": total_royalties,
+        "total_sales_count": sales_count,
+        "total_topup_revenue_usd": round(total_topup_usd, 2),
+        "recent_fee_transactions": recent,
+    }

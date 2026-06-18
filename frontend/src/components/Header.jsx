@@ -3,7 +3,8 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { TID } from "../constants/testIds";
-import { Coins, SignOut, User, ShieldStar, Storefront } from "@phosphor-icons/react";
+import { Coins, SignOut, User, ShieldStar, Storefront, Plus } from "@phosphor-icons/react";
+import TopUpModal from "./TopUpModal";
 
 function NavItem({ to, children, testid }) {
   return (
@@ -25,15 +26,16 @@ export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [bbBalance, setBbBalance] = useState(null);
+  const [topupOpen, setTopupOpen] = useState(false);
 
-  useEffect(() => {
+  const refreshBalance = () => {
     if (!user) { setBbBalance(null); return; }
-    let live = true;
     api.get("/bloxbucks/me")
-      .then((r) => { if (live) setBbBalance(r.data?.balance ?? 0); })
+      .then((r) => setBbBalance(r.data?.balance ?? 0))
       .catch(() => {});
-    return () => { live = false; };
-  }, [user]);
+  };
+
+  useEffect(() => { refreshBalance(); /* eslint-disable-next-line */ }, [user]);
 
   return (
     <header
@@ -141,19 +143,30 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
-              {/* BloxBucks balance pill (always shown for logged-in users) */}
-              <Link
-                to="/marketplace"
-                data-testid="header-bloxbucks"
-                title={`${bbBalance ?? 0} BloxBucks`}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#fbbf24]/15 to-[#ff0055]/10 border border-[#fbbf24]/40 hover:border-[#fbbf24] transition-colors"
-              >
-                <Storefront size={16} weight="duotone" className="text-[#fbbf24]" />
-                <span className="text-sm font-black text-[#fbbf24] tracking-tight">
-                  {bbBalance === null ? "—" : bbBalance.toLocaleString()}
-                </span>
-                <span className="text-[9px] text-[#fbbf24]/75 uppercase tracking-widest font-bold">BB</span>
-              </Link>
+              {/* BloxBucks balance pill + top-up button */}
+              <div className="hidden sm:flex items-center bg-gradient-to-r from-[#fbbf24]/15 to-[#ff0055]/10 border border-[#fbbf24]/40 rounded-full overflow-hidden">
+                <Link
+                  to="/marketplace"
+                  data-testid="header-bloxbucks"
+                  title={`${bbBalance ?? 0} BloxBucks`}
+                  className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 hover:bg-[#fbbf24]/10 transition-colors"
+                >
+                  <Storefront size={16} weight="duotone" className="text-[#fbbf24]" />
+                  <span className="text-sm font-black text-[#fbbf24] tracking-tight">
+                    {bbBalance === null ? "—" : bbBalance.toLocaleString()}
+                  </span>
+                  <span className="text-[9px] text-[#fbbf24]/75 uppercase tracking-widest font-bold">BB</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setTopupOpen(true)}
+                  data-testid="header-topup"
+                  title="Top up BloxBucks"
+                  className="border-l border-[#fbbf24]/30 px-2 py-1.5 hover:bg-[#fbbf24] hover:text-black transition-colors text-[#fbbf24]"
+                >
+                  <Plus size={16} weight="bold" />
+                </button>
+              </div>
 
               {user.role === "admin" ? (
                 <div

@@ -123,10 +123,24 @@ async def webhook_stripe(request: Request):
                 {"session_id": event.session_id},
                 {"$set": {"payment_status": "paid", "status": "complete"}},
             )
-            await db.users.update_one(
-                {"_id": ObjectId(tx["user_id"])},
-                {"$inc": {"credits": tx["credits"]}, "$set": {"plan": tx["plan_id"]}},
-            )
+            kind = tx.get("kind")
+            if kind == "bloxbucks_topup":
+                from bloxbucks_routes import _credit_bb_for_session
+                await _credit_bb_for_session(db, event.session_id)
+            elif kind == "boost":
+                from datetime import timedelta
+                featured_until = (now_utc() + timedelta(hours=24)).isoformat()
+                await db.generations.update_one(
+                    {"_id": ObjectId(tx["generation_id"])},
+                    {"$set": {"is_featured": True, "featured_until": featured_until}},
+                )
+            else:
+                # Default = subscription / credit pack
+                if tx.get("credits") and tx.get("plan_id"):
+                    await db.users.update_one(
+                        {"_id": ObjectId(tx["user_id"])},
+                        {"$inc": {"credits": tx["credits"]}, "$set": {"plan": tx["plan_id"]}},
+                    )
     return {"received": True}
 
 

@@ -53,52 +53,54 @@ function TierBar({ tier, label, count, color, delay }) {
 /* ----- Money flow visualization for royalty card ----- */
 function RoyaltyFlow() {
   return (
-    <div className="relative h-44 md:h-52 flex items-center justify-between text-center">
-      {/* Buyer */}
-      <div className="flex flex-col items-center gap-2 z-10">
-        <div className="w-14 h-14 rounded-full bg-zinc-900 border border-[#00f0ff]/60 flex items-center justify-center">
-          <UserGlyph color="#00f0ff" />
-        </div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Buyer</p>
-      </div>
-
-      {/* Animated flowing coins */}
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 flex items-center pointer-events-none">
-        <div className="relative w-full h-full">
-          {[0, 1, 2, 3].map((i) => (
-            <motion.span
-              key={i}
-              className="absolute top-1/2 -translate-y-1/2 text-[#ccff00] text-2xl"
-              initial={{ left: "5%", opacity: 0 }}
-              animate={{ left: ["5%", "95%"], opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.6, ease: "linear" }}
-            >
-              <Coins size={22} weight="fill" />
-            </motion.span>
-          ))}
-        </div>
-      </div>
-
-      {/* Royalty fork-off arrow up */}
-      <div className="absolute left-1/2 -translate-x-1/2 -top-2 flex flex-col items-center text-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#fbbf24] font-black">+5% royalty</p>
-        <div className="w-px h-5 bg-gradient-to-b from-[#fbbf24] to-transparent" />
-      </div>
-
-      {/* Seller */}
-      <div className="flex flex-col items-center gap-2 z-10">
-        <div className="w-14 h-14 rounded-full bg-zinc-900 border border-[#ccff00]/60 flex items-center justify-center">
-          <UserGlyph color="#ccff00" />
-        </div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Seller</p>
-      </div>
-
-      {/* Original creator (royalty recipient) — gold halo at top center */}
-      <div className="absolute left-1/2 -translate-x-1/2 -top-16 hidden md:flex flex-col items-center gap-1">
+    <div className="relative pt-2 pb-2">
+      {/* Original creator (royalty recipient) — gold halo at top, centered */}
+      <div className="flex flex-col items-center gap-1.5 mb-2">
         <div className="w-12 h-12 rounded-full bg-zinc-900 border border-[#fbbf24] flex items-center justify-center shadow-[0_0_22px_rgba(251,191,36,0.7)]">
           <Crown size={20} weight="fill" className="text-[#fbbf24]" />
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#fbbf24] font-black">Creator · forever</p>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-[#fbbf24] font-black">
+          Original Creator · 5% forever
+        </p>
+      </div>
+
+      {/* Dashed connector line down to flow */}
+      <div className="flex justify-center">
+        <div className="w-px h-6 bg-gradient-to-b from-[#fbbf24] to-transparent" />
+      </div>
+
+      {/* Buyer ← coin flow → Seller */}
+      <div className="relative h-20 flex items-center justify-between">
+        <div className="flex flex-col items-center gap-1.5 z-10">
+          <div className="w-12 h-12 rounded-full bg-zinc-900 border border-[#00f0ff]/60 flex items-center justify-center">
+            <UserGlyph color="#00f0ff" />
+          </div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Buyer</p>
+        </div>
+
+        {/* Animated coins flowing buyer → seller */}
+        <div className="absolute inset-x-12 top-1/2 -translate-y-1/2 h-8 flex items-center pointer-events-none">
+          <div className="relative w-full h-full">
+            {[0, 1, 2, 3].map((i) => (
+              <motion.span
+                key={i}
+                className="absolute top-1/2 -translate-y-1/2 text-[#ccff00]"
+                initial={{ left: "0%", opacity: 0 }}
+                animate={{ left: ["0%", "100%"], opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.6, ease: "linear" }}
+              >
+                <Coins size={22} weight="fill" />
+              </motion.span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-1.5 z-10">
+          <div className="w-12 h-12 rounded-full bg-zinc-900 border border-[#ccff00]/60 flex items-center justify-center">
+            <UserGlyph color="#ccff00" />
+          </div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Seller</p>
+        </div>
       </div>
     </div>
   );

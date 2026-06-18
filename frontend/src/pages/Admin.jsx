@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Crown, MagnifyingGlass, ShieldStar, User, Lightning, CaretDown, X, Check,
+  Crown, MagnifyingGlass, ShieldStar, User, Lightning, CaretDown, X, Check, Storefront, Coins, TrendUp,
 } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -16,6 +16,20 @@ const PLAN_OPTIONS = [
   { id: "pro_annual", label: "Studio · annual", color: "#ff0055", desc: "$216/yr · 700 credits" },
 ];
 
+function StatCard({ label, value, icon, accent }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-zinc-950/80 p-3.5">
+      <div className="flex items-center justify-between mb-1">
+        {icon}
+      </div>
+      <p className="font-display text-xl md:text-2xl font-black tracking-tight leading-tight" style={{ color: accent }}>
+        {value}
+      </p>
+      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mt-1">{label}</p>
+    </div>
+  );
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -24,6 +38,7 @@ export default function Admin() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(null);
   const [planMenu, setPlanMenu] = useState(null);
+  const [platformStats, setPlatformStats] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,7 +55,12 @@ export default function Admin() {
   useEffect(() => {
     if (user === false) { nav("/login"); return; }
     if (user && user.role !== "admin") { nav("/"); return; }
-    if (user) load();
+    if (user) {
+      load();
+      api.get("/admin/platform-stats")
+        .then((r) => setPlatformStats(r.data))
+        .catch(() => {});
+    }
   }, [user, load, nav]);
 
   const toggleRole = async (target) => {
@@ -113,6 +133,49 @@ export default function Admin() {
           />
         </div>
       </motion.div>
+
+      {/* PLATFORM EARNINGS WIDGET */}
+      {platformStats && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+          className="mb-8 rounded-2xl border border-[#fbbf24]/30 bg-gradient-to-br from-[#fbbf24]/10 via-zinc-950/80 to-zinc-950/80 p-5 md:p-7"
+          data-testid="platform-earnings"
+        >
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.3em] font-bold text-[#fbbf24] mb-2 flex items-center gap-2">
+                <Storefront size={12} weight="fill" /> Platform Earnings · Blox
+              </p>
+              <h2 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter">
+                Lifetime Revenue
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mt-5">
+            <StatCard label="Platform fees (lifetime)" value={`${platformStats.lifetime_fees_bb?.toLocaleString()} BB`} icon={<Coins size={20} weight="duotone" className="text-[#fbbf24]" />} accent="#fbbf24" />
+            <StatCard label="Fees · 24h" value={`${platformStats.fees_24h_bb?.toLocaleString()} BB`} icon={<TrendUp size={20} weight="duotone" className="text-[#ccff00]" />} accent="#ccff00" />
+            <StatCard label="Royalties paid out" value={`${platformStats.total_royalties_bb?.toLocaleString()} BB`} icon={<Crown size={20} weight="duotone" className="text-[#ff0055]" />} accent="#ff0055" />
+            <StatCard label="Total sales" value={platformStats.total_sales_count?.toLocaleString()} icon={<Lightning size={20} weight="duotone" className="text-[#00f0ff]" />} accent="#00f0ff" />
+            <StatCard label="USD topup revenue" value={`$${platformStats.total_topup_revenue_usd?.toLocaleString() || '0.00'}`} icon={<TrendUp size={20} weight="duotone" className="text-[#c084fc]" />} accent="#c084fc" />
+          </div>
+
+          {platformStats.recent_fee_transactions?.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-white/8">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-3">Recent platform fees</p>
+              <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                {platformStats.recent_fee_transactions.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between text-xs bg-black/40 border border-white/5 rounded-lg px-3 py-2">
+                    <span className="text-zinc-400">{new Date(tx.created_at).toLocaleString()}</span>
+                    <span className="font-mono text-zinc-500 truncate max-w-[200px]">listing · {tx.related?.listing_id?.slice(0,8)}…</span>
+                    <span className="font-black text-[#fbbf24]">+{tx.amount} BB</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {loading ? (
         <div className="text-zinc-500 text-sm py-10 text-center">Loading…</div>
