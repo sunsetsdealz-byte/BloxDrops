@@ -16,6 +16,7 @@ import Profile from "@/pages/Profile";
 import ScrollFeed from "@/pages/ScrollFeed";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import Admin from "@/pages/Admin";
 
 function Layout() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<Admin />} />
           </Route>
         </Routes>
       </BrowserRouter>

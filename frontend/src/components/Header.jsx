@@ -2,7 +2,7 @@ import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { TID } from "../constants/testIds";
-import { Coins, SignOut, User } from "@phosphor-icons/react";
+import { Coins, SignOut, User, ShieldStar } from "@phosphor-icons/react";
 
 function NavItem({ to, children, testid }) {
   return (
@@ -45,6 +45,19 @@ export default function Header() {
           <NavItem to="/battle" testid={TID.navBattle}>Battle</NavItem>
           <NavItem to="/challenges" testid={TID.navChallenges}>Challenges</NavItem>
           <NavItem to="/pricing" testid={TID.navPricing}>Pricing</NavItem>
+          {user?.role === "admin" && (
+            <NavLink
+              to="/admin"
+              data-testid="nav-admin"
+              className={({ isActive }) =>
+                `px-3 py-1.5 text-sm font-bold tracking-wide transition-colors flex items-center gap-1 ${
+                  isActive ? "text-[#ccff00]" : "text-[#ccff00]/80 hover:text-[#ccff00]"
+                }`
+              }
+            >
+              <ShieldStar size={14} weight="fill" /> Admin
+            </NavLink>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
