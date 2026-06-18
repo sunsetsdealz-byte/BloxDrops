@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform, useMotionValue, animate, useReducedMotion } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue, useSpring, animate, useReducedMotion } from "framer-motion";
 import {
   ArrowRight, Sparkle, Lightning, Trophy, ChatCircle, Cube, FireSimple,
   Cpu, Robot, Code, Lightbulb, ShareNetwork, Crown,
@@ -189,73 +189,7 @@ export default function Landing() {
             </div>
 
             {/* HERO SHOWCASE — custom Roblox-style creator character */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="lg:col-span-5 relative"
-            >
-              <div className="absolute -inset-8 bg-[#ccff00]/12 blur-3xl rounded-full pointer-events-none" />
-              <div
-                className="relative rounded-2xl overflow-hidden border border-white/10 aspect-square w-full max-w-[480px] mx-auto"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 60%, #1a1a1d 0%, #050507 80%)",
-                }}
-              >
-                <motion.img
-                  src={HERO_IMAGE}
-                  alt="BloxCraft creator character — generated with AI"
-                  className="absolute inset-0 w-full h-full object-contain select-none"
-                  draggable={false}
-                  initial={{ y: 0 }}
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 5.5, ease: "easeInOut", repeat: Infinity }}
-                />
-                {/* Bottom shadow */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-6 w-2/3 h-3 rounded-[50%] bg-black/70 blur-md pointer-events-none" />
-                <div className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
-                  blox/character_v3.glb
-                </div>
-
-                {/* Floating spec chips */}
-                <motion.div
-                  className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                >
-                  <Robot size={14} weight="duotone" className="text-[#ccff00]" />
-                  <div>
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">engine</p>
-                    <p className="text-[11px] font-bold">Tripo H3.1</p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.75, duration: 0.5 }}
-                >
-                  <Code size={14} weight="duotone" className="text-[#00f0ff]" />
-                  <div>
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">export</p>
-                    <p className="text-[11px] font-bold">.GLB · 1024px PBR</p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute top-1/2 -right-5 glass rounded-full px-3 py-1.5 hidden lg:flex items-center gap-1.5 z-10"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.0, duration: 0.5 }}
-                >
-                  <span className="live-dot" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest">live</span>
-                </motion.div>
-              </div>
-            </motion.div>
+            <HeroShowcase />
           </div>
         </div>
       </section>
@@ -376,8 +310,167 @@ export default function Landing() {
   );
 }
 
-function LiveStat({ label, value, accent }) {
+/* ---------- HeroShowcase: 3D-tilted character with mouse parallax ---------- */
+function HeroShowcase() {
+  const reduced = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  // Spring for buttery interpolation
+  const sx = useSpring(x, { stiffness: 120, damping: 18 });
+  const sy = useSpring(y, { stiffness: 120, damping: 18 });
+  // Tilt range: ±18° feels 3D without disorienting
+  const rotateY = useTransform(sx, [-100, 100], [-18, 18]);
+  const rotateX = useTransform(sy, [-100, 100], [14, -14]);
+  // Parallax depth for the character (shifts a bit MORE than the frame)
+  const charX = useTransform(sx, [-100, 100], [-18, 18]);
+  const charY = useTransform(sy, [-100, 100], [-14, 14]);
+
+  const onMove = (e) => {
+    if (reduced) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width - 0.5) * 200; // -100..100
+    const py = ((e.clientY - r.top) / r.height - 0.5) * 200;
+    x.set(px);
+    y.set(py);
+  };
+  const onLeave = () => {
+    animate(x, 0, { duration: 0.6, ease: "easeOut" });
+    animate(y, 0, { duration: 0.6, ease: "easeOut" });
+  };
+
   return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8, delay: 0.1 }}
+      className="lg:col-span-5 relative"
+      style={{ perspective: 1200 }}
+      data-testid="hero-showcase"
+    >
+      <div className="absolute -inset-8 bg-[#ccff00]/12 blur-3xl rounded-full pointer-events-none" />
+
+      {/* The tilting frame */}
+      <motion.div
+        onMouseMove={onMove}
+        onMouseLeave={onLeave}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          onMove({ clientX: t.clientX, clientY: t.clientY, currentTarget: e.currentTarget });
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          onMove({ clientX: t.clientX, clientY: t.clientY, currentTarget: e.currentTarget });
+        }}
+        onTouchEnd={onLeave}
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        className="relative rounded-2xl overflow-hidden border border-white/10 aspect-square w-full max-w-[480px] mx-auto cursor-grab active:cursor-grabbing"
+      >
+        {/* Background gradient — sits at depth 0 */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(circle at 50% 60%, #1a1a1d 0%, #050507 80%)",
+            transform: "translateZ(0px)",
+          }}
+        />
+
+        {/* Neon perspective grid INSIDE the frame for depth */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-2/3 pointer-events-none opacity-40"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(204,255,0,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(204,255,0,0.4) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+            transform: "perspective(420px) rotateX(58deg) translateZ(-30px)",
+            transformOrigin: "center top",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 90%)",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 90%)",
+          }}
+        />
+
+        {/* Character — parallaxes more than the frame, AND floats subtly */}
+        <motion.div
+          style={{ x: charX, y: charY, transform: "translateZ(40px)" }}
+          className="absolute inset-0"
+        >
+          <motion.img
+            src={HERO_IMAGE}
+            alt="BloxCraft creator character — generated with AI"
+            className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
+            draggable={false}
+            initial={{ scale: 0.98 }}
+            animate={reduced ? {} : { y: [0, -8, 0] }}
+            transition={{ duration: 5.5, ease: "easeInOut", repeat: Infinity }}
+          />
+        </motion.div>
+
+        {/* Ground shadow */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 bottom-5 w-2/3 h-3 rounded-[50%] bg-black/80 blur-md pointer-events-none"
+          style={{ transform: "translateZ(5px)" }}
+        />
+
+        {/* LIVE pill — TOP-RIGHT, perfectly aligned inside the frame */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.4 }}
+          className="absolute top-3 right-3 glass rounded-full px-3 py-1.5 flex items-center gap-1.5 z-20"
+          style={{ transform: "translateZ(60px)" }}
+          data-testid="hero-live-pill"
+        >
+          <span className="live-dot" />
+          <span className="font-mono text-[10px] uppercase tracking-widest font-bold">live</span>
+        </motion.div>
+
+        {/* Filename tag — bottom-left of frame */}
+        <div
+          className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono"
+          style={{ transform: "translateZ(30px)" }}
+        >
+          blox/character_v3.glb
+        </div>
+
+        {/* TILT-AND-PARALLAX HINT */}
+        <div
+          className="absolute bottom-3 right-4 text-[9px] uppercase tracking-[0.2em] text-zinc-600 font-mono hidden sm:block pointer-events-none"
+          style={{ transform: "translateZ(30px)" }}
+        >
+          ↕ move mouse to tilt
+        </div>
+      </motion.div>
+
+      {/* External floating spec chips — outside the frame, NOT tilted */}
+      <motion.div
+        className="absolute -top-3 -left-3 glass rounded-xl px-3 py-2 float-1 hidden md:flex items-center gap-2 z-10 pointer-events-none"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+      >
+        <Robot size={14} weight="duotone" className="text-[#ccff00]" />
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">engine</p>
+          <p className="text-[11px] font-bold">Tripo H3.1</p>
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="absolute -bottom-3 -right-3 glass rounded-xl px-3 py-2 float-2 hidden md:flex items-center gap-2 z-10 pointer-events-none"
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.75, duration: 0.5 }}
+      >
+        <Code size={14} weight="duotone" className="text-[#00f0ff]" />
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">export</p>
+          <p className="text-[11px] font-bold">.GLB · 1024px PBR</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function LiveStat({ label, value, accent }) {  return (
     <div className="bg-zinc-950/60 border border-white/10 rounded-xl px-3 py-3 backdrop-blur">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold mb-1">
         ▍ {label}
