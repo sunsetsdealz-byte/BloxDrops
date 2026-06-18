@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
@@ -44,6 +44,7 @@ export default function Studio() {
   const [exporting, setExporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [genesisRemaining, setGenesisRemaining] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -81,6 +82,27 @@ export default function Studio() {
       const { data } = await api.get("/me/generations");
       setHistory(data.items || []);
     } catch { /* ignore */ }
+  };
+
+  const ownsCurrent = currentGen && user && (user.role === "admin" || currentGen.user_id === user.id);
+
+  const deleteCurrent = async () => {
+    if (!currentGen) return;
+    const ok = window.confirm(
+      `Delete "${(currentGen.original_prompt || currentGen.prompt || "this creation").slice(0, 60)}"?\n\nThis permanently removes the drop, its likes and any cancelled listings. This action cannot be undone.`
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/generations/${currentGen.id}`);
+      setHistory((prev) => prev.filter((i) => i.id !== currentGen.id));
+      setCurrentGen(null);
+      toast.success("Creation deleted");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   useEffect(() => { loadHistory(); }, []);
@@ -489,7 +511,10 @@ export default function Studio() {
             {currentGen?.status === "pending" && (
               <div
                 data-testid={TID.studioStatus}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm rounded-2xl"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black rounded-2xl"
+                style={{
+                  background: "radial-gradient(circle at 50% 50%, #1a1a1d 0%, #0a0a0c 75%)",
+                }}
               >
                 <div className="w-12 h-12 rounded-full border-2 border-[#ccff00] border-t-transparent animate-spin" />
                 <p className="font-display font-bold text-lg uppercase tracking-wider">Generating</p>
@@ -497,7 +522,7 @@ export default function Studio() {
               </div>
             )}
             {currentGen?.status === "completed" && (
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2 items-start">
                 <a
                   href={currentGen.model_url}
                   download
@@ -514,6 +539,18 @@ export default function Studio() {
                 >
                   <Robot size={14} weight="fill" /> Export to Roblox
                 </button>
+                {ownsCurrent && (
+                  <button
+                    onClick={deleteCurrent}
+                    disabled={deleting}
+                    data-testid="studio-delete-creation"
+                    title="Delete this creation"
+                    className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 hover:shadow-[0_0_14px_rgba(255,0,85,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
+                  >
+                    <Trash size={13} weight="bold" />
+                    {deleting ? "Deleting…" : "Delete"}
+                  </button>
+                )}
               </div>
             )}
           </div>
