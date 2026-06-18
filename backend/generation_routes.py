@@ -79,7 +79,18 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
 
         if image_url:
             model = "tripo3d/tripo/v2.5/image-to-3d"
-            args = {"image_url": image_url}
+            args = {
+                "image_url": image_url,
+                # Quality stack — same params used for the Founder regen.
+                # Catches finer geometric detail and produces sharper textures so
+                # designs with intricate features (spikes, jewelry, glowing accents)
+                # come out crisp instead of low-poly approximations.
+                "pbr": True,                            # full PBR material maps
+                "texture": "HD",                        # highest texture tier
+                "texture_alignment": "original_image",  # preserve source detail
+                "orientation": "align_image",           # face the camera like input
+                "face_limit": 50000,                    # high poly = more detail
+            }
         else:
             model = "tripo3d/h3.1/text-to-3d"
             args = {"prompt": prompt}
@@ -320,6 +331,47 @@ async def get_generation(generation_id: str, user=Depends(get_current_user)):
     doc["is_liked"] = is_liked
     enrich_drop(doc)
     return doc
+
+
+@router.post("/generations/{generation_id}/regenerate")
+async def regenerate_generation(
+    generation_id: str,
+    bg: BackgroundTasks,
+    user=Depends(get_current_user),
+):
+    """Re-run the fal.ai job on an existing generation with the latest HD/PBR
+    quality settings. Owner-or-admin only. Wipes the current model_url and
+    flips status back to `pending`; the same record is mutated in place so
+    likes/badges/edition data are preserved.
+    """
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    if gen.get("user_id") != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You can only regenerate your own creations")
+
+    # Founder drop is permanent — block accidental regens
+    if gen.get("release_price_usd") == 50000:
+        raise HTTPException(status_code=400, detail="The Founder drop is permanent and cannot be regenerated")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"status": "pending", "model_url": None, "error": None}},
+    )
+
+    prompt = gen.get("prompt") or gen.get("original_prompt") or ""
+    image_url = gen.get("source_image_url")
+    if _has_fal_key():
+        bg.add_task(_run_fal_generation, generation_id, prompt, image_url)
+    else:
+        bg.add_task(_run_mock_generation, generation_id)
+
+    return {"id": generation_id, "status": "pending", "demo_mode": not _has_fal_key()}
 
 
 @router.post("/prompt/enhance")

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
@@ -45,6 +45,7 @@ export default function Studio() {
   const [dragOver, setDragOver] = useState(false);
   const [genesisRemaining, setGenesisRemaining] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -102,6 +103,25 @@ export default function Studio() {
       toast.error(formatApiError(err));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const regenerateCurrent = async () => {
+    if (!currentGen) return;
+    const ok = window.confirm(
+      "Regenerate this drop with the latest HD/PBR quality settings? The existing model will be replaced (likes, edition #, and badges are preserved)."
+    );
+    if (!ok) return;
+    setRegenerating(true);
+    try {
+      const { data } = await api.post(`/generations/${currentGen.id}/regenerate`);
+      // Flip to pending locally so the GENERATING overlay shows immediately
+      setCurrentGen((prev) => prev ? { ...prev, status: "pending", model_url: null } : prev);
+      toast.success("Regenerating with HD/PBR — usually under 2 minutes");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -540,16 +560,28 @@ export default function Studio() {
                   <Robot size={14} weight="fill" /> Export to Roblox
                 </button>
                 {ownsCurrent && (
-                  <button
-                    onClick={deleteCurrent}
-                    disabled={deleting}
-                    data-testid="studio-delete-creation"
-                    title="Delete this creation"
-                    className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 hover:shadow-[0_0_14px_rgba(255,0,85,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
-                  >
-                    <Trash size={13} weight="bold" />
-                    {deleting ? "Deleting…" : "Delete"}
-                  </button>
+                  <>
+                    <button
+                      onClick={regenerateCurrent}
+                      disabled={regenerating}
+                      data-testid="studio-regenerate-creation"
+                      title="Re-run with the latest HD/PBR quality settings"
+                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#00f0ff]/70 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 hover:shadow-[0_0_14px_rgba(0,240,255,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
+                    >
+                      <ArrowClockwise size={13} weight="bold" />
+                      {regenerating ? "Queuing…" : "Regenerate"}
+                    </button>
+                    <button
+                      onClick={deleteCurrent}
+                      disabled={deleting}
+                      data-testid="studio-delete-creation"
+                      title="Delete this creation"
+                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 hover:shadow-[0_0_14px_rgba(255,0,85,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
+                    >
+                      <Trash size={13} weight="bold" />
+                      {deleting ? "Deleting…" : "Delete"}
+                    </button>
+                  </>
                 )}
               </div>
             )}
