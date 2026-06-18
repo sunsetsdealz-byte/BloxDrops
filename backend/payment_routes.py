@@ -138,6 +138,33 @@ async def list_plans():
     }
 
 
+# ============== ADMIN-ONLY FREE BOOST ==============
+@router.post("/boost/free/{generation_id}")
+async def admin_free_boost(generation_id: str, user=Depends(get_current_user)):
+    """Admin-only — pin a creation for 24h without paying. Regular users get 403."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    from server import db
+    from datetime import timedelta
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    featured_until = (now_utc() + timedelta(hours=BOOST_DURATION_HOURS)).isoformat()
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {
+            "is_featured": True,
+            "featured_until": featured_until,
+            "free_boost_reason": "admin_freebie",
+        }},
+    )
+    return {"ok": True, "is_featured": True, "featured_until": featured_until}
+
+
 # ============== FEATURED FOR ROBUX BOOST ==============
 @router.post("/boost/checkout")
 async def boost_checkout(payload: BoostCheckoutRequest, request: Request, user=Depends(get_current_user)):

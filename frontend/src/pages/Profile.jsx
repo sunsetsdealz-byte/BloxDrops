@@ -178,6 +178,19 @@ export default function Profile() {
     }
   };
 
+  const boostFree = async (gen) => {
+    setBoosting(gen.id);
+    try {
+      await api.post(`/boost/free/${gen.id}`);
+      toast.success("Boosted free · pinned for 24 hours");
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setBoosting(null);
+    }
+  };
+
   if (user === null) return <div className="p-12 text-center text-zinc-500">Loading…</div>;
   if (user === false) {
     return (
@@ -262,15 +275,27 @@ export default function Profile() {
                   </div>
                 </div>
                 {it.status === "completed" && !it.is_featured && (
-                  <button
-                    onClick={() => boost(it)}
-                    disabled={boosting === it.id}
-                    data-testid={`profile-boost-${it.id}`}
-                    className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#00f0ff] text-black hover:shadow-[0_0_18px_rgba(0,240,255,0.45)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <Lightning size={12} weight="fill" />
-                    {boosting === it.id ? "Loading…" : "Boost $1.99 — 24h"}
-                  </button>
+                  user.role === "admin" ? (
+                    <button
+                      onClick={() => boostFree(it)}
+                      disabled={boosting === it.id}
+                      data-testid={`profile-boost-free-${it.id}`}
+                      className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <Lightning size={12} weight="fill" />
+                      {boosting === it.id ? "Pinning…" : "Boost free · Admin"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => boost(it)}
+                      disabled={boosting === it.id}
+                      data-testid={`profile-boost-${it.id}`}
+                      className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#00f0ff] text-black hover:shadow-[0_0_18px_rgba(0,240,255,0.45)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <Lightning size={12} weight="fill" />
+                      {boosting === it.id ? "Loading…" : "Boost $1.99 — 24h"}
+                    </button>
+                  )
                 )}
                 {it.is_featured && (
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#00f0ff] text-center">
