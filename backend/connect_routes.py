@@ -92,7 +92,16 @@ async def connect_onboard(payload: OnboardRequest, user=Depends(get_current_user
         return {"url": link.url, "account_id": account_id}
     except Exception as e:
         logger.exception("connect_onboard failed: %s", e)
-        raise HTTPException(500, f"Stripe error: {e}")
+        msg = str(e)
+        # Surface common Stripe Connect setup errors with clearer guidance
+        if "signed up for Connect" in msg:
+            raise HTTPException(
+                503,
+                "Stripe Connect is not enabled on this Stripe account. "
+                "Visit https://dashboard.stripe.com/test/connect/accounts/overview "
+                "and click 'Get started' to register as a Connect platform.",
+            )
+        raise HTTPException(500, f"Stripe error: {msg}")
 
 
 @router.get("/connect/status")
