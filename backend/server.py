@@ -1,10 +1,18 @@
 """BloxDrops AI — FastAPI server entry point."""
-from dotenv import load_dotenv
+import os
+from dotenv import load_dotenv, dotenv_values
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env", override=True)
+# Load .env WITHOUT overriding K8s-injected env vars (MONGO_URL, DB_NAME etc.
+# must come from the production environment, not from a local .env file).
+load_dotenv(ROOT_DIR / ".env", override=False)
+# Surgical override: if STRIPE_API_KEY is the placeholder `sk_test_emergent`
+# (injected at the shell level in some Kubernetes pods), prefer the value from
+# the .env file so local/preview Stripe Connect works.
+_env_file = dotenv_values(ROOT_DIR / ".env")
+if os.environ.get("STRIPE_API_KEY", "") in ("", "sk_test_emergent") and _env_file.get("STRIPE_API_KEY"):
+    os.environ["STRIPE_API_KEY"] = _env_file["STRIPE_API_KEY"]
 
-import os
 import logging
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
