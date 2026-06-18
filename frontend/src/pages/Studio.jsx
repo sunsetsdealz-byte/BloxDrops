@@ -48,6 +48,8 @@ export default function Studio() {
   const [regenerating, setRegenerating] = useState(false);
   const [vfxPresets, setVfxPresets] = useState([]);
   const [savingVfx, setSavingVfx] = useState(false);
+  const [vfxDetectUrl, setVfxDetectUrl] = useState("");
+  const [detectingVfx, setDetectingVfx] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -147,6 +149,28 @@ export default function Studio() {
       toast.error(formatApiError(err));
     } finally {
       setSavingVfx(false);
+    }
+  };
+
+  const detectVfxFromUrl = async () => {
+    if (!currentGen || !vfxDetectUrl.trim()) return;
+    setDetectingVfx(true);
+    try {
+      const { data } = await api.post(
+        `/admin/generations/${currentGen.id}/vfx/detect`,
+        { url: vfxDetectUrl.trim(), auto_apply: true }
+      );
+      setCurrentGen((prev) => prev ? { ...prev, vfx_preset: data.preset } : prev);
+      if (data.preset) {
+        toast.success(`AI detected: ${data.label} — ${data.reason || "applied"}`);
+      } else {
+        toast.info(`AI found no particle effect on that item${data.reason ? ` (${data.reason})` : ""}`);
+      }
+      setVfxDetectUrl("");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setDetectingVfx(false);
     }
   };
 
@@ -756,6 +780,46 @@ export default function Studio() {
                   <p className="text-[10px] tracking-wider text-zinc-500 mt-3">
                     Effects render live in the viewer above. Inspired by Roblox UGC particle emitters (e.g. Stormbreak Tempest).
                   </p>
+
+                  {/* AI URL → preset auto-detect */}
+                  <div className="mt-4 pt-4 border-t border-white/8">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-bold mb-2 flex items-center gap-2">
+                      <Sparkle size={11} weight="fill" className="text-[#ccff00]" />
+                      Auto-detect from Roblox URL
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <input
+                        type="url"
+                        value={vfxDetectUrl}
+                        onChange={(e) => setVfxDetectUrl(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") detectVfxFromUrl(); }}
+                        placeholder="https://www.roblox.com/catalog/76479271580913/Stormbreak-Horns…"
+                        data-testid="vfx-detect-url"
+                        className="flex-1 min-w-[260px] bg-black/40 border border-white/10 focus:border-[#ccff00] focus:bg-black/60 rounded-full px-4 py-2 text-xs font-mono text-zinc-200 placeholder:text-zinc-600 outline-none transition-colors"
+                      />
+                      <button
+                        onClick={detectVfxFromUrl}
+                        disabled={detectingVfx || !vfxDetectUrl.trim()}
+                        data-testid="vfx-detect-submit"
+                        className="rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-black flex items-center gap-2 bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {detectingVfx ? (
+                          <>
+                            <div className="w-3 h-3 rounded-full border-2 border-black/80 border-t-transparent animate-spin" />
+                            Scanning
+                          </>
+                        ) : (
+                          <>
+                            <Sparkle size={12} weight="fill" />
+                            Detect VFX
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] tracking-wider text-zinc-600 mt-2">
+                      Paste any Roblox catalog URL — AI analyzes the official thumbnail and picks the closest preset.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

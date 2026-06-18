@@ -508,3 +508,61 @@ async def set_generation_vfx(
     })
 
     return {"ok": True, "generation_id": generation_id, "vfx_preset": payload.preset}
+
+
+# ============== AUTO-DETECT VFX FROM A ROBLOX (or any) URL ==============
+class VfxDetectPayload(BaseModel):
+    url: str = Field(..., description="Roblox catalog URL or a direct image URL")
+    auto_apply: bool = Field(default=True, description="Persist the detected preset on the gen")
+
+
+@router.post("/generations/{generation_id}/vfx/detect")
+async def detect_vfx_for_generation(
+    generation_id: str,
+    payload: VfxDetectPayload,
+    user=Depends(get_current_user),
+):
+    """Look up an image (Roblox thumbnail or direct URL), run vision-AI to classify
+    the particle effect, and (optionally) attach the closest matching preset.
+
+    Admin-only. Uses gemini-3.1-pro-preview via the Emergent universal key.
+    """
+    _require_admin(user)
+    from server import db
+    from vfx_detector import detect_vfx_from_url
+
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    try:
+        result = await detect_vfx_from_url(payload.url.strip())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"VFX detection failed: {e}")
+
+    if payload.auto_apply:
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {"vfx_preset": result.get("preset")}},
+        )
+
+    await _log(db, user, "detect_vfx_from_url", None, {
+        "generation_id": generation_id,
+        "source_url": payload.url,
+        "preset": result.get("preset"),
+        "asset_id": result.get("asset_id"),
+        "auto_applied": payload.auto_apply,
+    })
+
+    return {
+        "ok": True,
+        "generation_id": generation_id,
+        "applied": payload.auto_apply,
+        **result,
+    }
+
