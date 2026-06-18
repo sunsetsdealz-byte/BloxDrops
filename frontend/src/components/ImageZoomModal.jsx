@@ -40,7 +40,7 @@ export default function ImageZoomModal({ item, open, onClose }) {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 10 }}
             transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
-            className="relative w-full max-w-3xl"
+            className="relative w-full max-w-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -61,12 +61,12 @@ export default function ImageZoomModal({ item, open, onClose }) {
             </div>
 
             {/* Image area */}
-            <div className="relative bg-gradient-to-br from-zinc-900 to-black border border-white/10 overflow-hidden flex items-center justify-center" style={{ minHeight: "min(70vh, 640px)", maxHeight: "min(70vh, 640px)" }}>
+            <div className="relative bg-gradient-to-br from-zinc-900 to-black border border-white/10 overflow-hidden flex items-center justify-center" style={{ height: "min(52vh, 460px)" }}>
               {item.thumbnail_url ? (
                 <img
                   src={item.thumbnail_url}
                   alt={item.prompt}
-                  className="w-full h-full object-contain"
+                  className="max-w-full max-h-full object-contain"
                 />
               ) : (
                 <div className="text-zinc-500 uppercase text-sm tracking-widest">No preview</div>
