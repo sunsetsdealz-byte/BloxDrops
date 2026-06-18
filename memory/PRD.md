@@ -44,7 +44,7 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 
 ## Key technical notes
 - `load_dotenv(override=True)` in server.py ensures backend/.env takes precedence over shell-level env vars (critical for `STRIPE_API_KEY` since the container ships with placeholder `sk_test_emergent`).
-- Stripe Connect requires a **Sandbox-specific** API key, NOT the parent account's test key. The two have different account IDs and are isolated.
+- **🔴 LIVE MODE (2026-06-18):** `STRIPE_API_KEY` is now `sk_live_...` — Connect onboarding creates real connected accounts; payments charge real cards; payouts wire real USD.
 - Platform owner (`is_platform_owner=True`, email `noelcampos11211@yahoo.com`) automatically receives 5% of all marketplace sales.
 - Roblox Open Cloud Assets API uses per-user API keys (Profile → Roblox Connection).
 
