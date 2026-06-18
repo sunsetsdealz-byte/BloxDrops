@@ -24,10 +24,18 @@ async def main():
     # Public URL to the founder character image
     image_url = "https://ai-generator-66.preview.emergentagent.com/hero/character.png"
 
-    print(f"[1/3] Submitting fal.ai image-to-3d for: {image_url}")
+    print(f"[1/3] Submitting fal.ai image-to-3d (HD/PBR) for: {image_url}")
     handler = await fal_client.submit_async(
         "tripo3d/tripo/v2.5/image-to-3d",
-        arguments={"image_url": image_url},
+        arguments={
+            "image_url": image_url,
+            # Quality upgrades — produces realistic shading & sharper textures
+            "pbr": True,                          # full PBR material maps (metal/rough)
+            "texture": "HD",                      # highest texture tier
+            "texture_alignment": "original_image",# keep face/beard details aligned to source
+            "orientation": "align_image",         # face the camera like the input
+            "face_limit": 50000,                  # higher poly = more geometry detail
+        },
     )
     print(f"[2/3] Waiting for fal.ai result …")
     result = await handler.get()
@@ -50,13 +58,13 @@ async def main():
     print(f"  model_url: {model_url}")
     print(f"  thumb_url: {thumb_url}")
 
-    # Update the founder drop
+    # Update the founder drop (matched by 1/1 release price)
     print(f"[3/3] Updating founder drop in DB …")
     mongo = MongoClient(os.environ["MONGO_URL"])
     db = mongo[os.environ["DB_NAME"]]
     res = db.generations.update_one(
-        {"is_coming_soon": True},
-        {"$set": {"model_url": model_url}},
+        {"release_price_usd": 50000},
+        {"$set": {"model_url": model_url}, "$unset": {"image_url": ""}},
     )
     print(f"Updated {res.modified_count} doc(s)")
 
