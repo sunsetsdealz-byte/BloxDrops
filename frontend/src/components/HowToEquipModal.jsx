@@ -21,47 +21,72 @@ const ROBLOX_CATEGORY_HINT = {
 
 const STEPS = (attachment, name) => [
   {
-    title: "Download the Accessory file",
-    body: `From the export modal, click "Download Accessory file" — that .rbxmx is already pre-wrapped as an Avatar Item with the right type and attachment point baked in.`,
-  },
-  {
     title: "Open Roblox Studio",
     body: `Launch Roblox Studio and open any place (an empty Baseplate works fine — you don't need a real game).`,
   },
   {
-    title: "Drag the file into Workspace",
-    body: `Drag the downloaded .rbxmx straight into Studio's Workspace (or the Explorer). You'll see an Accessory appear in the Explorer panel — that's your drop, fully configured.`,
-  },
-  {
-    title: "Right-click the ACCESSORY (not the Model)",
+    title: "Open Toolbox → My Models",
     body: (
       <>
-        In Studio&apos;s <strong className="text-white">Explorer</strong> panel, click directly on the{" "}
-        <strong className="text-[#ccff00]">Accessory</strong> item — it has a hat-icon. Then right-click → &ldquo;Save to Roblox&rdquo;.
-        <br />
-        <span className="text-[#ff0055] font-bold">Common mistake:</span> clicking Workspace or the
-        Model wrapper instead of the Accessory. If you see &ldquo;Uploaded asset should be a
-        Accessory but is a Model&rdquo;, you selected the wrong node — try again on the Accessory child.
+        Click <strong className="text-white">View</strong> →{" "}
+        <strong className="text-white">Toolbox</strong>. In the Toolbox panel, switch to the{" "}
+        <strong className="text-[#ccff00]">Inventory</strong> tab and pick{" "}
+        <strong className="text-[#ccff00]">My Models</strong>. Your BloxDrops upload should be there.
       </>
     ),
   },
   {
-    title: "Pick the right category",
+    title: "Drag the Model into Workspace",
+    body: `Click your BloxDrops model in Toolbox — it inserts into Workspace. In Explorer you'll see a Model with a MeshPart inside (that MeshPart has the real mesh, properly loaded).`,
+  },
+  {
+    title: "Open the Accessory Fitting Tool",
     body: (
       <>
-        In the category dropdown, pick{" "}
+        Go to the <strong className="text-white">Avatar</strong> tab in Studio&apos;s top ribbon →
+        click <strong className="text-[#ccff00]">Accessory Fitting Tool</strong>. A floating panel
+        opens.
+      </>
+    ),
+  },
+  {
+    title: "Configure the fitting tool",
+    body: (
+      <>
+        In the Accessory Fitting Tool panel:
+        <br />• <strong className="text-white">Asset Type</strong>: pick{" "}
         <strong className="text-[#ccff00] font-mono">
           &ldquo;{ROBLOX_CATEGORY_HINT[attachment] || "Hats"}&rdquo;
         </strong>
-        .{" "}
-        <span className="text-[#ff0055] font-bold">Do NOT pick &ldquo;UGC Body&rdquo;</span> — that's
-        for full-avatar bundles and will fail with &ldquo;Invalid root instance, must be a model&rdquo;.
+        <br />• <strong className="text-white">Selection</strong>: click your MeshPart in Explorer or
+        Workspace
+        <br />• Click <strong className="text-white">Generate</strong> — the tool auto-wraps it as an
+        Accessory with the correct attachment point.
       </>
     ),
   },
   {
-    title: "Submit → wait for moderation",
-    body: `Click Submit. Roblox runs the asset through automated moderation (usually a few minutes, sometimes hours for first-time creators). You'll get an email + a notification in your Creator Dashboard when approved.`,
+    title: "Save to Roblox",
+    body: (
+      <>
+        In Explorer, right-click the new Accessory the tool just generated →{" "}
+        <strong className="text-white">Save to Roblox</strong>. In the dialog, the category should
+        auto-fill as{" "}
+        <strong className="text-[#ccff00] font-mono">
+          &ldquo;{ROBLOX_CATEGORY_HINT[attachment] || "Hats"}&rdquo;
+        </strong>
+        . Click <strong className="text-white">Submit</strong>.
+        <br />
+        <span className="text-[#ff0055] font-bold">
+          Do NOT pick &ldquo;UGC Body&rdquo;
+        </span>{" "}
+        — that&apos;s for full-avatar bundles.
+      </>
+    ),
+  },
+  {
+    title: "Wait for moderation",
+    body: `Roblox runs the asset through automated moderation (usually a few minutes, sometimes hours for first-time creators). You'll get an email + notification when approved.`,
   },
   {
     title: "Equip on your avatar",
@@ -76,14 +101,11 @@ const STEPS = (attachment, name) => [
         >
           roblox.com/my/avatar
         </a>{" "}
-        → click <strong className="text-white">Inventory</strong> on the right → pick the right
-        category tab (Hats / Accessories / etc.) → click <strong className="text-white">{name || "your accessory"}</strong> to equip → click <strong className="text-white">Save</strong>.
+        → <strong className="text-white">Inventory</strong> on the right → pick the right category
+        tab → click <strong className="text-white">{name || "your accessory"}</strong> to equip →
+        click <strong className="text-white">Save</strong>.
       </>
     ),
-  },
-  {
-    title: "Done — it's on your avatar",
-    body: `Your BloxDrops creation is now live on your Roblox character. Anyone who looks at your profile will see it equipped.`,
   },
 ];
 

@@ -13,15 +13,31 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    try {
-      const { data } = await api.get("/auth/me");
-      setUser(data);
-    } catch {
-      tokenStore.clear();
-      setUser(false);
-    } finally {
-      setLoading(false);
-    }
+    // Retry transient errors a few times with backoff. Only a confirmed
+    // 401/403 (token invalid/expired) clears the token and logs the user out.
+    const attempt = async (delay) => {
+      try {
+        const { data } = await api.get("/auth/me");
+        setUser(data);
+        setLoading(false);
+        return true;
+      } catch (err) {
+        const status = err?.response?.status;
+        if (status === 401 || status === 403) {
+          tokenStore.clear();
+          setUser(false);
+          setLoading(false);
+          return true;
+        }
+        // Transient (network / 5xx / Cloudflare / CORS preflight). Schedule retry.
+        setLoading(false);
+        if (delay <= 30000) {
+          setTimeout(() => attempt(delay * 2), delay);
+        }
+        return false;
+      }
+    };
+    await attempt(2000); // 2s, then 4s, 8s, 16s, 32s
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);

@@ -7,7 +7,7 @@ from fastapi import HTTPException, Request, Depends
 from bson import ObjectId
 
 JWT_ALGORITHM = "HS256"
-ACCESS_EXPIRE_MIN = 60 * 24 * 7  # 7 days
+ACCESS_EXPIRE_MIN = 60 * 24 * 60  # 60 days — long-lived so casual users don't get logged out
 
 
 def _secret() -> str:

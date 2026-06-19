@@ -74,13 +74,22 @@ def build_accessory_rbxmx(
     attachment_type: str,
     description: str = "",
 ) -> str:
-    """Return an .rbxmx XML string for a fully-wrapped Accessory."""
+    """Return an .rbxmx XML string for a starter Accessory shell.
+
+    NOTE: Roblox Open Cloud only gives back a Model asset ID — and MeshPart.MeshId
+    needs a Mesh asset ID buried inside that Model (no API extracts it). So this
+    template ships an Accessory shell with the correct AccessoryType + Attachment,
+    but leaves Handle.MeshId empty. The user finishes the wrap inside Studio via
+    Avatar > Accessory Fitting Tool, which auto-detects the MeshPart from their
+    uploaded Model in Toolbox > My Models.
+
+    This .rbxmx is now optional — the recommended flow is direct AFT use.
+    """
     accessory_type_int, attachment_point = ATTACHMENT_MAP.get(
         attachment_type, ATTACHMENT_MAP["Hat"]
     )
     safe_name = _xml_escape((asset_name or "BloxDrops Accessory")[:60])
     safe_desc = _xml_escape((description or "Generated with BloxDrops AI")[:280])
-    mesh_url = f"rbxassetid://{asset_id}" if asset_id else ""
 
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
@@ -101,7 +110,7 @@ def build_accessory_rbxmx(
     <Item class="MeshPart" referent="RBX_MESH_0">
       <Properties>
         <string name="Name">Handle</string>
-        <Content name="MeshId"><url>{mesh_url}</url></Content>
+        <Content name="MeshId"><null></null></Content>
         <bool name="CanCollide">false</bool>
         <bool name="CanQuery">false</bool>
         <bool name="CanTouch">false</bool>

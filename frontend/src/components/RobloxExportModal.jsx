@@ -252,44 +252,43 @@ export default function RobloxExportModal({ generationId, onClose }) {
                         )}
                       </div>
 
-                      {/* === ACCESSORY .rbxmx DOWNLOAD === */}
+                      {/* === ACCESSORY WRAP FLOW (Roblox Accessory Fitting Tool) === */}
                       <div className="bg-gradient-to-br from-[#00f0ff]/10 to-[#ccff00]/8 border border-[#00f0ff]/30 rounded-xl p-4">
                         <p className="text-[10px] uppercase tracking-[0.2em] font-black text-[#00f0ff] mb-2 flex items-center gap-1.5">
-                          <DownloadSimple size={12} weight="bold" /> Step 2 · Wear-Ready Accessory
+                          <DownloadSimple size={12} weight="bold" /> Step 2 · Wrap as Accessory in Studio
                         </p>
                         <p className="text-sm text-zinc-200 mb-3 leading-relaxed">
-                          Download this pre-wrapped <code className="text-[#ccff00] font-mono text-xs">.rbxmx</code> file, drag it into Roblox Studio Explorer — it&apos;s already configured as an Accessory with the right type and attachment. Then right-click → <strong>Save to Roblox</strong> to submit it as an Avatar Item.
+                          To make your drop wearable, use Roblox Studio&apos;s built-in{" "}
+                          <strong className="text-white">Accessory Fitting Tool</strong> — it auto-extracts
+                          the mesh from your uploaded Model (which is the part the API can&apos;t expose).
                         </p>
-                        <button
-                          onClick={downloadAccessory}
-                          disabled={downloadingAccessory}
-                          data-testid="export-download-accessory"
-                          className="bg-[#00f0ff] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(0,240,255,0.5)] transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                          <DownloadSimple size={13} weight="bold" />
-                          {downloadingAccessory ? "Building…" : "Download Accessory file"}
-                        </button>
-                        <ol className="text-[11px] text-zinc-400 mt-3 space-y-1 leading-snug list-decimal list-inside">
-                          <li>Open Roblox Studio → any place (empty baseplate works)</li>
-                          <li>Drag the downloaded <span className="font-mono text-[#ccff00]">.rbxmx</span> into the Workspace</li>
+                        <ol className="text-[11px] text-zinc-300 space-y-1.5 leading-snug list-decimal list-inside">
+                          <li>In Studio: <strong className="text-white">View → Toolbox → Inventory tab → My Models</strong></li>
+                          <li>Click your BloxDrops upload — it inserts into Workspace</li>
+                          <li><strong className="text-white">Avatar tab → Accessory Fitting Tool</strong></li>
                           <li>
-                            In Explorer, click the <strong className="text-[#ccff00]">Accessory</strong> item (NOT the Model wrapper) → right-click → <strong className="text-white">Save to Roblox</strong>
-                          </li>
-                          <li>
-                            In the dialog, pick category{" "}
-                            <strong className="text-[#ccff00]" data-testid="studio-category-hint">
+                            Asset Type:{" "}
+                            <strong className="text-[#ccff00] font-mono" data-testid="studio-category-hint">
                               &ldquo;{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}&rdquo;
                             </strong>
-                            {" "}— <span className="text-[#ff0055] font-bold">NOT &ldquo;UGC Body&rdquo;</span>.
+                            ; Selection: click the MeshPart inside your Model; click <strong className="text-white">Generate</strong>
                           </li>
-                          <li>Click Submit → wait for moderation → it appears in your Avatar Editor.</li>
+                          <li>Right-click the new Accessory → <strong className="text-white">Save to Roblox</strong> → Submit</li>
+                          <li>Wait for moderation → equip from your Avatar Editor</li>
                         </ol>
+                        <button
+                          onClick={() => setShowHowTo(true)}
+                          data-testid="export-open-howto"
+                          className="mt-3 bg-[#00f0ff] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(0,240,255,0.5)] transition-all flex items-center gap-2"
+                        >
+                          See full step-by-step walkthrough →
+                        </button>
                         <div className="mt-3 pt-3 border-t border-white/8 text-[10px] text-zinc-500 leading-relaxed space-y-1.5">
                           <p>
-                            <strong className="text-[#fbbf24]">&ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;</strong> — you right-clicked the wrong node. In Explorer, select the <span className="font-mono text-[#ccff00]">Accessory</span> child (hat icon), not Workspace or the Model wrapper above it.
+                            <strong className="text-[#fbbf24]">&ldquo;Failed to load mesh rbxassetid://…&rdquo;</strong> — you tried to use the Model assetId directly as MeshId. Roblox doesn&apos;t allow that. Use the Accessory Fitting Tool flow above.
                           </p>
                           <p>
-                            <strong className="text-[#fbbf24]">&ldquo;Invalid root instance, must be a model&rdquo;</strong> — you picked the wrong category. Choose <span className="text-[#ccff00] font-mono">{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}</span>, not &ldquo;UGC Body&rdquo;.
+                            <strong className="text-[#fbbf24]">&ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;</strong> — in Explorer, right-click the Accessory child (hat icon), not the Model wrapper above it.
                           </p>
                         </div>
                       </div>
