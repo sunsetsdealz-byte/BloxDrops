@@ -1,10 +1,9 @@
 """Roblox Open Cloud integration — direct upload pipeline.
 
-Roblox Open Cloud Assets API accepts FBX for `Model` assets and PNG/JPEG for
-`Decal`/`Image` assets, authenticated via `x-api-key`. Our fal.ai pipeline
-produces GLB which Open Cloud does NOT accept directly, so we push the rendered
-preview PNG as a Decal (real working upload) and surface the GLB for the
-creator's manual marketplace publish.
+Roblox Open Cloud Assets API accepts FBX for `Model` assets, authenticated via
+`x-api-key`. Our fal.ai pipeline produces GLB, which we convert to FBX server-
+side via headless Blender (see `glb_to_fbx.py`) before pushing as `Model`. This
+delivers a real 3D asset to the creator's inventory — not a flat decal.
 
 The user generates an Open Cloud API key at https://create.roblox.com/dashboard/credentials
 with the `asset:write` permission. We store {api_key, roblox_user_id} on the
@@ -15,6 +14,9 @@ import os
 import logging
 import httpx
 import asyncio
+import shutil
+import tempfile
+import subprocess
 from typing import Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
@@ -111,13 +113,63 @@ async def _poll_operation(api_key: str, operation_id: str, max_attempts: int = 2
     raise HTTPException(status_code=504, detail="Roblox upload timed out (still processing on their side)")
 
 
+BLENDER_BIN = os.environ.get("BLENDER_BIN", "blender")
+GLB_TO_FBX_SCRIPT = os.path.join(os.path.dirname(__file__), "glb_to_fbx.py")
+
+
+def _convert_glb_to_fbx_sync(glb_bytes: bytes) -> bytes:
+    """Run headless Blender to convert GLB bytes → FBX bytes.
+
+    Blocking subprocess — call from an executor.
+    """
+    tmp = tempfile.mkdtemp(prefix="bloxdrops_fbx_")
+    try:
+        glb_path = os.path.join(tmp, "in.glb")
+        fbx_path = os.path.join(tmp, "out.fbx")
+        with open(glb_path, "wb") as f:
+            f.write(glb_bytes)
+
+        result = subprocess.run(
+            [
+                BLENDER_BIN,
+                "--background",
+                "--python",
+                GLB_TO_FBX_SCRIPT,
+                "--",
+                glb_path,
+                fbx_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+        if result.returncode != 0 or not os.path.exists(fbx_path):
+            logger.error("Blender conversion failed: stdout=%s stderr=%s", result.stdout[-400:], result.stderr[-400:])
+            raise HTTPException(
+                status_code=502,
+                detail="3D model conversion failed. Try regenerating the drop.",
+            )
+        with open(fbx_path, "rb") as f:
+            return f.read()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+async def _convert_glb_to_fbx(glb_bytes: bytes) -> bytes:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _convert_glb_to_fbx_sync, glb_bytes)
+
+
 @router.post("/upload/{generation_id}")
 async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
-    """Push the creation's preview image as a Decal to the creator's Roblox inventory.
+    """Push the creation as a 3D Model (.fbx) to the creator's Roblox inventory.
 
-    NOTE: Open Cloud doesn't accept GLB for Models (only FBX). We push the PNG
-    preview as a Decal so creators get an immediate inventory item; the .GLB is
-    still downloadable for manual Studio import → marketplace publish.
+    Pipeline:
+    1. Verify ownership + generation is completed with a model_url (GLB).
+    2. Fetch the GLB bytes.
+    3. Convert GLB → FBX server-side via headless Blender.
+    4. POST to Open Cloud /assets with assetType=Model + multipart fileContent.
+    5. Poll the returned operation until done, persist the assetId.
     """
     from server import db
     try:
@@ -130,44 +182,59 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Not your creation")
     if gen.get("status") != "completed":
         raise HTTPException(status_code=400, detail="Generation not ready")
-    if not gen.get("thumbnail_url"):
-        raise HTTPException(status_code=400, detail="No preview image to upload")
+    if not gen.get("model_url"):
+        raise HTTPException(status_code=400, detail="No 3D model attached to this drop")
 
     creds = await _get_creds(user["id"])
 
-    # 1) Fetch the preview image bytes from the source URL
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-        img = await client.get(gen["thumbnail_url"])
-        if img.status_code != 200 or not img.content:
-            raise HTTPException(status_code=502, detail="Couldn't fetch preview image")
-        content_type = img.headers.get("content-type", "image/png").split(";")[0]
-        if content_type not in ("image/png", "image/jpeg", "image/jpg"):
-            content_type = "image/png"
-        file_bytes = img.content
+    # 1) Fetch the GLB bytes
+    async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+        glb_resp = await client.get(gen["model_url"])
+        if glb_resp.status_code != 200 or not glb_resp.content:
+            raise HTTPException(status_code=502, detail="Couldn't fetch the .glb file")
+        glb_bytes = glb_resp.content
 
-    # 2) Build the Open Cloud Create Asset request
+    # Roblox Open Cloud caps single asset uploads at 20 MB
+    if len(glb_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Model is over 20 MB — Roblox rejects assets above that size.")
+
+    # 2) Convert GLB → FBX via headless Blender
+    try:
+        fbx_bytes = await _convert_glb_to_fbx(glb_bytes)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Blender conversion threw")
+        raise HTTPException(status_code=502, detail=f"3D conversion error: {str(e)[:160]}")
+
+    if len(fbx_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Converted FBX exceeded 20 MB — Roblox limit.")
+
+    # 3) Build the Open Cloud Create Asset request
     import json as _json
-    asset_name = (gen.get("original_prompt") or "BloxDrops Item")[:40]
+    asset_name = ((gen.get("display_name") or gen.get("original_prompt") or "BloxDrops Item").strip() or "BloxDrops Item")[:50]
+    description = (gen.get("description") or f"Generated with BloxDrops AI · {gen.get('attachment_type', 'Item')} · {gen.get('style', 'auto')}")[:600]
+
     request_payload = {
-        "assetType": "Decal",
+        "assetType": "Model",
         "displayName": asset_name,
-        "description": f"Generated with BloxDrops AI · {gen.get('attachment_type', 'Item')} · {gen.get('style', 'auto')}",
+        "description": description,
         "creationContext": {"creator": {"userId": int(creds["user_id"])}},
     }
     files = {
         "request": (None, _json.dumps(request_payload), "application/json"),
-        "fileContent": (f"{asset_name}.png", file_bytes, content_type),
+        "fileContent": (f"{asset_name.replace(' ', '_')}.fbx", fbx_bytes, "model/fbx"),
     }
     headers = {"x-api-key": creds["api_key"]}
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         r = await client.post(f"{OPEN_CLOUD}/assets", files=files, headers=headers)
     if r.status_code == 401:
         raise HTTPException(status_code=401, detail="Roblox rejected the API key — re-connect.")
     if r.status_code == 403:
         raise HTTPException(status_code=403, detail="Roblox: missing 'asset:write' permission on this key.")
     if r.status_code >= 400:
-        raise HTTPException(status_code=502, detail=f"Roblox upload failed: {r.text[:200]}")
+        raise HTTPException(status_code=502, detail=f"Roblox upload failed: {r.text[:300]}")
 
     op = r.json()
     operation_path = op.get("path") or op.get("name") or ""
@@ -180,11 +247,12 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
     response_obj = result if "assetId" in result else result.get("response", {})
     final_asset_id = response_obj.get("assetId") or asset_id
 
-    # 3) Record the push on the generation doc for the activity timeline
+    # 4) Record the push on the generation doc for the activity timeline
     await db.generations.update_one(
         {"_id": ObjectId(generation_id)},
         {"$set": {
             "roblox_asset_id": str(final_asset_id) if final_asset_id else None,
+            "roblox_asset_type": "Model",
             "roblox_pushed_at": datetime.now(timezone.utc).isoformat(),
         }},
     )
@@ -192,11 +260,11 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
     return {
         "ok": True,
         "asset_id": final_asset_id,
-        "asset_type": "Decal",
+        "asset_type": "Model",
         "inventory_url": (
             f"https://create.roblox.com/store/asset/{final_asset_id}"
             if final_asset_id
-            else (f"https://www.roblox.com/users/{creds['user_id']}/inventory#!/decals" if creds.get("user_id") else None)
+            else (f"https://www.roblox.com/users/{creds['user_id']}/inventory#!/models" if creds.get("user_id") else None)
         ),
-        "studio_note": "Open the .GLB in Roblox Studio (Home → Import 3D) and use Avatar → Accessory Fitting Tool to publish the full 3D item to the UGC marketplace.",
+        "studio_note": "Open Roblox Studio → Toolbox → My Models to drop the asset in, then use Avatar → Accessory Fitting Tool to publish to the Marketplace.",
     }

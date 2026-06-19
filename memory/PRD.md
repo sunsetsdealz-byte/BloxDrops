@@ -73,6 +73,8 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **NFT Metadata Editor**: New owner-only `PATCH /api/generations/{id}/metadata` with display_name, description (lore), and OpenSea-style key/value traits[]. Locked once any marketplace listing exists for the drop (admin bypass). Frontend `NFTMetadataModal.jsx` + provenance panel displays display name, description, and trait grid. **Tested 9/9 backend + Playwright UI = 100%**.
 - **Share NFT Card**: Client-side HTML5 Canvas renderer producing a 1080×1080 PNG (brand header, rarity-tinted aura, edition pill, drop thumbnail with vignette, display name, description, traits grid, Mint ID, live URL). Three CTAs: Download PNG, Copy to clipboard, Tweet. Mounted via `studio-share-card` button on every completed drop. **Tested 6/6 acceptance criteria = 100%**.
 - **Roblox API key length fix**: Bumped Open Cloud key max from 400 → 2048 chars (real keys are signed JWTs ~600-1000 chars).
+- **Studio button overlap fix**: action overlay uses `right-32` to leave room for the ModelViewer Zoom button.
+- **Roblox 3D Model push (real GLB → FBX)**: Installed headless Blender on the container. `POST /api/roblox/upload/{id}` now downloads the .glb, runs `blender --background --python glb_to_fbx.py` to convert to .fbx (~150ms for 3.6MB), and uploads to Open Cloud with `assetType=Model` + `content-type: model/fbx`. Drops now arrive as real 3D Models in the creator's inventory — no more Decals. Pytest 3/3 passing.
 
 ## P1 — Backlog
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)
