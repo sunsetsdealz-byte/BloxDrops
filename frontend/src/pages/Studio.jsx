@@ -9,6 +9,7 @@ import RobloxExportModal from "../components/RobloxExportModal";
 import NFTMetadataModal from "../components/NFTMetadataModal";
 import ShareNFTCard from "../components/ShareNFTCard";
 import HowToEquipModal from "../components/HowToEquipModal";
+import RobloxToolkitPanel from "../components/RobloxToolkitPanel";
 import DropBadges from "../components/DropBadges";
 import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
@@ -58,11 +59,7 @@ export default function Studio() {
   const [viewerZoomed, setViewerZoomed] = useState(false);
   const [showHowToEquip, setShowHowToEquip] = useState(false);
   const [howToMode, setHowToMode] = useState("accessory");
-  const [rigging, setRigging] = useState(false);
-  const [optimizing, setOptimizing] = useState(false);
   const pollRef = useRef(null);
-  const rigPollRef = useRef(null);
-  const optPollRef = useRef(null);
 
   // Pull live Genesis counter
   useEffect(() => {
@@ -235,82 +232,6 @@ export default function Studio() {
     }, 2200);
     return () => clearInterval(pollRef.current);
   }, [currentGen?.id, currentGen?.status]);
-
-  // Poll rigging status independently — rigging happens on a completed gen
-  useEffect(() => {
-    if (!currentGen || currentGen.rigging_status !== "pending") {
-      clearInterval(rigPollRef.current);
-      return;
-    }
-    rigPollRef.current = setInterval(async () => {
-      try {
-        const { data } = await api.get(`/generate/${currentGen.id}`);
-        setCurrentGen(data);
-        if (data.rigging_status !== "pending") {
-          clearInterval(rigPollRef.current);
-          if (data.rigging_status === "completed") {
-            toast.success("Rigged avatar ready — drop the new GLB into Roblox Studio's Avatar Setup");
-          }
-          if (data.rigging_status === "failed") {
-            toast.error("Rigging failed: " + (data.rigging_error || "unknown"));
-          }
-        }
-      } catch { /* keep polling */ }
-    }, 3500);
-    return () => clearInterval(rigPollRef.current);
-  }, [currentGen?.id, currentGen?.rigging_status]);
-
-  const handleRig = async () => {
-    if (!currentGen?.id) return;
-    setRigging(true);
-    try {
-      const { data } = await api.post(`/generations/${currentGen.id}/rig`);
-      setCurrentGen((prev) => prev ? { ...prev, rigging_status: data.rigging_status || "pending" } : prev);
-      toast.success("Rigging started — humanoid skeleton + skinning in progress (~1–3 min)");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setRigging(false);
-    }
-  };
-
-  // Poll mesh-optimization status (parallel to rigging — they're independent)
-  useEffect(() => {
-    if (!currentGen || currentGen.optimization_status !== "pending") {
-      clearInterval(optPollRef.current);
-      return;
-    }
-    optPollRef.current = setInterval(async () => {
-      try {
-        const { data } = await api.get(`/generate/${currentGen.id}`);
-        setCurrentGen(data);
-        if (data.optimization_status !== "pending") {
-          clearInterval(optPollRef.current);
-          if (data.optimization_status === "completed") {
-            toast.success("Mesh optimized — Roblox-ready polycount + clean topology");
-          }
-          if (data.optimization_status === "failed") {
-            toast.error("Optimization failed: " + (data.optimization_error || "unknown"));
-          }
-        }
-      } catch { /* keep polling */ }
-    }, 3500);
-    return () => clearInterval(optPollRef.current);
-  }, [currentGen?.id, currentGen?.optimization_status]);
-
-  const handleOptimize = async (density = "medium") => {
-    if (!currentGen?.id) return;
-    setOptimizing(true);
-    try {
-      const { data } = await api.post(`/generations/${currentGen.id}/optimize`, { density });
-      setCurrentGen((prev) => prev ? { ...prev, optimization_status: data.optimization_status || "pending" } : prev);
-      toast.success(`Optimizing mesh (${density} density) — ~1–2 min`);
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setOptimizing(false);
-    }
-  };
 
   const enhance = async () => {
     if (!prompt.trim()) return;
@@ -768,96 +689,6 @@ export default function Studio() {
                 >
                   <Share size={11} weight="bold" /> Share
                 </button>
-                {ownsCurrent && !currentGen?.rigged_model_url && currentGen?.rigging_status !== "pending" && (
-                  <button
-                    onClick={handleRig}
-                    disabled={rigging}
-                    data-testid="studio-rig-avatar"
-                    title="Auto-rig this humanoid model with a skeleton + skinning for Roblox Avatar Setup (~1–3 min)"
-                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff]/15 text-[#00f0ff] border border-[#00f0ff]/40 hover:bg-[#00f0ff]/25 hover:shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all whitespace-nowrap disabled:opacity-50"
-                  >
-                    <Lightning size={11} weight="fill" /> {rigging ? "Starting…" : "Rig for Roblox"}
-                  </button>
-                )}
-                {currentGen?.rigging_status === "pending" && (
-                  <span
-                    data-testid="studio-rig-pending"
-                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/30 whitespace-nowrap animate-pulse"
-                  >
-                    <Lightning size={11} weight="fill" /> Rigging…
-                  </span>
-                )}
-                {currentGen?.rigged_model_url && (
-                  <>
-                    <a
-                      href={currentGen.rigged_model_url}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      data-testid="studio-rigged-download"
-                      title="Download the rigged GLB — drop into Roblox Studio → Avatar tab → Avatar Setup"
-                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff] text-black hover:shadow-[0_0_14px_rgba(0,240,255,0.55)] transition-all whitespace-nowrap"
-                    >
-                      <Download size={11} weight="bold" /> Rigged .GLB
-                    </a>
-                    <button
-                      onClick={() => { setHowToMode("avatar"); setShowHowToEquip(true); }}
-                      data-testid="studio-avatar-setup-howto"
-                      title="Walkthrough: publish the rigged avatar via Roblox Studio's Avatar Setup"
-                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-[#00f0ff] border border-[#00f0ff]/40 hover:bg-[#00f0ff]/10 transition-all whitespace-nowrap"
-                    >
-                      <Question size={11} weight="fill" /> Avatar Setup
-                    </button>
-                  </>
-                )}
-                {ownsCurrent && !currentGen?.optimized_model_url && currentGen?.optimization_status !== "pending" && (
-                  <div className="relative group shrink-0">
-                    <button
-                      onClick={() => handleOptimize("medium")}
-                      disabled={optimizing}
-                      data-testid="studio-optimize-mesh"
-                      title="Clean up topology + reduce polycount for Roblox UGC limits (~1–2 min)"
-                      className="rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#fbbf24]/15 text-[#fbbf24] border border-[#fbbf24]/40 hover:bg-[#fbbf24]/25 hover:shadow-[0_0_12px_rgba(251,191,36,0.4)] transition-all whitespace-nowrap disabled:opacity-50"
-                    >
-                      <MagicWand size={11} weight="fill" /> {optimizing ? "Starting…" : "Optimize Mesh"}
-                    </button>
-                    {/* Density picker on hover */}
-                    <div className="absolute top-full mt-1 right-0 hidden group-hover:flex bg-black/95 border border-[#fbbf24]/40 rounded-xl p-1 gap-1 z-30 backdrop-blur-md">
-                      {["low", "medium", "high"].map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => handleOptimize(d)}
-                          data-testid={`studio-optimize-${d}`}
-                          title={d === "low" ? "Lowest poly (hat/accessory)" : d === "medium" ? "Balanced (default)" : "Highest detail (small parts only)"}
-                          className="rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider text-[#fbbf24] hover:bg-[#fbbf24]/15 transition-colors whitespace-nowrap"
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {currentGen?.optimization_status === "pending" && (
-                  <span
-                    data-testid="studio-optimize-pending"
-                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#fbbf24]/10 text-[#fbbf24] border border-[#fbbf24]/30 whitespace-nowrap animate-pulse"
-                  >
-                    <MagicWand size={11} weight="fill" /> Optimizing…
-                  </span>
-                )}
-                {currentGen?.optimized_model_url && (
-                  <a
-                    href={currentGen.optimized_model_url}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    data-testid="studio-optimized-download"
-                    title={`Download the polycount-optimized GLB (${currentGen.optimization_density || "medium"} density)`}
-                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#fbbf24] text-black hover:shadow-[0_0_14px_rgba(251,191,36,0.55)] transition-all whitespace-nowrap"
-                  >
-                    <Download size={11} weight="bold" /> Optimized .GLB
-                  </a>
-                )}
                 {isAdmin && (
                   <button
                     onClick={() => setExporting(true)}
@@ -1059,6 +890,17 @@ export default function Studio() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* === ROBLOX TOOLKIT (rigging + mesh optimization) === */}
+              {ownsCurrent && currentGen?.status === "completed" && (
+                <div className="mt-5 pt-5 border-t border-white/8">
+                  <RobloxToolkitPanel
+                    generation={currentGen}
+                    onUpdate={(fresh) => setCurrentGen(fresh)}
+                    onOpenAvatarWalkthrough={() => { setHowToMode("avatar"); setShowHowToEquip(true); }}
+                  />
                 </div>
               )}
 
