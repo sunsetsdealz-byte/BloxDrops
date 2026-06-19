@@ -75,10 +75,10 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
     : "relative w-full rounded-2xl overflow-hidden border border-white/10";
 
   const containerStyle = zoomed
-    ? { background: "radial-gradient(circle at 50% 40%, #ffffff 0%, #d8d8de 100%)" }
+    ? { background: "transparent" }
     : {
         height: isFullHeight ? "100%" : height,
-        background: "radial-gradient(circle at 50% 35%, #f4f4f6 0%, #c8c8d0 100%)",
+        background: "transparent",
       };
 
   const placeholder = (
@@ -103,7 +103,8 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
           <Canvas
             camera={{ position: [0, 0, 4], fov: 35 }}
             dpr={[1, 1.5]}
-            style={{ width: "100%", height: "100%" }}
+            gl={{ alpha: true, antialias: true, preserveDrawingBuffer: false }}
+            style={{ width: "100%", height: "100%", background: "transparent" }}
           >
             <ambientLight intensity={0.85} />
             <directionalLight position={[5, 5, 5]} intensity={1.2} color="#ffffff" />

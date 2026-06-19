@@ -1,5 +1,5 @@
-import React, { useMemo, useRef } from "react";
-import { useFrame, useLoader } from "@react-three/fiber";
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
@@ -25,12 +25,34 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
   }, [config, maxParticles]);
 
   // Load the particle sprite texture from the (already-resolved) public URL
-  const texture = useLoader(THREE.TextureLoader, config.texture || "");
-  if (texture) {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearMipmapLinearFilter;
-  }
+  // Use an effect-based loader (not Suspense) so the particle system still
+  // renders with its procedural soft mask even when the texture URL is empty,
+  // 404s, or violates CORS (common with rbxasset:// references).
+  const [texture, setTexture] = useState(null);
+  useEffect(() => {
+    if (!config.texture) {
+      setTexture(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(
+      config.texture,
+      (tex) => {
+        if (cancelled) { tex.dispose?.(); return; }
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        setTexture(tex);
+      },
+      undefined,
+      () => { if (!cancelled) setTexture(null); }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [config.texture]);
 
   // Particle pool (CPU-side state)
   const pool = useMemo(() => {
@@ -186,16 +208,22 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
     }
   });
 
-  // ---- material: additive blending + texture sample + per-particle rotation ----
+  // ---- material: per-particle PNG-like smoke (procedural soft alpha mask) ----
   const material = useMemo(() => {
     const brightness = config.brightness ?? 1;
+    // LightEmission: 0 = normal alpha (smoke/clouds), 1 = additive (fire/electricity).
+    // Default to NormalBlending so smoke renders as a transparent PNG on any backdrop.
+    const lightEmission = Math.max(0, Math.min(1, config.light_emission ?? 0));
+    const blendMode = lightEmission > 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending;
     return new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: blendMode,
       uniforms: {
         uTex: { value: texture },
+        uHasTex: { value: texture ? 1.0 : 0.0 },
         uBrightness: { value: brightness },
+        uLightEmission: { value: lightEmission },
       },
       vertexShader: `
         attribute float size;
@@ -213,24 +241,42 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
       `,
       fragmentShader: `
         uniform sampler2D uTex;
+        uniform float uHasTex;
         uniform float uBrightness;
+        uniform float uLightEmission;
         varying vec4 vColor;
         varying float vRotation;
         void main() {
           if (vColor.a < 0.001) discard;
+
           // Rotate the sprite UVs around (0.5, 0.5)
           float c = cos(vRotation), s = sin(vRotation);
           vec2 uv = gl_PointCoord - vec2(0.5);
           uv = mat2(c, -s, s, c) * uv + vec2(0.5);
-          if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
-          vec4 tex = texture2D(uTex, uv);
-          gl_FragColor = vec4(tex.rgb * vColor.rgb * uBrightness, tex.a * vColor.a);
+
+          // Procedural soft circular alpha mask (always present) — gives clean PNG-like
+          // edges. Falls off smoothly from the center so particles look like wisps,
+          // never as black squares.
+          vec2 d = gl_PointCoord - vec2(0.5);
+          float r = length(d) * 2.0;
+          float softMask = 1.0 - smoothstep(0.55, 1.0, r);
+
+          vec4 tex = vec4(1.0);
+          if (uHasTex > 0.5 && uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
+            tex = texture2D(uTex, uv);
+          }
+
+          // Combine texture alpha (if any) with the procedural soft mask so corners
+          // always fade. If texture is missing, only the soft mask is used.
+          float a = tex.a * softMask * vColor.a;
+          if (a < 0.005) discard;
+
+          vec3 rgb = tex.rgb * vColor.rgb * uBrightness;
+          gl_FragColor = vec4(rgb, a);
         }
       `,
     });
-  }, [texture, config.brightness]);
-
-  if (!texture) return null;
+  }, [texture, config.brightness, config.light_emission]);
 
   return (
     <points ref={pointsRef} frustumCulled={false}>
