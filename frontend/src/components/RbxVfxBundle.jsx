@@ -1,5 +1,5 @@
-import React, { useMemo, useRef } from "react";
-import { useFrame, useLoader } from "@react-three/fiber";
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import RbxParticleEmitter from "./RbxParticleEmitter";
 
@@ -199,16 +199,96 @@ function RbxBeam({ config }) {
     });
   }, [color, alpha, brightness]);
 
+  // Pulsing orb position = midpoint of the two attachments. Computed before
+  // any conditional return to keep hooks order stable.
+  const midPoint = useMemo(
+    () => [a.x + dir.x * 0.5, a.y + dir.y * 0.5, a.z + dir.z * 0.5],
+    [a, dir]
+  );
+  const orbBase = useMemo(() => Math.max(0.3, dir.length() * 0.45), [dir]);
+
   if (!valid) return null;
   if (!texture) return null; // ensure loader resolved (we don't actually use it but useLoader gates render)
 
   return (
-    <mesh renderOrder={3}>
-      <bufferGeometry ref={geoRef}>
-        <bufferAttribute attach="attributes-position" count={(segs + 1) * 2} array={positionsRef.current} itemSize={3} />
-        <bufferAttribute attach="attributes-uv"       count={(segs + 1) * 2} array={uvsRef.current}       itemSize={2} />
-        <bufferAttribute attach="index"                count={segs * 6}      array={indicesRef.current}   itemSize={1} />
-      </bufferGeometry>
+    <group>
+      {/* === ZIGZAG LIGHTNING RIBBON === */}
+      <mesh renderOrder={3}>
+        <bufferGeometry ref={geoRef}>
+          <bufferAttribute attach="attributes-position" count={(segs + 1) * 2} array={positionsRef.current} itemSize={3} />
+          <bufferAttribute attach="attributes-uv"       count={(segs + 1) * 2} array={uvsRef.current}       itemSize={2} />
+          <bufferAttribute attach="index"                count={segs * 6}      array={indicesRef.current}   itemSize={1} />
+        </bufferGeometry>
+        <primitive object={material} attach="material" />
+      </mesh>
+
+      {/* === ORBITAL LIGHTNING GLOW (pulsing white→purple sphere) === */}
+      <PulsingOrb position={midPoint} baseRadius={orbBase} color={color} brightness={brightness} />
+    </group>
+  );
+}
+
+// ============================================================================
+//  PulsingOrb — billboard sprite with radial gradient + brightness pulse,
+//  used as the bright "orbital lightning" core between Beam attachments.
+// ============================================================================
+function PulsingOrb({ position, baseRadius, color, brightness }) {
+  const meshRef = useRef();
+  const phaseRef = useRef(Math.random() * Math.PI * 2);
+  const { camera } = useThree();
+
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uColor:      { value: new THREE.Color(color.r, color.g, color.b) },
+        uBrightness: { value: brightness },
+        uPulse:      { value: 1.0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uBrightness;
+        uniform float uPulse;
+        varying vec2 vUv;
+        void main() {
+          vec2 d = vUv - vec2(0.5);
+          float r = length(d) * 2.0;
+          if (r > 1.0) discard;
+          // Bright hot core fading to colored halo
+          float hotCore   = pow(1.0 - smoothstep(0.0, 0.35, r), 2.0);
+          float midGlow   = pow(1.0 - smoothstep(0.0, 0.7, r), 1.5);
+          float outerHalo = 1.0 - smoothstep(0.0, 1.0, r);
+          vec3 rgb = mix(uColor, vec3(1.0), hotCore) * uBrightness * uPulse;
+          float a = (hotCore + midGlow * 0.5 + outerHalo * 0.25) * uPulse;
+          if (a < 0.005) discard;
+          gl_FragColor = vec4(rgb, a);
+        }
+      `,
+    });
+  }, [color, brightness]);
+
+  useFrame((_, dt) => {
+    phaseRef.current += dt * 6.0; // ~1 Hz pulse
+    const pulse = 0.85 + Math.sin(phaseRef.current) * 0.15 + (Math.random() < 0.08 ? 0.25 : 0);
+    if (material.uniforms?.uPulse) material.uniforms.uPulse.value = pulse;
+    // Billboard the orb so it always faces the camera (lookAt camera position)
+    if (meshRef.current) {
+      meshRef.current.lookAt(camera.position);
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} position={position} renderOrder={4}>
+      <planeGeometry args={[baseRadius * 2, baseRadius * 2]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
