@@ -30,7 +30,7 @@ OPEN_CLOUD = "https://apis.roblox.com/assets/v1"
 
 
 class ConnectRequest(BaseModel):
-    api_key: str = Field(min_length=10, max_length=400)
+    api_key: str = Field(min_length=10, max_length=2048)
     roblox_user_id: str = Field(min_length=1, max_length=30, pattern=r"^\d+$")
 
 
