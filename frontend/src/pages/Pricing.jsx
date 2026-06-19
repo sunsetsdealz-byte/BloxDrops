@@ -27,7 +27,7 @@ const PLAN_DETAILS = {
       ["Browse the full community feed", true],
       ["Vote in 1v1 battles + earn streak boosts", true],
       ["In-browser 3D preview with avatar try-on", true],
-      ["Roblox-style starter materials only", false],
+      ["Generic starter materials only", false],
       ["Personal use only — no resale rights", false],
     ],
     cta: "Start free now",
@@ -46,8 +46,8 @@ const PLAN_DETAILS = {
       ["3 AI re-rolls per prompt (best-of-3 quality)", true],
       ["All 10 design lanes: cyberpunk, kawaii, gothic, y2k, anime, fantasy, streetwear, gothic, horror, realistic", true],
       ["PBR materials on every export (BloxDrops engine)", true],
-      ["Direct push to Roblox via Open Cloud API", true],
-      ["1 free Featured-for-Robux boost per week", true],
+      ["Direct push to your 3D platform via Open Cloud API", true],
+      ["1 free Featured boost per week", true],
       ["Skip-the-line generation queue", true],
       ["Hidden creations + private studio mode", true],
       ["Full commercial license — sell anywhere", true],
@@ -70,7 +70,7 @@ const PLAN_DETAILS = {
       ["1 AI re-roll per prompt (regenerate if you don't love it)", true],
       ["All 10 design lanes unlocked", true],
       ["Standard PBR-quality .GLB exports", true],
-      ["Direct push to Roblox via Open Cloud API", true],
+      ["Direct push to your 3D platform via Open Cloud API", true],
       ["Priority queue (~2× faster than free tier)", true],
       ["Hidden creations + private studio mode", true],
       ["Full commercial license", true],
@@ -86,8 +86,8 @@ const COMPARISON_ROWS = [
   { label: "AI re-rolls per prompt", free: "1", indie: "1", studio: "3 (best of)" },
   { label: "Design styles", free: "Basic 4", indie: "All 10", studio: "All 10 + early access" },
   { label: "Generation queue speed", free: "Standard", indie: "Priority", studio: "Highest priority" },
-  { label: "Direct Roblox push", free: "—", indie: "✔", studio: "✔" },
-  { label: "Featured-for-Robux boost", free: "Earn via 5 wins", indie: "Earn via 5 wins", studio: "1 free / week" },
+  { label: "Direct platform push", free: "—", indie: "✔", studio: "✔" },
+  { label: "Featured boost", free: "Earn via 5 wins", indie: "Earn via 5 wins", studio: "1 free / week" },
   { label: "Private creations", free: "—", indie: "✔", studio: "✔" },
   { label: "Commercial license", free: "—", indie: "✔", studio: "✔" },
   { label: "Support SLA", free: "Community", indie: "Email · 24h", studio: "1:1 onboarding" },
@@ -159,7 +159,7 @@ export default function Pricing() {
           Pick a lane.<br/>Ship your drop.
         </h1>
         <p className="text-zinc-400 max-w-xl mx-auto mt-4">
-          Every plan unlocks the full BloxDrops engine and the Roblox export pipeline.
+          Every plan unlocks the full BloxDrops engine and the marketplace export pipeline.
           The only difference is how many ideas you want to ship this month.
         </p>
       </motion.div>
@@ -340,7 +340,7 @@ export default function Pricing() {
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[#00f0ff] mb-2 flex items-center gap-1.5">
-              <FireSimple size={12} weight="fill" /> Featured for Robux
+              <FireSimple size={12} weight="fill" /> Featured Boost
             </p>
             <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter">
               Pin your creation to the top<br/>of the feed for 24 hours.
@@ -365,8 +365,8 @@ export default function Pricing() {
           q="What does a credit buy me?"
           a="One full generation (Text→3D or Image→3D). Re-rolls (AI re-edits) inside the same prompt session don't burn extra credits." />
         <FaqCard icon={<ShareNetwork size={20} weight="duotone" className="text-[#00f0ff]" />}
-          q="How does the Roblox push work?"
-          a="Paste your Open Cloud API key once. Hit 'Push to Roblox' and the preview lands in your Inventory in seconds. The full .GLB downloads for marketplace publish." />
+          q="How does the platform push work?"
+          a="Paste your Open Cloud API key once. Hit 'Push' and the preview lands in your Inventory in seconds. The full .GLB downloads for marketplace publish." />
         <FaqCard icon={<Trophy size={20} weight="duotone" className="text-[#ff0055]" />}
           q="Can I cancel any time?"
           a="Yes — cancel from your profile in two clicks. Annual subscribers keep their credits until the renewal date." />

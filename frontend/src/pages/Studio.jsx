@@ -365,14 +365,14 @@ export default function Studio() {
                 </div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#fbbf24] font-bold mb-2">Pro feature · Photo Scanner</p>
                 <h3 className="font-display text-lg font-black uppercase tracking-tighter mb-2 leading-tight">
-                  Turn real-world photos into Roblox 3D drops
+                  Turn real-world photos into 3D UGC drops
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                  Selfies, sneakers, props, plushies — point at anything in real life, snap a photo, and the AI scans it into a fully Roblox-ready 3D model in 60 seconds.
+                  Selfies, sneakers, props, plushies — point at anything in real life, snap a photo, and the AI scans it into a fully marketplace-ready 3D model in 60 seconds.
                 </p>
                 <ul className="text-[11px] text-zinc-300 text-left max-w-xs mx-auto mb-5 space-y-1.5">
                   <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Photogrammetry-grade scan accuracy</li>
-                  <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Roblox-optimized topology + materials</li>
+                  <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Marketplace-optimized topology + materials</li>
                   <li className="flex items-center gap-2"><Lightning size={12} weight="fill" className="text-[#ccff00]" /> Unlimited scans on Pro · 50/mo on Creator</li>
                 </ul>
                 <Link
@@ -669,13 +669,15 @@ export default function Studio() {
                 >
                   <Download size={14} weight="bold" /> .GLB
                 </a>
-                <button
-                  onClick={() => setExporting(true)}
-                  data-testid="studio-export-roblox"
-                  className="bg-[#ccff00] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-shadow"
-                >
-                  <Robot size={14} weight="fill" /> Export to Roblox
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setExporting(true)}
+                    data-testid="studio-export-roblox"
+                    className="bg-[#ccff00] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-shadow"
+                  >
+                    <Robot size={14} weight="fill" /> Export to Roblox
+                  </button>
+                )}
                 {ownsCurrent && (
                   <>
                     <button
@@ -704,7 +706,7 @@ export default function Studio() {
             )}
           </div>
 
-          {exporting && currentGen?.id && (
+          {exporting && currentGen?.id && isAdmin && (
             <RobloxExportModal
               generationId={currentGen.id}
               onClose={() => setExporting(false)}

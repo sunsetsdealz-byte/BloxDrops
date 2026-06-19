@@ -96,7 +96,7 @@ export default function Landing() {
               `> ${stats.total_creations.toLocaleString()} CREATIONS · ${stats.creators.toLocaleString()} CREATORS ONLINE`,
               `> ${stats.today_creations} ITEMS MINTED IN THE LAST 24H`,
               `> ${stats.battles_settled} BATTLES SETTLED · BLOXDROPS ENGINE LIVE`,
-              `> READY: TEXT→3D · IMAGE→3D · ROBLOX MARKETPLACE PIPELINE`,
+              `> READY: TEXT→3D · IMAGE→3D · UGC MARKETPLACE PIPELINE`,
             ]} />
           </div>
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
@@ -149,9 +149,9 @@ export default function Landing() {
                 transition={{ duration: 0.7, delay: 0.25 }}
                 className="text-zinc-300 text-lg max-w-xl leading-relaxed"
               >
-                Drop a prompt or an image. Watch AI sculpt your idea into a Roblox-ready 3D
+                Drop a prompt or an image. Watch AI sculpt your idea into a marketplace-ready 3D
                 accessory while you wait. Battle other creators. Climb the leaderboard.
-                Cash in the Robux.
+                Cash in the rewards.
               </motion.p>
 
               <motion.div
@@ -231,15 +231,15 @@ export default function Landing() {
 
         <div className="grid md:grid-cols-6 gap-4 md:gap-6">
           <FeatureCard delay={0} span="md:col-span-3" icon={<Cube size={28} weight="duotone" />} title="Text & Image → 3D"
-            body="Drop a prompt or a reference image. The BloxDrops engine sculpts a Roblox-ready GLB in under 2 minutes." kbd="01" />
+            body="Drop a prompt or a reference image. The BloxDrops engine sculpts a marketplace-ready GLB in under 2 minutes." kbd="01" />
           <FeatureCard delay={0.08} span="md:col-span-3" icon={<ChatCircle size={28} weight="duotone" />} title="AI Prompt Booster"
             body="Stuck at 'cool hat'? Our Claude-powered prompt engine upgrades it into a vivid 60-word spec." kbd="02" />
           <FeatureCard delay={0.16} span="md:col-span-2" icon={<Trophy size={28} weight="duotone" />} title="1v1 Battles"
             body="Vote your way through pairs. Win 5 → free 24h feature boost." accent="magenta" kbd="03" />
           <FeatureCard delay={0.22} span="md:col-span-2" icon={<Lightning size={28} weight="duotone" />} title="Daily Themes"
             body="Cyberpunk Monday, Anime Tuesday, Gothic Wednesday — fresh prompts every day." accent="cyan" kbd="04" />
-          <FeatureCard delay={0.28} span="md:col-span-2" icon={<ShareNetwork size={28} weight="duotone" />} title="Roblox Marketplace Export"
-            body="One-click .GLB + manifest + checklist for the Roblox Asset Configuration upload." kbd="05" />
+          <FeatureCard delay={0.28} span="md:col-span-2" icon={<ShareNetwork size={28} weight="duotone" />} title="Marketplace Export"
+            body="One-click .GLB + manifest + checklist ready for upload to your 3D platform." kbd="05" />
         </div>
       </section>
 
@@ -380,7 +380,7 @@ export default function Landing() {
               Your next bestseller<br/>is one prompt away.
             </h3>
             <p className="text-zinc-300 mb-7 max-w-xl mx-auto">
-              Join the creators turning ideas into Robux. Start with 20 free credits — no card required.
+              Join the creators turning ideas into rewards. Start with 20 free credits — no card required.
             </p>
             <Link to="/register" className="btn-volt rounded-full px-8 py-4 text-base inline-flex items-center gap-2">
               Create your first item <ArrowRight size={18} weight="bold" />
@@ -546,7 +546,7 @@ function HeroShowcase() {
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">manifesto</p>
           <p className="text-[11px] font-bold italic leading-tight">
-            &ldquo;Every person with an idea is one prompt away from a Roblox empire.&rdquo;
+            &ldquo;Every person with an idea is one prompt away from a UGC empire.&rdquo;
           </p>
         </div>
       </motion.div>

@@ -296,11 +296,11 @@ export default function MonetizationSection() {
               <Storefront size={12} weight="fill" /> 04 · Marketplace · Soon
             </p>
             <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter mb-2">
-              List in USD<br/>or Robux.
+              List in USD<br/>or BloxBucks.
             </h3>
             <p className="text-sm text-zinc-400 mb-6">
               Sell any owned drop in either currency. Real cash-out via Stripe.
-              In-platform Robux economy for Roblox-native trades.
+              Native in-platform economy for fast trades.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl border border-[#00f0ff]/40 bg-black/40 p-4 text-center">
@@ -310,7 +310,7 @@ export default function MonetizationSection() {
               </div>
               <div className="rounded-2xl border border-[#ff0055]/40 bg-black/40 p-4 text-center">
                 <Coins size={28} weight="duotone" className="text-[#ff0055] mx-auto mb-2" />
-                <p className="font-display text-lg font-black uppercase tracking-tight">Robux</p>
+                <p className="font-display text-lg font-black uppercase tracking-tight">BloxBucks</p>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mt-0.5">In-platform</p>
               </div>
             </div>
@@ -339,11 +339,11 @@ export default function MonetizationSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Traditional */}
           <div className="rounded-2xl border border-zinc-700/50 bg-zinc-950 p-6">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-4">Traditional Roblox UGC</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-4">Traditional UGC marketplaces</p>
             <ul className="space-y-3 text-sm">
               {[
                 "Unlimited copies = zero scarcity value",
-                "30% Roblox cut, no royalties on resales",
+                "30% platform cut, no royalties on resales",
                 "No proof of authorship",
                 "Compete against thousands of clones",
                 "One-time sale only · no recurring revenue",
@@ -392,7 +392,7 @@ export default function MonetizationSection() {
             border: "border-[#ccff00]/40",
           },
           {
-            n: "02", t: "Trade", c: "Other creators buy your drop in USD or Robux.",
+            n: "02", t: "Trade", c: "Other creators buy your drop in USD or BloxBucks.",
             icon: <TrendUp size={28} weight="duotone" className="text-[#00f0ff]" />,
             border: "border-[#00f0ff]/40",
           },

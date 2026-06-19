@@ -255,7 +255,7 @@ export default function Profile() {
       </div>
 
       <ConnectPayoutsCard />
-      <RobloxConnectCard />
+      {user?.role === "admin" && <RobloxConnectCard />}
 
       {items.length === 0 ? (
         <div className="text-center py-20 text-zinc-500">

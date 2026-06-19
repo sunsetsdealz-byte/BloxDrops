@@ -194,7 +194,7 @@ export default function BloxBucksExplainer() {
           ▍ Why a native currency?
         </p>
         <h3 className="font-display text-2xl md:text-3xl font-black uppercase tracking-tighter text-center mb-6">
-          BloxBucks vs. crypto vs. raw Robux
+          BloxBucks vs. crypto vs. raw cash
         </h3>
         <div className="grid md:grid-cols-3 gap-3">
           {[

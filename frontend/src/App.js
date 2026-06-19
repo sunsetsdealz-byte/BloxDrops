@@ -31,7 +31,7 @@ function Layout() {
           <div className="font-display font-bold tracking-tighter uppercase">
             Blox<span className="text-[#ccff00]">Drops</span> AI
           </div>
-          <div>Built for Roblox creators · &copy; {new Date().getFullYear()} BloxDrops</div>
+          <div>Built for UGC creators · &copy; {new Date().getFullYear()} BloxDrops</div>
         </div>
       </footer>
     </>
