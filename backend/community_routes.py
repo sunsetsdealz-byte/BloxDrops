@@ -3,8 +3,9 @@ import os
 import random
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel, Field
 from bson import ObjectId
 
 from auth_utils import get_current_user, get_optional_user
@@ -158,6 +159,97 @@ async def delete_my_generation(generation_id: str, user=Depends(get_current_user
     await db.generations.delete_one({"_id": ObjectId(generation_id)})
 
     return {"ok": True, "deleted_id": generation_id}
+
+
+# ============== NFT METADATA EDITOR ==============
+class NFTTrait(BaseModel):
+    trait_type: str = Field(min_length=1, max_length=32)
+    value: str = Field(min_length=1, max_length=64)
+
+
+class NFTMetadataUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=80)
+    description: Optional[str] = Field(default=None, max_length=600)
+    traits: Optional[List[NFTTrait]] = Field(default=None, max_length=12)
+
+
+@router.patch("/generations/{generation_id}/metadata")
+async def update_generation_metadata(
+    generation_id: str,
+    payload: NFTMetadataUpdate,
+    user=Depends(get_current_user),
+):
+    """Owner-only NFT metadata editor.
+
+    Lets the creator add a custom display name, description / lore,
+    and OpenSea-style key/value traits (e.g. "Edition: 1 of 1") to
+    their generation.
+
+    Locking rule:
+    - Editable freely until the drop is first listed on the marketplace.
+    - Once ANY marketplace listing exists for this generation (open,
+      sold, or cancelled), the metadata becomes immutable to preserve
+      buyer-facing provenance.
+    - Admins can always edit.
+    """
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Creation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Creation not found")
+
+    is_admin = user.get("role") == "admin"
+    if gen.get("user_id") != user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="You can only edit your own creations")
+
+    # Lock once the drop has ever been listed on the marketplace
+    if not is_admin:
+        ever_listed = await db.marketplace_listings.find_one({"generation_id": generation_id})
+        if ever_listed:
+            raise HTTPException(
+                status_code=400,
+                detail="Metadata is locked — this drop was listed on the marketplace. Provenance is now permanent.",
+            )
+
+    update: dict = {}
+    if payload.display_name is not None:
+        update["display_name"] = payload.display_name.strip() or None
+    if payload.description is not None:
+        update["description"] = payload.description.strip() or None
+    if payload.traits is not None:
+        # Dedupe by trait_type (case-insensitive), preserve order
+        seen = set()
+        cleaned = []
+        for t in payload.traits:
+            key = t.trait_type.strip()
+            val = t.value.strip()
+            if not key or not val:
+                continue
+            k_lower = key.lower()
+            if k_lower in seen:
+                continue
+            seen.add(k_lower)
+            cleaned.append({"trait_type": key, "value": val})
+        update["traits"] = cleaned
+
+    if not update:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+
+    update["metadata_updated_at"] = now_utc().isoformat()
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": update},
+    )
+
+    fresh = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    result = _hydrate(fresh)
+    # After update, recompute lock state for the client
+    ever_listed_now = await db.marketplace_listings.find_one({"generation_id": generation_id})
+    result["metadata_locked"] = bool(ever_listed_now)
+    return result
 
 
 # ============== BATTLE ==============

@@ -124,6 +124,13 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
     # VFX custom config (imported from Roblox .rbxm — takes precedence over preset)
     if "vfx_custom" not in doc:
         doc["vfx_custom"] = None
+    # NFT metadata (owner-editable until first marketplace listing)
+    if "display_name" not in doc:
+        doc["display_name"] = None
+    if "description" not in doc:
+        doc["description"] = None
+    if "traits" not in doc:
+        doc["traits"] = []
 
     tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]

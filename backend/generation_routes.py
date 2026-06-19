@@ -330,6 +330,9 @@ async def get_generation(generation_id: str, user=Depends(get_current_user)):
         is_liked = bool(like)
     doc["is_liked"] = is_liked
     enrich_drop(doc)
+    # Metadata is locked once the drop has ever appeared on the marketplace
+    ever_listed = await db.marketplace_listings.find_one({"generation_id": doc["id"]})
+    doc["metadata_locked"] = bool(ever_listed)
     return doc
 
 

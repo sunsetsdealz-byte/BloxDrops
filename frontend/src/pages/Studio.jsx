@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
 import RobloxExportModal from "../components/RobloxExportModal";
+import NFTMetadataModal from "../components/NFTMetadataModal";
 import DropBadges from "../components/DropBadges";
 import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
@@ -50,6 +51,7 @@ export default function Studio() {
   const [savingVfx, setSavingVfx] = useState(false);
   const [vfxDetectUrl, setVfxDetectUrl] = useState("");
   const [detectingVfx, setDetectingVfx] = useState(false);
+  const [editingMetadata, setEditingMetadata] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -681,6 +683,17 @@ export default function Studio() {
                 {ownsCurrent && (
                   <>
                     <button
+                      onClick={() => setEditingMetadata(true)}
+                      data-testid="studio-edit-metadata"
+                      title={currentGen.metadata_locked
+                        ? "Metadata locked — drop has been listed on the marketplace"
+                        : "Edit NFT info (name, description, traits)"}
+                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 hover:shadow-[0_0_14px_rgba(204,255,0,0.25)] transition-all backdrop-blur-md"
+                    >
+                      {currentGen.metadata_locked ? <Lock size={13} weight="fill" /> : <PencilSimple size={13} weight="bold" />}
+                      Edit Info
+                    </button>
+                    <button
                       onClick={regenerateCurrent}
                       disabled={regenerating}
                       data-testid="studio-regenerate-creation"
@@ -713,8 +726,38 @@ export default function Studio() {
             />
           )}
 
+          {editingMetadata && currentGen?.id && (
+            <NFTMetadataModal
+              generation={currentGen}
+              onClose={() => setEditingMetadata(false)}
+              onSaved={(updated) => setCurrentGen((prev) => ({ ...prev, ...updated }))}
+            />
+          )}
+
           {currentGen && currentGen.status === "completed" && (
             <div className="glass rounded-2xl p-5">
+              {/* === NFT DISPLAY NAME + LORE === */}
+              {(currentGen.display_name || currentGen.description) && (
+                <div className="mb-4 pb-4 border-b border-white/8" data-testid="nft-meta-display">
+                  {currentGen.display_name && (
+                    <p
+                      className="font-display text-2xl font-black tracking-tighter text-white leading-tight"
+                      data-testid="nft-display-name"
+                    >
+                      {currentGen.display_name}
+                    </p>
+                  )}
+                  {currentGen.description && (
+                    <p
+                      className="text-sm text-zinc-300 leading-relaxed mt-2 whitespace-pre-wrap"
+                      data-testid="nft-display-description"
+                    >
+                      {currentGen.description}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold mb-1">Prompt</p>
@@ -755,6 +798,31 @@ export default function Studio() {
                       </p>
                     </div>
                   </div>
+
+                  {/* === NFT CUSTOM TRAITS === */}
+                  {Array.isArray(currentGen.traits) && currentGen.traits.length > 0 && (
+                    <div className="mt-4" data-testid="nft-traits-display">
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-2">
+                        Traits
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {currentGen.traits.map((t, i) => (
+                          <div
+                            key={`${t.trait_type}-${i}`}
+                            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2"
+                            data-testid={`nft-trait-${i}`}
+                          >
+                            <p className="text-[9px] uppercase tracking-[0.2em] text-[#ccff00] font-black truncate">
+                              {t.trait_type}
+                            </p>
+                            <p className="text-xs text-white font-bold mt-0.5 truncate" title={t.value}>
+                              {t.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
