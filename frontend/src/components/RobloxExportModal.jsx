@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { X, CheckCircle, WarningCircle, Copy, DownloadSimple, Robot, Plug, ArrowSquareOut } from "@phosphor-icons/react";
+import { X, CheckCircle, WarningCircle, Copy, DownloadSimple, Robot, Plug, ArrowSquareOut, Question } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { api, API, formatApiError } from "../lib/api";
+import HowToEquipModal from "./HowToEquipModal";
 
 // Maps a BloxDrops attachment_type → the exact Roblox "Save to Roblox" sub-category
 // the user must pick in Studio. Picking "UGC Body" (or anything else) returns the
@@ -30,6 +31,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
   const [pushResult, setPushResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingAccessory, setDownloadingAccessory] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -226,17 +228,27 @@ export default function RobloxExportModal({ generationId, onClose }) {
                           Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
                         </p>
                         {pushResult.inventory_url && (
-                          <a
-                            href={pushResult.inventory_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            data-testid="export-open-in-roblox"
-                            className="inline-flex items-center gap-2 bg-white text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(255,255,255,0.4)] transition-all"
-                          >
-                            <Robot size={14} weight="fill" />
-                            Open in Roblox
-                            <ArrowSquareOut size={11} weight="bold" />
-                          </a>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <a
+                              href={pushResult.inventory_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              data-testid="export-open-in-roblox"
+                              className="inline-flex items-center gap-2 bg-white text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(255,255,255,0.4)] transition-all"
+                            >
+                              <Robot size={14} weight="fill" />
+                              Open in Roblox
+                              <ArrowSquareOut size={11} weight="bold" />
+                            </a>
+                            <button
+                              onClick={() => setShowHowTo(true)}
+                              data-testid="export-how-to-equip"
+                              className="inline-flex items-center gap-2 bg-black/60 text-zinc-200 border border-white/20 rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:border-[#ccff00]/70 hover:text-[#ccff00] transition-all"
+                            >
+                              <Question size={13} weight="fill" />
+                              How to equip
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -321,6 +333,13 @@ export default function RobloxExportModal({ generationId, onClose }) {
           </>
         )}
       </div>
+
+      <HowToEquipModal
+        open={showHowTo}
+        onClose={() => setShowHowTo(false)}
+        attachmentType={manifest?.attachment_type || "Hat"}
+        itemName={manifest?.asset_name}
+      />
     </div>
   );
 }

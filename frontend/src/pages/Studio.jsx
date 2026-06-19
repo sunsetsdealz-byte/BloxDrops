@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple, Share, MagnifyingGlassPlus, X as XIcon } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple, Share, MagnifyingGlassPlus, X as XIcon, Question } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
 import RobloxExportModal from "../components/RobloxExportModal";
 import NFTMetadataModal from "../components/NFTMetadataModal";
 import ShareNFTCard from "../components/ShareNFTCard";
+import HowToEquipModal from "../components/HowToEquipModal";
 import DropBadges from "../components/DropBadges";
 import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
@@ -55,6 +56,7 @@ export default function Studio() {
   const [editingMetadata, setEditingMetadata] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
   const [viewerZoomed, setViewerZoomed] = useState(false);
+  const [showHowToEquip, setShowHowToEquip] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -696,16 +698,26 @@ export default function Studio() {
                   </button>
                 )}
                 {currentGen?.roblox_asset_id && (
-                  <a
-                    href={`https://create.roblox.com/store/asset/${currentGen.roblox_asset_id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    data-testid="studio-open-in-roblox"
-                    title={`Open Roblox asset ${currentGen.roblox_asset_id}`}
-                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-white text-black hover:shadow-[0_0_12px_rgba(255,255,255,0.4)] transition-all whitespace-nowrap"
-                  >
-                    <Robot size={11} weight="fill" /> Open
-                  </a>
+                  <>
+                    <a
+                      href={`https://create.roblox.com/store/asset/${currentGen.roblox_asset_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      data-testid="studio-open-in-roblox"
+                      title={`Open Roblox asset ${currentGen.roblox_asset_id}`}
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-white text-black hover:shadow-[0_0_12px_rgba(255,255,255,0.4)] transition-all whitespace-nowrap"
+                    >
+                      <Robot size={11} weight="fill" /> Open
+                    </a>
+                    <button
+                      onClick={() => setShowHowToEquip(true)}
+                      data-testid="studio-how-to-equip"
+                      title="How to equip this on your Roblox avatar"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 transition-all backdrop-blur-md whitespace-nowrap"
+                    >
+                      <Question size={11} weight="fill" /> Equip
+                    </button>
+                  </>
                 )}
                 {ownsCurrent && (
                   <>
@@ -777,6 +789,13 @@ export default function Studio() {
               onClose={() => setSharingCard(false)}
             />
           )}
+
+          <HowToEquipModal
+            open={showHowToEquip}
+            onClose={() => setShowHowToEquip(false)}
+            attachmentType={currentGen?.attachment_type || "Hat"}
+            itemName={currentGen?.display_name || currentGen?.original_prompt}
+          />
 
           {currentGen && currentGen.status === "completed" && (
             <div className="glass rounded-2xl p-5">
