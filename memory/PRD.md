@@ -69,6 +69,11 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **Verified Creator badge** (2026-06-18): Marketplace listing cards display a green `✓ Verified` chip when the seller has completed Stripe Connect KYC (`stripe_charges_enabled=true`). `/api/marketplace` browse now returns `seller_verified` per listing.
 - **Removed demo seed**: All 12 fake demo creations wiped from DB. Battle Arena's empty-state UI now correctly displays for new users until real drops exist.
 
+**2026-06-19**
+- **NFT Metadata Editor**: New owner-only `PATCH /api/generations/{id}/metadata` with display_name, description (lore), and OpenSea-style key/value traits[]. Locked once any marketplace listing exists for the drop (admin bypass). Frontend `NFTMetadataModal.jsx` + provenance panel displays display name, description, and trait grid. **Tested 9/9 backend + Playwright UI = 100%**.
+- **Share NFT Card**: Client-side HTML5 Canvas renderer producing a 1080×1080 PNG (brand header, rarity-tinted aura, edition pill, drop thumbnail with vignette, display name, description, traits grid, Mint ID, live URL). Three CTAs: Download PNG, Copy to clipboard, Tweet. Mounted via `studio-share-card` button on every completed drop. **Tested 6/6 acceptance criteria = 100%**.
+- **Roblox API key length fix**: Bumped Open Cloud key max from 400 → 2048 chars (real keys are signed JWTs ~600-1000 chars).
+
 ## P1 — Backlog
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)
 - Admin: encourage-email/notif tool for creators in "never_started" bucket
