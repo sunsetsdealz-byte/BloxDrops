@@ -143,7 +143,8 @@ export default function Studio() {
     setSavingVfx(true);
     try {
       await api.post(`/admin/generations/${currentGen.id}/vfx`, { preset: presetKey });
-      setCurrentGen((prev) => prev ? { ...prev, vfx_preset: presetKey } : prev);
+      // Setting a preset clears any prior imported custom config on the backend (see admin_routes)
+      setCurrentGen((prev) => prev ? { ...prev, vfx_preset: presetKey, vfx_custom: presetKey ? null : prev.vfx_custom } : prev);
       toast.success(presetKey ? "VFX preset attached" : "VFX preset cleared");
     } catch (err) {
       toast.error(formatApiError(err));
@@ -156,15 +157,35 @@ export default function Studio() {
     if (!currentGen || !vfxDetectUrl.trim()) return;
     setDetectingVfx(true);
     try {
-      const { data } = await api.post(
-        `/admin/generations/${currentGen.id}/vfx/detect`,
-        { url: vfxDetectUrl.trim(), auto_apply: true }
-      );
-      setCurrentGen((prev) => prev ? { ...prev, vfx_preset: data.preset } : prev);
-      if (data.preset) {
-        toast.success(`AI detected: ${data.label} — ${data.reason || "applied"}`);
+      // Try real Roblox VFX import first (extracts the EXACT ParticleEmitter from .rbxm)
+      let imported = null;
+      try {
+        const { data } = await api.post(
+          `/admin/generations/${currentGen.id}/vfx/import-roblox`,
+          { url: vfxDetectUrl.trim() }
+        );
+        imported = data;
+      } catch (impErr) {
+        // Not a Roblox URL with a ParticleEmitter — fall back to AI preset classifier
+      }
+
+      if (imported && imported.emitter_count > 0) {
+        // Refetch the gen to get the persisted vfx_custom config
+        const { data: fresh } = await api.get(`/generate/${currentGen.id}`);
+        setCurrentGen(fresh);
+        toast.success(`Imported exact Roblox VFX: ${imported.emitter_names.join(", ")} (${imported.emitter_count} emitter${imported.emitter_count > 1 ? "s" : ""})`);
       } else {
-        toast.info(`AI found no particle effect on that item${data.reason ? ` (${data.reason})` : ""}`);
+        // AI preset fallback
+        const { data } = await api.post(
+          `/admin/generations/${currentGen.id}/vfx/detect`,
+          { url: vfxDetectUrl.trim(), auto_apply: true }
+        );
+        setCurrentGen((prev) => prev ? { ...prev, vfx_preset: data.preset, vfx_custom: null } : prev);
+        if (data.preset) {
+          toast.success(`AI detected: ${data.label} — ${data.reason || "applied"}`);
+        } else {
+          toast.info(`AI found no particle effect on that item${data.reason ? ` (${data.reason})` : ""}`);
+        }
       }
       setVfxDetectUrl("");
     } catch (err) {
@@ -577,6 +598,7 @@ export default function Studio() {
               url={currentGen?.status === "completed" ? currentGen.model_url : null}
               height={520}
               vfxPreset={currentGen?.vfx_preset || null}
+              vfxCustom={currentGen?.vfx_custom || null}
             />
             {currentGen?.status === "pending" && (
               <div

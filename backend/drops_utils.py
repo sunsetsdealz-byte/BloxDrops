@@ -121,6 +121,9 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
     # VFX preset (admin-attached particle effect)
     if "vfx_preset" not in doc:
         doc["vfx_preset"] = None
+    # VFX custom config (imported from Roblox .rbxm — takes precedence over preset)
+    if "vfx_custom" not in doc:
+        doc["vfx_custom"] = None
 
     tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]

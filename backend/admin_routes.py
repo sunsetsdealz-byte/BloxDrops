@@ -499,7 +499,7 @@ async def set_generation_vfx(
 
     await db.generations.update_one(
         {"_id": ObjectId(generation_id)},
-        {"$set": {"vfx_preset": payload.preset}},
+        {"$set": {"vfx_preset": payload.preset, "vfx_custom": None}},
     )
 
     await _log(db, user, "set_vfx_preset", None, {
@@ -564,5 +564,74 @@ async def detect_vfx_for_generation(
         "generation_id": generation_id,
         "applied": payload.auto_apply,
         **result,
+    }
+
+
+# ============== IMPORT EXACT ROBLOX VFX (.rbxm ParticleEmitter) ==============
+class VfxImportPayload(BaseModel):
+    url: str = Field(..., description="Roblox catalog URL or numeric assetId")
+
+
+@router.post("/generations/{generation_id}/vfx/import-roblox")
+async def import_roblox_vfx_for_gen(
+    generation_id: str,
+    payload: VfxImportPayload,
+    user=Depends(get_current_user),
+):
+    """Download a Roblox UGC asset, parse its `.rbxm` binary, extract every
+    ParticleEmitter's *real* config (Color, Lifetime, Speed, Rotation, Texture…)
+    and persist it to the gen as `vfx_custom`. The frontend renderer replays the
+    exact effect — pixel-faithful, not preset-based.
+    """
+    _require_admin(user)
+    from server import db
+    from rbxm_vfx_import import import_roblox_vfx
+
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    try:
+        result = await import_roblox_vfx(payload.url.strip())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"VFX import failed: {e}")
+
+    if not result.get("emitters"):
+        raise HTTPException(
+            status_code=400,
+            detail="No ParticleEmitter found inside that Roblox asset.",
+        )
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {
+            "vfx_custom": {
+                "source": "roblox",
+                "asset_id": result["asset_id"],
+                "source_url": payload.url,
+                "emitters": result["emitters"],
+            },
+            # Clear the preset since we're using the exact import now
+            "vfx_preset": None,
+        }},
+    )
+
+    await _log(db, user, "import_roblox_vfx", None, {
+        "generation_id": generation_id,
+        "asset_id": result["asset_id"],
+        "emitter_count": len(result["emitters"]),
+    })
+
+    return {
+        "ok": True,
+        "generation_id": generation_id,
+        "asset_id": result["asset_id"],
+        "emitter_count": len(result["emitters"]),
+        "emitter_names": [e["name"] for e in result["emitters"]],
     }
 
