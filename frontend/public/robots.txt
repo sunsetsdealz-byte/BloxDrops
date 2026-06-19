@@ -1,0 +1,10 @@
+# BloxDrops AI · robots.txt
+User-agent: *
+Allow: /
+# Don't index private/account routes
+Disallow: /profile
+Disallow: /admin
+Disallow: /reset-password
+Disallow: /forgot-password
+
+Sitemap: https://bloxdrops.com/sitemap.xml
