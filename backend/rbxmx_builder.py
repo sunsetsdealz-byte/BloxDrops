@@ -127,13 +127,6 @@ def build_accessory_rbxmx(
           </CoordinateFrame>
         </Properties>
       </Item>
-      <Item class="SpecialMesh" referent="RBX_SM_0">
-        <Properties>
-          <Content name="MeshId"><url>{mesh_url}</url></Content>
-          <token name="MeshType">5</token>
-          <Vector3 name="Scale"><X>1</X><Y>1</Y><Z>1</Z></Vector3>
-        </Properties>
-      </Item>
     </Item>
   </Item>
 </roblox>

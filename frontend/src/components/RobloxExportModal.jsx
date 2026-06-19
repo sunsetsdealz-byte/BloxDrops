@@ -272,18 +272,25 @@ export default function RobloxExportModal({ generationId, onClose }) {
                         <ol className="text-[11px] text-zinc-400 mt-3 space-y-1 leading-snug list-decimal list-inside">
                           <li>Open Roblox Studio → any place (empty baseplate works)</li>
                           <li>Drag the downloaded <span className="font-mono text-[#ccff00]">.rbxmx</span> into the Workspace</li>
-                          <li>Right-click the new Accessory → <strong className="text-white">Save to Roblox</strong></li>
+                          <li>
+                            In Explorer, click the <strong className="text-[#ccff00]">Accessory</strong> item (NOT the Model wrapper) → right-click → <strong className="text-white">Save to Roblox</strong>
+                          </li>
                           <li>
                             In the dialog, pick category{" "}
                             <strong className="text-[#ccff00]" data-testid="studio-category-hint">
                               &ldquo;{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}&rdquo;
                             </strong>
-                            {" "}— <span className="text-[#ff0055] font-bold">NOT &ldquo;UGC Body&rdquo;</span> (that&apos;s for full-avatar bundles).
+                            {" "}— <span className="text-[#ff0055] font-bold">NOT &ldquo;UGC Body&rdquo;</span>.
                           </li>
                           <li>Click Submit → wait for moderation → it appears in your Avatar Editor.</li>
                         </ol>
-                        <div className="mt-3 pt-3 border-t border-white/8 text-[10px] text-zinc-500 leading-relaxed">
-                          <strong className="text-[#fbbf24]">If you see &ldquo;Invalid root instance, must be a model&rdquo;:</strong> you picked the wrong category. Re-open Save to Roblox and choose <span className="text-[#ccff00] font-mono">{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}</span> from the dropdown.
+                        <div className="mt-3 pt-3 border-t border-white/8 text-[10px] text-zinc-500 leading-relaxed space-y-1.5">
+                          <p>
+                            <strong className="text-[#fbbf24]">&ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;</strong> — you right-clicked the wrong node. In Explorer, select the <span className="font-mono text-[#ccff00]">Accessory</span> child (hat icon), not Workspace or the Model wrapper above it.
+                          </p>
+                          <p>
+                            <strong className="text-[#fbbf24]">&ldquo;Invalid root instance, must be a model&rdquo;</strong> — you picked the wrong category. Choose <span className="text-[#ccff00] font-mono">{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}</span>, not &ldquo;UGC Body&rdquo;.
+                          </p>
                         </div>
                       </div>
                     </div>

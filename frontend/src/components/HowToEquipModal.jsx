@@ -33,8 +33,17 @@ const STEPS = (attachment, name) => [
     body: `Drag the downloaded .rbxmx straight into Studio's Workspace (or the Explorer). You'll see an Accessory appear in the Explorer panel — that's your drop, fully configured.`,
   },
   {
-    title: "Right-click → Save to Roblox",
-    body: `In Explorer, right-click the new Accessory → "Save to Roblox". The Asset Configuration dialog opens.`,
+    title: "Right-click the ACCESSORY (not the Model)",
+    body: (
+      <>
+        In Studio&apos;s <strong className="text-white">Explorer</strong> panel, click directly on the{" "}
+        <strong className="text-[#ccff00]">Accessory</strong> item — it has a hat-icon. Then right-click → &ldquo;Save to Roblox&rdquo;.
+        <br />
+        <span className="text-[#ff0055] font-bold">Common mistake:</span> clicking Workspace or the
+        Model wrapper instead of the Accessory. If you see &ldquo;Uploaded asset should be a
+        Accessory but is a Model&rdquo;, you selected the wrong node — try again on the Accessory child.
+      </>
+    ),
   },
   {
     title: "Pick the right category",
