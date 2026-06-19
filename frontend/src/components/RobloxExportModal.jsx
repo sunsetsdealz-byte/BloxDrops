@@ -220,7 +220,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
                   </p>
                   {pushResult ? (
                     <div className="space-y-3">
-                      <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
+                      <div className="bg-black/40 rounded-xl p-3 space-y-2">
                         <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">3D Model uploaded ✓</p>
                         <p className="text-sm text-zinc-200">
                           Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
@@ -230,9 +230,12 @@ export default function RobloxExportModal({ generationId, onClose }) {
                             href={pushResult.inventory_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs text-[#ccff00] font-bold underline flex items-center gap-1"
+                            data-testid="export-open-in-roblox"
+                            className="inline-flex items-center gap-2 bg-white text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(255,255,255,0.4)] transition-all"
                           >
-                            Open in Roblox Inventory <ArrowSquareOut size={12} weight="bold" />
+                            <Robot size={14} weight="fill" />
+                            Open in Roblox
+                            <ArrowSquareOut size={11} weight="bold" />
                           </a>
                         )}
                       </div>

@@ -690,6 +690,18 @@ export default function Studio() {
                     <Robot size={14} weight="fill" /> Export to Roblox
                   </button>
                 )}
+                {currentGen?.roblox_asset_id && (
+                  <a
+                    href={`https://create.roblox.com/store/asset/${currentGen.roblox_asset_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    data-testid="studio-open-in-roblox"
+                    title={`Open Roblox asset ${currentGen.roblox_asset_id}`}
+                    className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-white text-black hover:shadow-[0_0_14px_rgba(255,255,255,0.4)] transition-all"
+                  >
+                    <Robot size={13} weight="fill" /> Open in Roblox
+                  </a>
+                )}
                 {ownsCurrent && (
                   <>
                     <button
