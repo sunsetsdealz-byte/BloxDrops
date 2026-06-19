@@ -3,6 +3,25 @@ import { X, CheckCircle, WarningCircle, Copy, DownloadSimple, Robot, Plug, Arrow
 import { toast } from "sonner";
 import { api, API, formatApiError } from "../lib/api";
 
+// Maps a BloxDrops attachment_type → the exact Roblox "Save to Roblox" sub-category
+// the user must pick in Studio. Picking "UGC Body" (or anything else) returns the
+// dreaded "Invalid root instance, must be a model" error.
+const ROBLOX_CATEGORY_HINT = {
+  Hat: "Hats",
+  Hair: "Hair Accessories",
+  Back: "Back Accessories",
+  Neck: "Neck Accessories",
+  Face: "Face Accessories",
+  Shoulder: "Shoulder Accessories",
+  Front: "Front Accessories",
+  Waist: "Waist Accessories",
+  Hoodie: "Sweater (Layered Clothing)",
+  Shirt: "T-Shirt (Layered Clothing)",
+  Jacket: "Jacket (Layered Clothing)",
+  Pants: "Pants (Layered Clothing)",
+  auto: "Hats",
+};
+
 export default function RobloxExportModal({ generationId, onClose }) {
   const [manifest, setManifest] = useState(null);
   const [checklist, setChecklist] = useState(null);
@@ -239,9 +258,18 @@ export default function RobloxExportModal({ generationId, onClose }) {
                           <li>Open Roblox Studio → any place (empty baseplate works)</li>
                           <li>Drag the downloaded <span className="font-mono text-[#ccff00]">.rbxmx</span> into the Workspace</li>
                           <li>Right-click the new Accessory → <strong className="text-white">Save to Roblox</strong></li>
-                          <li>Select <strong className="text-white">Avatar Item</strong> + the right category → Submit</li>
-                          <li>Wait for moderation (~minutes) → it appears in your Avatar Editor</li>
+                          <li>
+                            In the dialog, pick category{" "}
+                            <strong className="text-[#ccff00]" data-testid="studio-category-hint">
+                              &ldquo;{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}&rdquo;
+                            </strong>
+                            {" "}— <span className="text-[#ff0055] font-bold">NOT &ldquo;UGC Body&rdquo;</span> (that&apos;s for full-avatar bundles).
+                          </li>
+                          <li>Click Submit → wait for moderation → it appears in your Avatar Editor.</li>
                         </ol>
+                        <div className="mt-3 pt-3 border-t border-white/8 text-[10px] text-zinc-500 leading-relaxed">
+                          <strong className="text-[#fbbf24]">If you see &ldquo;Invalid root instance, must be a model&rdquo;:</strong> you picked the wrong category. Re-open Save to Roblox and choose <span className="text-[#ccff00] font-mono">{ROBLOX_CATEGORY_HINT[manifest.attachment_type] || "Hats"}</span> from the dropdown.
+                        </div>
                       </div>
                     </div>
                   ) : (
