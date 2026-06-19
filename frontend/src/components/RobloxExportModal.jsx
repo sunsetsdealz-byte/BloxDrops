@@ -10,6 +10,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
   const [pushing, setPushing] = useState(false);
   const [pushResult, setPushResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingAccessory, setDownloadingAccessory] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -71,6 +72,35 @@ export default function RobloxExportModal({ generationId, onClose }) {
         URL.revokeObjectURL(url);
       })
       .catch(() => toast.error("Download failed"));
+  };
+
+  const downloadAccessory = async () => {
+    const token = localStorage.getItem("bloxdrops_token");
+    if (!token) return toast.error("Please sign in again");
+    setDownloadingAccessory(true);
+    try {
+      const r = await fetch(`${API}/roblox/accessory/${generationId}.rbxmx`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) {
+        const msg = (await r.json().catch(() => ({}))).detail || "Download failed";
+        throw new Error(msg);
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${(manifest?.asset_name || "bloxdrops_accessory").replace(/\s+/g, "_")}.rbxmx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Accessory file downloaded — drag into Roblox Studio");
+    } catch (err) {
+      toast.error(err.message || "Couldn't build the Accessory file");
+    } finally {
+      setDownloadingAccessory(false);
+    }
   };
 
   return (
@@ -166,24 +196,49 @@ export default function RobloxExportModal({ generationId, onClose }) {
                     One-click upload pushes the <strong className="text-white">.glb</strong> as a real 3D Model to <strong>@{robloxStatus.roblox_user_id}</strong>&apos;s Roblox inventory via Open Cloud. Takes ~5 seconds.
                   </p>
                   {pushResult ? (
-                    <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
-                      <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">3D Model uploaded ✓</p>
-                      <p className="text-sm text-zinc-200">
-                        Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
-                      </p>
-                      {pushResult.inventory_url && (
-                        <a
-                          href={pushResult.inventory_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-[#ccff00] font-bold underline flex items-center gap-1"
+                    <div className="space-y-3">
+                      <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
+                        <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">3D Model uploaded ✓</p>
+                        <p className="text-sm text-zinc-200">
+                          Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
+                        </p>
+                        {pushResult.inventory_url && (
+                          <a
+                            href={pushResult.inventory_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-[#ccff00] font-bold underline flex items-center gap-1"
+                          >
+                            Open in Roblox Inventory <ArrowSquareOut size={12} weight="bold" />
+                          </a>
+                        )}
+                      </div>
+
+                      {/* === ACCESSORY .rbxmx DOWNLOAD === */}
+                      <div className="bg-gradient-to-br from-[#00f0ff]/10 to-[#ccff00]/8 border border-[#00f0ff]/30 rounded-xl p-4">
+                        <p className="text-[10px] uppercase tracking-[0.2em] font-black text-[#00f0ff] mb-2 flex items-center gap-1.5">
+                          <DownloadSimple size={12} weight="bold" /> Step 2 · Wear-Ready Accessory
+                        </p>
+                        <p className="text-sm text-zinc-200 mb-3 leading-relaxed">
+                          Download this pre-wrapped <code className="text-[#ccff00] font-mono text-xs">.rbxmx</code> file, drag it into Roblox Studio Explorer — it&apos;s already configured as an Accessory with the right type and attachment. Then right-click → <strong>Save to Roblox</strong> to submit it as an Avatar Item.
+                        </p>
+                        <button
+                          onClick={downloadAccessory}
+                          disabled={downloadingAccessory}
+                          data-testid="export-download-accessory"
+                          className="bg-[#00f0ff] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider hover:shadow-[0_0_18px_rgba(0,240,255,0.5)] transition-all flex items-center gap-2 disabled:opacity-50"
                         >
-                          Open in Roblox Inventory <ArrowSquareOut size={12} weight="bold" />
-                        </a>
-                      )}
-                      <p className="text-[11px] text-zinc-400 mt-1.5">
-                        Next step in Studio: Toolbox → My Models → drag in → Avatar → Accessory Fitting Tool → Save to Roblox.
-                      </p>
+                          <DownloadSimple size={13} weight="bold" />
+                          {downloadingAccessory ? "Building…" : "Download Accessory file"}
+                        </button>
+                        <ol className="text-[11px] text-zinc-400 mt-3 space-y-1 leading-snug list-decimal list-inside">
+                          <li>Open Roblox Studio → any place (empty baseplate works)</li>
+                          <li>Drag the downloaded <span className="font-mono text-[#ccff00]">.rbxmx</span> into the Workspace</li>
+                          <li>Right-click the new Accessory → <strong className="text-white">Save to Roblox</strong></li>
+                          <li>Select <strong className="text-white">Avatar Item</strong> + the right category → Submit</li>
+                          <li>Wait for moderation (~minutes) → it appears in your Avatar Editor</li>
+                        </ol>
+                      </div>
                     </div>
                   ) : (
                     <button

@@ -75,6 +75,7 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **Roblox API key length fix**: Bumped Open Cloud key max from 400 → 2048 chars (real keys are signed JWTs ~600-1000 chars).
 - **Studio button overlap fix**: action overlay uses `right-32` to leave room for the ModelViewer Zoom button.
 - **Roblox 3D Model push (direct GLB upload)**: Roblox Open Cloud now natively accepts `.glb` for `Model` assets (since Mar 2024 3D-import update) with MIME `model/gltf-binary`. `POST /api/roblox/upload/{id}` streams the .glb straight to Open Cloud — zero conversion, zero system deps, ~5s end-to-end. Earlier Blender-based approach removed (it required runtime apt install which doesn't carry into the production build, causing Cloudflare 520 on deploy).
+- **Pre-wrapped Accessory .rbxmx**: New `/api/roblox/accessory/{id}.rbxmx` endpoint generates a fully-configured Roblox Accessory XML with the right `AccessoryType` (Hat/Hair/Back/etc), attachment-point name, MeshPart Handle with physics flags + MeshId pointing to the uploaded asset, plus a SpecialMesh fallback. After the user pushes their drop to Roblox, they download the .rbxmx, drag it into Studio Explorer, and right-click → Save to Roblox. Solves the "Open Cloud can't upload as Accessory" platform gap.
 
 ## P1 — Backlog
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)

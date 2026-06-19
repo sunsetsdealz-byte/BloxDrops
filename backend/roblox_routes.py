@@ -204,5 +204,51 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
             if final_asset_id
             else (f"https://www.roblox.com/users/{creds['user_id']}/inventory#!/models" if creds.get("user_id") else None)
         ),
-        "studio_note": "Open Roblox Studio → Toolbox → My Models to drop the asset in, then use Avatar → Accessory Fitting Tool to publish to the Marketplace.",
+        "accessory_rbxmx_url": f"/api/roblox/accessory/{generation_id}.rbxmx",
+        "studio_note": "Download the Accessory file and drag it into Studio Explorer — it's pre-wrapped as an Avatar Item. Then right-click → Save to Roblox.",
     }
+
+
+# ============== ACCESSORY .rbxmx DOWNLOAD ==============
+from fastapi.responses import Response  # noqa: E402
+
+
+@router.get("/accessory/{generation_id}.rbxmx")
+async def download_accessory_rbxmx(generation_id: str, user=Depends(get_current_user)):
+    """Return a pre-wrapped Accessory .rbxmx for a generation that was already
+    pushed to Roblox. The user drags this file into Studio Explorer and submits.
+    """
+    from server import db
+    from rbxmx_builder import build_accessory_rbxmx
+
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Creation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Creation not found")
+    if gen["user_id"] != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not your creation")
+    asset_id = gen.get("roblox_asset_id")
+    if not asset_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Push this drop to Roblox first — then come back to download the Accessory file.",
+        )
+
+    xml = build_accessory_rbxmx(
+        asset_id=asset_id,
+        asset_name=(gen.get("display_name") or gen.get("original_prompt") or "BloxDrops Item")[:60],
+        attachment_type=gen.get("attachment_type", "Hat"),
+        description=(gen.get("description") or "")[:280],
+    )
+    safe_filename = (gen.get("display_name") or gen.get("original_prompt") or "bloxdrops_accessory")[:40]
+    safe_filename = "".join(c if c.isalnum() else "_" for c in safe_filename).strip("_") or "bloxdrops_accessory"
+
+    return Response(
+        content=xml,
+        media_type="application/xml",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_filename}.rbxmx"',
+        },
+    )
