@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple, Share } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple, Share, MagnifyingGlassPlus, X as XIcon } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
@@ -54,6 +54,7 @@ export default function Studio() {
   const [detectingVfx, setDetectingVfx] = useState(false);
   const [editingMetadata, setEditingMetadata] = useState(false);
   const [sharingCard, setSharingCard] = useState(false);
+  const [viewerZoomed, setViewerZoomed] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -603,6 +604,9 @@ export default function Studio() {
               height={520}
               vfxPreset={currentGen?.vfx_preset || null}
               vfxCustom={currentGen?.vfx_custom || null}
+              allowZoom={false}
+              zoomed={viewerZoomed}
+              onZoomChange={setViewerZoomed}
             />
             {currentGen?.status === "pending" && (
               <div
@@ -663,7 +667,7 @@ export default function Studio() {
               </div>
             )}
             {currentGen?.status === "completed" && (
-              <div className="absolute top-4 left-4 right-28 flex flex-nowrap overflow-x-auto gap-1.5 items-center scrollbar-thin">
+              <div className="absolute top-4 left-4 right-4 flex flex-nowrap overflow-x-auto gap-1.5 items-center scrollbar-thin">
                 <a
                   href={currentGen.model_url}
                   download
@@ -738,6 +742,16 @@ export default function Studio() {
                     </button>
                   </>
                 )}
+                {/* Zoom pill — last in the row so all action pills sit on one line */}
+                <button
+                  onClick={() => setViewerZoomed((v) => !v)}
+                  data-testid="studio-zoom-toggle"
+                  title={viewerZoomed ? "Exit fullscreen" : "Zoom in"}
+                  className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 transition-all backdrop-blur-md whitespace-nowrap"
+                >
+                  {viewerZoomed ? <XIcon size={11} weight="bold" /> : <MagnifyingGlassPlus size={11} weight="bold" />}
+                  {viewerZoomed ? "Close" : "Zoom"}
+                </button>
               </div>
             )}
           </div>
