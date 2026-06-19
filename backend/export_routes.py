@@ -21,8 +21,10 @@ files + manifest needed for the upload, which is the industry-standard pattern
 import os
 import httpx
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
+from pydantic import BaseModel
 from bson import ObjectId
 
 from auth_utils import get_current_user
@@ -104,12 +106,17 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
     doc = await _load_generation(generation_id, user)
     attachment = doc.get("attachment_type", "auto")
     name_base = _safe_filename((doc.get("original_prompt") or "BloxDrops Item")[:40])
+    default_price = ROBLOX_LIMITS["recommended_price_robux"].get(attachment, 50)
+    custom_price = doc.get("custom_robux_price")
+    price_robux = int(custom_price) if isinstance(custom_price, (int, float)) and custom_price > 0 else default_price
     return {
         "asset_name": name_base.replace("_", " ").title(),
         "description": doc.get("original_prompt") or "Generated with BloxDrops AI",
         "attachment_type": attachment,
         "attachment_point": ROBLOX_LIMITS["required_attachments"].get(attachment, "Auto"),
-        "recommended_price_robux": ROBLOX_LIMITS["recommended_price_robux"].get(attachment, 50),
+        "recommended_price_robux": price_robux,
+        "default_recommended_price_robux": default_price,
+        "is_custom_price": bool(custom_price),
         "category": "Accessory" if attachment in ROBLOX_LIMITS["required_attachments"] else "Clothing",
         "tags": [attachment.lower(), doc.get("style", "auto"), "bloxdrops", "ai-generated"],
         "marketplace_ready": True,
@@ -122,9 +129,46 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
             "2. Go to Avatar → Accessory Fitting Tool",
             f"3. Import the .GLB and attach to '{ROBLOX_LIMITS['required_attachments'].get(attachment, 'Auto')}'",
             "4. Use the asset name, description, and tags from this manifest",
-            f"5. Publish at the recommended price of {ROBLOX_LIMITS['recommended_price_robux'].get(attachment, 50)} Robux",
+            f"5. Publish at {price_robux} Robux",
         ],
     }
+
+
+class PriceUpdateRequest(BaseModel):
+    price_robux: Optional[int] = None  # set to null/None to reset to default
+
+
+@router.patch("/export/{generation_id}/price")
+async def update_export_price(
+    generation_id: str,
+    payload: PriceUpdateRequest,
+    user=Depends(get_current_user),
+):
+    """Owner (or admin) overrides the suggested Roblox marketplace price for a drop.
+
+    Pass `price_robux: null` (or omit) to clear the override and fall back to the
+    attachment-type default.
+    """
+    from server import db
+    doc = await _load_generation(generation_id, user)
+
+    if payload.price_robux is None:
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$unset": {"custom_robux_price": ""}},
+        )
+        new_price = ROBLOX_LIMITS["recommended_price_robux"].get(doc.get("attachment_type", "auto"), 50)
+        return {"ok": True, "price_robux": new_price, "is_custom_price": False}
+
+    price = int(payload.price_robux)
+    if price < 1 or price > 1_000_000:
+        raise HTTPException(status_code=400, detail="Price must be between 1 and 1,000,000 Robux")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"custom_robux_price": price}},
+    )
+    return {"ok": True, "price_robux": price, "is_custom_price": True}
 
 
 @router.get("/export/{generation_id}/checklist")

@@ -163,7 +163,11 @@ export default function RobloxExportModal({ generationId, onClose }) {
               <Field label="Asset name" value={manifest.asset_name} />
               <Field label="Attachment" value={manifest.attachment_point} />
               <Field label="Category" value={manifest.category} />
-              <Field label="Suggested price" value={`${manifest.recommended_price_robux} Robux`} accent />
+              <PriceField
+                generationId={generationId}
+                manifest={manifest}
+                onSaved={(m) => setManifest((prev) => ({ ...prev, ...m }))}
+              />
             </div>
 
             {/* ACTIONS */}
@@ -296,5 +300,113 @@ function Field({ label, value, accent }) {
       <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500">{label}</p>
       <p className={`text-sm font-bold mt-1 ${accent ? "text-[#ccff00]" : "text-zinc-200"}`}>{value}</p>
     </div>
+  );
+}
+
+function PriceField({ generationId, manifest, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(manifest.recommended_price_robux);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    setValue(manifest.recommended_price_robux);
+  }, [manifest.recommended_price_robux]);
+
+  const save = async () => {
+    const num = parseInt(value, 10);
+    if (!num || num < 1 || num > 1000000) {
+      return toast.error("Price must be between 1 and 1,000,000 Robux");
+    }
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/export/${generationId}/price`, { price_robux: num });
+      onSaved({ recommended_price_robux: data.price_robux, is_custom_price: data.is_custom_price });
+      toast.success("Price updated");
+      setEditing(false);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetToDefault = async () => {
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/export/${generationId}/price`, { price_robux: null });
+      onSaved({ recommended_price_robux: data.price_robux, is_custom_price: data.is_custom_price });
+      setValue(data.price_robux);
+      toast.success("Reset to suggested price");
+      setEditing(false);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="bg-zinc-900/60 border border-[#ccff00]/40 rounded-xl p-3" data-testid="price-field-edit">
+        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 mb-1">Marketplace price · Robux</p>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            min={1}
+            max={1000000}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+            autoFocus
+            disabled={saving}
+            data-testid="price-input"
+            className="flex-1 min-w-0 bg-black/50 border border-white/15 focus:border-[#ccff00] rounded-lg px-2 py-1 text-sm font-bold text-[#ccff00] outline-none"
+          />
+          <button
+            onClick={save}
+            disabled={saving}
+            data-testid="price-save"
+            className="text-[10px] font-black uppercase tracking-wider text-black bg-[#ccff00] rounded-full px-2.5 py-1 hover:shadow-[0_0_12px_rgba(204,255,0,0.45)] transition-all disabled:opacity-40"
+          >
+            {saving ? "…" : "Save"}
+          </button>
+          <button
+            onClick={() => { setValue(manifest.recommended_price_robux); setEditing(false); }}
+            disabled={saving}
+            data-testid="price-cancel"
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white px-1.5"
+          >
+            Cancel
+          </button>
+        </div>
+        {manifest.is_custom_price && (
+          <button
+            onClick={resetToDefault}
+            disabled={saving}
+            data-testid="price-reset"
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[#ff0055] mt-1.5 transition-colors"
+          >
+            Reset to suggested ({manifest.default_recommended_price_robux} R$)
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      data-testid="price-field"
+      title="Click to edit"
+      className="bg-zinc-900/60 border border-white/8 hover:border-[#ccff00]/60 rounded-xl p-3 text-left transition-colors group"
+    >
+      <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 flex items-center gap-1">
+        {manifest.is_custom_price ? "Your price" : "Suggested price"}
+        <span className="text-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity">·  edit</span>
+      </p>
+      <p className="text-sm font-bold mt-1 text-[#ccff00]">
+        {manifest.recommended_price_robux.toLocaleString()} Robux
+      </p>
+    </button>
   );
 }
