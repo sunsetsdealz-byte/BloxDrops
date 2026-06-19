@@ -163,7 +163,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
               {robloxStatus?.connected ? (
                 <>
                   <p className="text-sm text-zinc-300 mb-3">
-                    One-click upload converts the <strong className="text-white">.glb → .fbx</strong> and pushes it as a real 3D Model to <strong>@{robloxStatus.roblox_user_id}</strong>'s Roblox inventory. Server-side conversion takes ~5–10s.
+                    One-click upload pushes the <strong className="text-white">.glb</strong> as a real 3D Model to <strong>@{robloxStatus.roblox_user_id}</strong>&apos;s Roblox inventory via Open Cloud. Takes ~5 seconds.
                   </p>
                   {pushResult ? (
                     <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
@@ -193,7 +193,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
                       className="bg-[#ccff00] text-black rounded-full px-5 py-2.5 text-sm font-black uppercase tracking-wider hover:shadow-[0_0_24px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                       <Robot size={16} weight="fill" />
-                      {pushing ? "Converting & uploading…" : "Push 3D Model to Roblox"}
+                      {pushing ? "Uploading…" : "Push 3D Model to Roblox"}
                     </button>
                   )}
                 </>
