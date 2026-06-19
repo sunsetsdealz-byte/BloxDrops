@@ -102,11 +102,12 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
       slot.lifetime = lt.min + Math.random() * (lt.max - lt.min);
       slot.age = 0;
       slot.alive = true;
-      // Position offset within a tiny sphere so particles don't all stack at origin
+      // Spawn from a tight point (Roblox emitters spawn at a single Attachment).
+      // Slight jitter so particles don't perfectly overlap on frame 0.
       slot.position.set(
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 0.4,
+        (Math.random() - 0.5) * 0.08,
+        (Math.random() - 0.5) * 0.08,
+        (Math.random() - 0.5) * 0.08,
       );
       // Velocity from spread angle (degrees) — sample a cone in +Y up direction.
       const spread = config.spread_angle || { x: 0, y: 0 };
@@ -169,9 +170,12 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
       // Transparency: Roblox stores 0=opaque, 1=invisible → alpha = 1 - t
       const trans = lerpScalar(config.transparency_keypoints, tNorm, 0);
       colors[oc + 3] = Math.max(0, Math.min(1, 1 - trans));
-      // Size keypoint values are in Roblox studs; scale down for our viewer
       const sz = lerpScalar(config.size_keypoints, tNorm, 0.5);
-      sizes[i] = sz * 24;  // empirical scale to look right in our normalized scene
+      // Roblox stores Size in studs. Our viewer normalizes models to ~1.5 world units,
+      // so 1 stud ≈ 0.3 world units. The point-shader scales by (300/-z) which gives
+      // ~75× at default camera distance, so we use ×4 here for a ~visible-but-not-huge
+      // wisp that matches the Roblox catalog thumbnail proportions.
+      sizes[i] = sz * 4;
     }
 
     if (geometryRef.current) {
