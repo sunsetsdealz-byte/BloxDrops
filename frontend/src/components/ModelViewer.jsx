@@ -75,10 +75,10 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
     : "relative w-full rounded-2xl overflow-hidden border border-white/10";
 
   const containerStyle = zoomed
-    ? { background: "radial-gradient(circle at 50% 50%, #15151a 0%, #050507 70%)" }
+    ? { background: "radial-gradient(circle at 50% 40%, #ffffff 0%, #d8d8de 100%)" }
     : {
         height: isFullHeight ? "100%" : height,
-        background: "radial-gradient(circle at 50% 50%, #1a1a1d 0%, #0a0a0c 75%)",
+        background: "radial-gradient(circle at 50% 35%, #f4f4f6 0%, #c8c8d0 100%)",
       };
 
   const placeholder = (
@@ -105,9 +105,9 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
             dpr={[1, 1.5]}
             style={{ width: "100%", height: "100%" }}
           >
-            <ambientLight intensity={0.55} />
-            <directionalLight position={[5, 5, 5]} intensity={1.4} color="#ccff00" />
-            <directionalLight position={[-5, -3, -5]} intensity={0.6} color="#ff0055" />
+            <ambientLight intensity={0.85} />
+            <directionalLight position={[5, 5, 5]} intensity={1.2} color="#ffffff" />
+            <directionalLight position={[-5, -3, -5]} intensity={0.35} color="#ffffff" />
             <Suspense fallback={<Loader />}>
               <Bounds fit clip observe margin={zoomed ? 1.05 : 1.15}>
                 <Center>

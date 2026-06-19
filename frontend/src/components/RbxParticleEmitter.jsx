@@ -173,9 +173,9 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
       const sz = lerpScalar(config.size_keypoints, tNorm, 0.5);
       // Roblox stores Size in studs. Our viewer normalizes models to ~1.5 world units,
       // so 1 stud ≈ 0.3 world units. The point-shader scales by (300/-z) which gives
-      // ~75× at default camera distance, so we use ×4 here for a ~visible-but-not-huge
-      // wisp that matches the Roblox catalog thumbnail proportions.
-      sizes[i] = sz * 4;
+      // ~75× at default camera distance, so we use ×1.6 here to match the
+      // Roblox catalog thumbnail proportions (tight wisps, not big clouds).
+      sizes[i] = sz * 1.6;
     }
 
     if (geometryRef.current) {
