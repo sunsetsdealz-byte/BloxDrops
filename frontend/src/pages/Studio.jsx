@@ -57,7 +57,10 @@ export default function Studio() {
   const [sharingCard, setSharingCard] = useState(false);
   const [viewerZoomed, setViewerZoomed] = useState(false);
   const [showHowToEquip, setShowHowToEquip] = useState(false);
+  const [howToMode, setHowToMode] = useState("accessory");
+  const [rigging, setRigging] = useState(false);
   const pollRef = useRef(null);
+  const rigPollRef = useRef(null);
 
   // Pull live Genesis counter
   useEffect(() => {
@@ -230,6 +233,44 @@ export default function Studio() {
     }, 2200);
     return () => clearInterval(pollRef.current);
   }, [currentGen?.id, currentGen?.status]);
+
+  // Poll rigging status independently — rigging happens on a completed gen
+  useEffect(() => {
+    if (!currentGen || currentGen.rigging_status !== "pending") {
+      clearInterval(rigPollRef.current);
+      return;
+    }
+    rigPollRef.current = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/generate/${currentGen.id}`);
+        setCurrentGen(data);
+        if (data.rigging_status !== "pending") {
+          clearInterval(rigPollRef.current);
+          if (data.rigging_status === "completed") {
+            toast.success("Rigged avatar ready — drop the new GLB into Roblox Studio's Avatar Setup");
+          }
+          if (data.rigging_status === "failed") {
+            toast.error("Rigging failed: " + (data.rigging_error || "unknown"));
+          }
+        }
+      } catch { /* keep polling */ }
+    }, 3500);
+    return () => clearInterval(rigPollRef.current);
+  }, [currentGen?.id, currentGen?.rigging_status]);
+
+  const handleRig = async () => {
+    if (!currentGen?.id) return;
+    setRigging(true);
+    try {
+      const { data } = await api.post(`/generations/${currentGen.id}/rig`);
+      setCurrentGen((prev) => prev ? { ...prev, rigging_status: data.rigging_status || "pending" } : prev);
+      toast.success("Rigging started — humanoid skeleton + skinning in progress (~1–3 min)");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setRigging(false);
+    }
+  };
 
   const enhance = async () => {
     if (!prompt.trim()) return;
@@ -687,6 +728,48 @@ export default function Studio() {
                 >
                   <Share size={11} weight="bold" /> Share
                 </button>
+                {ownsCurrent && !currentGen?.rigged_model_url && currentGen?.rigging_status !== "pending" && (
+                  <button
+                    onClick={handleRig}
+                    disabled={rigging}
+                    data-testid="studio-rig-avatar"
+                    title="Auto-rig this humanoid model with a skeleton + skinning for Roblox Avatar Setup (~1–3 min)"
+                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff]/15 text-[#00f0ff] border border-[#00f0ff]/40 hover:bg-[#00f0ff]/25 hover:shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all whitespace-nowrap disabled:opacity-50"
+                  >
+                    <Lightning size={11} weight="fill" /> {rigging ? "Starting…" : "Rig for Roblox"}
+                  </button>
+                )}
+                {currentGen?.rigging_status === "pending" && (
+                  <span
+                    data-testid="studio-rig-pending"
+                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/30 whitespace-nowrap animate-pulse"
+                  >
+                    <Lightning size={11} weight="fill" /> Rigging…
+                  </span>
+                )}
+                {currentGen?.rigged_model_url && (
+                  <>
+                    <a
+                      href={currentGen.rigged_model_url}
+                      download
+                      target="_blank"
+                      rel="noreferrer"
+                      data-testid="studio-rigged-download"
+                      title="Download the rigged GLB — drop into Roblox Studio → Avatar tab → Avatar Setup"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#00f0ff] text-black hover:shadow-[0_0_14px_rgba(0,240,255,0.55)] transition-all whitespace-nowrap"
+                    >
+                      <Download size={11} weight="bold" /> Rigged .GLB
+                    </a>
+                    <button
+                      onClick={() => { setHowToMode("avatar"); setShowHowToEquip(true); }}
+                      data-testid="studio-avatar-setup-howto"
+                      title="Walkthrough: publish the rigged avatar via Roblox Studio's Avatar Setup"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-[#00f0ff] border border-[#00f0ff]/40 hover:bg-[#00f0ff]/10 transition-all whitespace-nowrap"
+                    >
+                      <Question size={11} weight="fill" /> Avatar Setup
+                    </button>
+                  </>
+                )}
                 {isAdmin && (
                   <button
                     onClick={() => setExporting(true)}
@@ -710,7 +793,7 @@ export default function Studio() {
                       <Robot size={11} weight="fill" /> Open
                     </a>
                     <button
-                      onClick={() => setShowHowToEquip(true)}
+                      onClick={() => { setHowToMode("accessory"); setShowHowToEquip(true); }}
                       data-testid="studio-how-to-equip"
                       title="How to equip this on your Roblox avatar"
                       className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 transition-all backdrop-blur-md whitespace-nowrap"
@@ -796,6 +879,7 @@ export default function Studio() {
             attachmentType={currentGen?.attachment_type || "Hat"}
             itemName={currentGen?.display_name || currentGen?.original_prompt}
             dropId={currentGen?.id}
+            initialMode={howToMode}
           />
 
           {currentGen && currentGen.status === "completed" && (

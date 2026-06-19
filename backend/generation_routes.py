@@ -377,6 +377,99 @@ async def regenerate_generation(
     return {"id": generation_id, "status": "pending", "demo_mode": not _has_fal_key()}
 
 
+# ─── Roblox-ready rigging (Meshy via fal.ai) ──────────────────────────────────
+async def _run_meshy_rigging(generation_id: str, model_url: str):
+    """Background task — send the existing GLB through Meshy's auto-rigger and
+    store the rigged GLB URL back on the generation document. The output uses
+    a standard humanoid skeleton (Mixamo-compatible) which Roblox Studio's
+    Avatar Setup tool can re-target to the R15 rig automatically."""
+    from server import db
+    try:
+        import fal_client
+        handler = await fal_client.submit_async(
+            "fal-ai/meshy/rigging",
+            arguments={
+                "model_url": model_url,
+                # Roblox avatars are ~5 studs ≈ 1.7m — match human proportions
+                "height_meters": 1.7,
+            },
+        )
+        result = await handler.get()
+        rigged_url = None
+        if isinstance(result, dict):
+            rigged_url = (
+                (result.get("rigged_character_glb") or {}).get("url")
+                or (result.get("model_mesh") or {}).get("url")
+            )
+        if not rigged_url:
+            raise RuntimeError(f"Rigging returned no glb url: {result!r}")
+
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {
+                "rigged_model_url": rigged_url,
+                "rigging_status": "completed",
+                "rigging_completed_at": now_utc().isoformat(),
+                "rigging_error": None,
+            }},
+        )
+    except Exception as e:
+        logger.exception("Meshy rigging failed: %s", e)
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {
+                "rigging_status": "failed",
+                "rigging_error": str(e)[:300],
+            }},
+        )
+
+
+@router.post("/generations/{generation_id}/rig")
+async def rig_generation(
+    generation_id: str,
+    bg: BackgroundTasks,
+    user=Depends(get_current_user),
+):
+    """Kick off Roblox-ready auto-rigging on an existing completed generation.
+    Pipes the static GLB through `fal-ai/meshy/rigging` and stores the rigged
+    output URL on the record so the export modal can offer the rigged version
+    for Studio's Avatar Setup workflow.
+
+    Costs ~$0.20 per rig (fal.ai billed) — gated to the model's owner or admin.
+    """
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if gen.get("user_id") != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You can only rig your own creations")
+    if gen.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="Generation must be completed before rigging")
+    model_url = gen.get("model_url")
+    if not model_url:
+        raise HTTPException(status_code=400, detail="Generation has no model_url to rig")
+    if not _has_fal_key():
+        raise HTTPException(status_code=503, detail="FAL_KEY missing — rigging unavailable in demo mode")
+
+    # If a rigging job is already in-flight, return its status idempotently
+    if gen.get("rigging_status") == "pending":
+        return {"id": generation_id, "rigging_status": "pending", "already_running": True}
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {
+            "rigging_status": "pending",
+            "rigging_started_at": now_utc().isoformat(),
+            "rigging_error": None,
+        }},
+    )
+    bg.add_task(_run_meshy_rigging, generation_id, model_url)
+    return {"id": generation_id, "rigging_status": "pending"}
+
+
 @router.post("/prompt/enhance")
 async def enhance_prompt(payload: PromptEnhanceRequest, user=Depends(get_current_user)):
     """Use Claude Sonnet (via Emergent LLM key) to enhance a short prompt."""

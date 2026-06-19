@@ -27,8 +27,7 @@ const STEPS = (attachment, name) => [
   },
   {
     title: "Open Toolbox → My Models",
-    body: (
-      <>
+    body: (      <>
         Click <strong className="text-white">View</strong> →{" "}
         <strong className="text-white">Toolbox</strong>. In the Toolbox panel, switch to the{" "}
         <strong className="text-[#ccff00]">Inventory</strong> tab and pick{" "}
@@ -133,8 +132,71 @@ const STEPS = (attachment, name) => [
   },
 ];
 
-export default function HowToEquipModal({ open, onClose, attachmentType = "Hat", itemName, dropId }) {
+// Walkthrough for full rigged avatar bodies (the "Rig for Roblox" output).
+// Uses Roblox Studio's Avatar Setup tool (Avatar tab) — different from the
+// Accessory Fitting Tool flow above which is only for wearable accessories.
+const AVATAR_STEPS = (name) => [
+  {
+    title: "Download the rigged GLB",
+    body: `Click "Rigged .GLB" in the action bar above. You now have a humanoid mesh with a skeleton + skinning weights — Roblox needs both to drive an avatar.`,
+  },
+  {
+    title: "Open Roblox Studio + a blank place",
+    body: `Launch Studio, open any place (Baseplate is fine), and switch to the Avatar tab in the top ribbon.`,
+  },
+  {
+    title: "Run Avatar Setup",
+    body: (
+      <>
+        In the <strong className="text-white">Avatar</strong> tab, click{" "}
+        <strong className="text-[#00f0ff]">Avatar Setup</strong>. The Avatar Setup panel opens —
+        click <strong className="text-white">Import</strong> and select the rigged GLB you just
+        downloaded.
+      </>
+    ),
+  },
+  {
+    title: "Map the rig to R15",
+    body: (
+      <>
+        Avatar Setup auto-detects the skeleton. Confirm the joint mapping picker shows{" "}
+        <strong className="text-[#00f0ff]">R15</strong> (15-part rig). If joints aren&apos;t
+        auto-mapped, drag-drop each bone to its matching slot (Head, UpperTorso, LeftUpperArm…).
+        Click <strong className="text-white">Next</strong>.
+      </>
+    ),
+  },
+  {
+    title: "Configure cage + attachments",
+    body: `Studio generates the inner/outer cage for layered clothing and adds the standard RigAttachments (NeckRigAttachment, HipRigAttachment, etc.). Accept defaults unless you have custom cage data.`,
+  },
+  {
+    title: "Validate + preview",
+    body: (
+      <>
+        Avatar Setup runs the Roblox validator on your rig. Fix any warnings (polycount &gt; 10k per
+        part, missing attachments, scale outside avatar bounds). Click{" "}
+        <strong className="text-white">Preview</strong> to test it on the dummy.
+      </>
+    ),
+  },
+  {
+    title: "Publish to Avatar Marketplace",
+    body: (
+      <>
+        Click <strong className="text-[#00f0ff]">Publish</strong> in the Avatar Setup panel → fill
+        in name, description, and pick <strong className="text-white">Avatar Body</strong> or{" "}
+        <strong className="text-white">Avatar Bundle</strong>. Submit for moderation. Once
+        approved, <strong className="text-white">{name || "your avatar"}</strong> is wearable from
+        the marketplace.
+      </>
+    ),
+  },
+];
+
+export default function HowToEquipModal({ open, onClose, attachmentType = "Hat", itemName, dropId, initialMode = "accessory" }) {
   const [errorText, setErrorText] = useState("");
+  const [mode, setMode] = useState(initialMode);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -185,7 +247,8 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
   };
 
   if (!open) return null;
-  const steps = STEPS(attachmentType, itemName);
+  const isAvatar = mode === "avatar";
+  const steps = isAvatar ? AVATAR_STEPS(itemName) : STEPS(attachmentType, itemName);
   const category = ROBLOX_CATEGORY_HINT[attachmentType] || "Hats";
 
   return (
@@ -201,10 +264,14 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
         <div className="sticky top-0 bg-black/85 backdrop-blur-xl border-b border-white/8 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div>
             <h2 className="font-display text-lg font-black uppercase tracking-tighter">
-              How to equip on your avatar
+              {isAvatar ? "How to publish your rigged avatar" : "How to equip on your avatar"}
             </h2>
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-0.5">
-              Category for this drop · <span className="text-[#ccff00] font-bold">{category}</span>
+              {isAvatar ? (
+                <>Studio tool · <span className="text-[#00f0ff] font-bold">Avatar Setup (R15 rig)</span></>
+              ) : (
+                <>Category for this drop · <span className="text-[#ccff00] font-bold">{category}</span></>
+              )}
             </p>
           </div>
           <button
@@ -217,16 +284,55 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
         </div>
 
         <div className="px-6 py-5">
-          {/* Top callout */}
-          <div className="rounded-xl border border-[#fbbf24]/40 bg-[#fbbf24]/8 px-4 py-3 mb-3 flex items-start gap-2">
-            <WarningCircle size={16} weight="fill" className="text-[#fbbf24] flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-zinc-200 leading-relaxed">
-              Roblox does <strong>not</strong> have an API to publish wearable Accessories directly —
-              every UGC creator on the platform (us included) has to go through Studio + their
-              Marketplace submit flow. These 7 steps take ~3 minutes the first time, then ~30 seconds
-              per drop.
-            </p>
+          {/* Mode toggle: Accessory walkthrough vs Avatar walkthrough */}
+          <div className="flex items-center gap-1 mb-4 bg-black/40 border border-white/10 rounded-full p-1 w-fit">
+            <button
+              onClick={() => setMode("accessory")}
+              data-testid="how-to-equip-tab-accessory"
+              className={
+                "px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-black transition-all " +
+                (!isAvatar
+                  ? "bg-[#ccff00] text-black"
+                  : "text-zinc-400 hover:text-white")
+              }
+            >
+              Accessory (Hat / Hair / Back)
+            </button>
+            <button
+              onClick={() => setMode("avatar")}
+              data-testid="how-to-equip-tab-avatar"
+              className={
+                "px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-black transition-all " +
+                (isAvatar
+                  ? "bg-[#00f0ff] text-black"
+                  : "text-zinc-400 hover:text-white")
+              }
+            >
+              Full Rigged Avatar
+            </button>
           </div>
+          {isAvatar ? (
+            /* Avatar-mode intro callout */
+            <div className="rounded-xl border border-[#00f0ff]/40 bg-[#00f0ff]/8 px-4 py-3 mb-5 flex items-start gap-2">
+              <CheckCircle size={16} weight="fill" className="text-[#00f0ff] flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-zinc-200 leading-relaxed">
+                Your model now has a humanoid skeleton + skinning weights. Roblox Studio&apos;s{" "}
+                <strong className="text-white">Avatar Setup</strong> tool will retarget the skeleton
+                to R15 and add the cages + RigAttachments needed for Avatar Marketplace submission.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Top callout */}
+              <div className="rounded-xl border border-[#fbbf24]/40 bg-[#fbbf24]/8 px-4 py-3 mb-3 flex items-start gap-2">
+                <WarningCircle size={16} weight="fill" className="text-[#fbbf24] flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-zinc-200 leading-relaxed">
+                  Roblox does <strong>not</strong> have an API to publish wearable Accessories directly —
+                  every UGC creator on the platform (us included) has to go through Studio + their
+                  Marketplace submit flow. These 7 steps take ~3 minutes the first time, then ~30 seconds
+                  per drop.
+                </p>
+              </div>
 
           {/* Red common-error troubleshooting callout (with smart matcher) */}
           <div className="rounded-xl border border-[#ff0055]/50 bg-[#ff0055]/8 px-4 py-3 mb-5">
@@ -311,6 +417,8 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
               <Copy size={12} weight="bold" /> Copy diagnostic report
             </button>
           </div>
+            </>
+          )}
 
           {/* Step list */}
           <ol className="space-y-3">
