@@ -323,6 +323,27 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
             </div>
           ) : (
             <>
+              {/* "Looking to rig a full avatar?" cross-promo banner — most users
+                  who pick The Founder or any humanoid mistakenly use this flow */}
+              <button
+                type="button"
+                onClick={() => setMode("avatar")}
+                data-testid="how-to-equip-switch-to-avatar"
+                className="w-full text-left rounded-xl border border-[#00f0ff]/50 bg-[#00f0ff]/8 px-4 py-3 mb-3 flex items-center justify-between gap-3 hover:bg-[#00f0ff]/15 hover:border-[#00f0ff] transition-all group"
+              >
+                <div className="flex items-start gap-2 min-w-0">
+                  <ArrowRight size={16} weight="bold" className="text-[#00f0ff] flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-zinc-200 leading-relaxed">
+                    <strong className="text-[#00f0ff]">Looking to use this as a full Roblox avatar (body)?</strong>{" "}
+                    This walkthrough is for Hats / Hair / Accessories. For a full character body,
+                    rig the model first then follow the Avatar Setup flow instead.
+                  </p>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest font-black text-[#00f0ff] whitespace-nowrap group-hover:underline">
+                  Switch →
+                </span>
+              </button>
+
               {/* Top callout */}
               <div className="rounded-xl border border-[#fbbf24]/40 bg-[#fbbf24]/8 px-4 py-3 mb-3 flex items-start gap-2">
                 <WarningCircle size={16} weight="fill" className="text-[#fbbf24] flex-shrink-0 mt-0.5" />

@@ -153,6 +153,25 @@ export default function RobloxExportModal({ generationId, onClose }) {
           Download the .GLB, copy the manifest, and follow the steps in Roblox Studio.
         </p>
 
+        {/* Cross-promo: this Export flow publishes the model as an Accessory.
+            If the user wanted a full avatar BODY, they should rig it first. */}
+        <button
+          type="button"
+          onClick={() => setShowHowTo(true)}
+          data-testid="export-switch-to-avatar"
+          className="w-full text-left rounded-xl border border-[#00f0ff]/50 bg-[#00f0ff]/8 px-4 py-3 mb-5 flex items-center justify-between gap-3 hover:bg-[#00f0ff]/15 hover:border-[#00f0ff] transition-all group"
+        >
+          <p className="text-xs text-zinc-200 leading-relaxed">
+            <strong className="text-[#00f0ff]">Wait — is this a full avatar (body) or an accessory (hat / hair)?</strong>{" "}
+            This Export flow publishes Accessories. For a full character body, close this and click{" "}
+            <strong className="text-white">&quot;Rig for Roblox&quot;</strong> in the Studio action
+            bar instead — then follow the <strong>Full Rigged Avatar</strong> walkthrough.
+          </p>
+          <span className="text-[10px] uppercase tracking-widest font-black text-[#00f0ff] whitespace-nowrap group-hover:underline">
+            Learn more →
+          </span>
+        </button>
+
         {loading || !manifest || !checklist ? (
           <div className="text-zinc-500 text-sm text-center py-10">Loading…</div>
         ) : (
