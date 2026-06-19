@@ -345,6 +345,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
         onClose={() => setShowHowTo(false)}
         attachmentType={manifest?.attachment_type || "Hat"}
         itemName={manifest?.asset_name}
+        dropId={manifest?.generation_id || manifest?.id}
       />
     </div>
   );

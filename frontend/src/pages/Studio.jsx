@@ -795,6 +795,7 @@ export default function Studio() {
             onClose={() => setShowHowToEquip(false)}
             attachmentType={currentGen?.attachment_type || "Hat"}
             itemName={currentGen?.display_name || currentGen?.original_prompt}
+            dropId={currentGen?.id}
           />
 
           {currentGen && currentGen.status === "completed" && (

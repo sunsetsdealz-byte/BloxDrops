@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
-import { X, ArrowRight, CheckCircle, WarningCircle } from "@phosphor-icons/react";
+import React, { useEffect, useMemo, useState } from "react";
+import { X, ArrowRight, CheckCircle, WarningCircle, Copy } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 // Maps a BloxDrops attachment_type → the exact Roblox "Save to Roblox" sub-category
 // the user must pick. Picking "UGC Body" returns "Invalid root instance, must be a model".
@@ -132,13 +133,56 @@ const STEPS = (attachment, name) => [
   },
 ];
 
-export default function HowToEquipModal({ open, onClose, attachmentType = "Hat", itemName }) {
+export default function HowToEquipModal({ open, onClose, attachmentType = "Hat", itemName, dropId }) {
+  const [errorText, setErrorText] = useState("");
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Match the pasted Studio error against the two known failure patterns
+  const matched = useMemo(() => {
+    const t = (errorText || "").toLowerCase();
+    if (!t.trim()) return null;
+    if (
+      t.includes("should be a accessory") ||
+      t.includes("should be an accessory") ||
+      (t.includes("accessory") && t.includes("is a model")) ||
+      t.includes("expected top-level instance to be a accessory")
+    ) return "model_vs_accessory";
+    if (
+      t.includes("failed to load mesh") ||
+      t.includes("not part of the approved schema") ||
+      t.includes("handle.mesh")
+    ) return "schema_violation";
+    if (t.includes("ugc body") || t.includes("invalid root instance")) return "wrong_category";
+    return "unknown";
+  }, [errorText]);
+
+  const copyDiagnostic = async () => {
+    const report = [
+      "── BloxDrops Roblox Studio diagnostic ──",
+      `Drop ID: ${dropId || "(unknown)"}`,
+      `Item: ${itemName || "(unnamed)"}`,
+      `Attachment type: ${attachmentType || "Hat"}`,
+      `Detected error pattern: ${matched || "(no error pasted)"}`,
+      "",
+      "Studio error text:",
+      errorText.trim() || "(none pasted)",
+      "",
+      "App URL: " + (typeof window !== "undefined" ? window.location.origin : ""),
+      "Time: " + new Date().toISOString(),
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(report);
+      toast.success("Diagnostic report copied — paste in Discord / support");
+    } catch (e) {
+      toast.error("Couldn't access clipboard");
+    }
+  };
 
   if (!open) return null;
   const steps = STEPS(attachmentType, itemName);
@@ -184,13 +228,53 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
             </p>
           </div>
 
-          {/* Red common-error troubleshooting callout */}
+          {/* Red common-error troubleshooting callout (with smart matcher) */}
           <div className="rounded-xl border border-[#ff0055]/50 bg-[#ff0055]/8 px-4 py-3 mb-5">
             <p className="text-[10px] uppercase tracking-[0.2em] font-black text-[#ff0055] mb-2 flex items-center gap-1.5">
-              <WarningCircle size={12} weight="fill" /> Seeing one of these errors?
+              <WarningCircle size={12} weight="fill" /> Seeing an error in Roblox Studio?
             </p>
+
+            {/* Paste box */}
+            <div className="mb-3">
+              <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">
+                Paste the exact error text — we&apos;ll highlight the fix
+              </label>
+              <textarea
+                value={errorText}
+                onChange={(e) => setErrorText(e.target.value)}
+                placeholder="e.g. Uploaded asset should be a Accessory but is a Model"
+                rows={2}
+                data-testid="how-to-equip-error-paste"
+                className="mt-1 w-full bg-black/50 border border-white/15 rounded-lg px-3 py-2 text-xs text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-[#ff0055]/60"
+              />
+              {errorText.trim() && (
+                <p className="text-[10px] mt-1.5 text-zinc-400">
+                  Match:{" "}
+                  <span className={
+                    matched === "unknown"
+                      ? "text-[#fbbf24] font-bold"
+                      : "text-[#ccff00] font-bold"
+                  }>
+                    {matched === "model_vs_accessory" && "Model published instead of Accessory → see card A below"}
+                    {matched === "schema_violation" && "Schema violation / mesh load failure → see card B below"}
+                    {matched === "wrong_category" && "Wrong category picked → re-open Save to Roblox dialog and choose the category we listed at the top"}
+                    {matched === "unknown" && "No known pattern matched. Use Copy Diagnostic and send to support."}
+                  </span>
+                </p>
+              )}
+            </div>
+
             <ul className="text-xs text-zinc-200 leading-relaxed space-y-2">
-              <li>
+              <li
+                className={
+                  "rounded-lg p-2 transition-all " +
+                  (matched === "model_vs_accessory"
+                    ? "bg-[#ff0055]/15 ring-1 ring-[#ff0055] ring-offset-2 ring-offset-transparent"
+                    : "")
+                }
+                data-testid="how-to-equip-fix-card-a"
+              >
+                <span className="text-[10px] uppercase tracking-widest text-[#ff8080] font-black mr-1">A.</span>
                 <span className="font-mono text-[#ff8080]">
                   &ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;
                 </span>
@@ -198,7 +282,16 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
                 <strong className="text-[#ccff00]">Accessory Fitting Tool</strong> first (steps 4–5),
                 then right-click the new <strong>Accessory</strong> it generates.
               </li>
-              <li>
+              <li
+                className={
+                  "rounded-lg p-2 transition-all " +
+                  (matched === "schema_violation"
+                    ? "bg-[#ff0055]/15 ring-1 ring-[#ff0055] ring-offset-2 ring-offset-transparent"
+                    : "")
+                }
+                data-testid="how-to-equip-fix-card-b"
+              >
+                <span className="text-[10px] uppercase tracking-widest text-[#ff8080] font-black mr-1">B.</span>
                 <span className="font-mono text-[#ff8080]">
                   &ldquo;Failed to load mesh rbxassetid://…&rdquo; / &ldquo;instances not part of approved schema&rdquo;
                 </span>
@@ -208,6 +301,15 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
                 builds the clean structure for you.
               </li>
             </ul>
+
+            <button
+              type="button"
+              onClick={copyDiagnostic}
+              data-testid="how-to-equip-copy-diagnostic"
+              className="mt-3 inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-widest font-black text-white transition-colors"
+            >
+              <Copy size={12} weight="bold" /> Copy diagnostic report
+            </button>
           </div>
 
           {/* Step list */}
