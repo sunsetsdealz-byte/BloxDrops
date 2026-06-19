@@ -75,10 +75,10 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
     : "relative w-full rounded-2xl overflow-hidden border border-white/10";
 
   const containerStyle = zoomed
-    ? { background: "transparent" }
+    ? { background: "linear-gradient(180deg, #f7f7f9 0%, #d8d8df 100%)" }
     : {
         height: isFullHeight ? "100%" : height,
-        background: "transparent",
+        background: "linear-gradient(180deg, #f6f6f9 0%, #d6d6dc 100%)",
       };
 
   const placeholder = (

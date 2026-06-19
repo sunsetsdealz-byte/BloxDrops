@@ -193,11 +193,9 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
       const trans = lerpScalar(config.transparency_keypoints, tNorm, 0);
       colors[oc + 3] = Math.max(0, Math.min(1, 1 - trans));
       const sz = lerpScalar(config.size_keypoints, tNorm, 0.5);
-      // Roblox stores Size in studs. Our viewer normalizes models to ~1.5 world units,
-      // so 1 stud ≈ 0.3 world units. The point-shader scales by (300/-z) which gives
-      // ~75× at default camera distance, so we use ×1.6 here to match the
-      // Roblox catalog thumbnail proportions (tight wisps, not big clouds).
-      sizes[i] = sz * 1.6;
+      // Roblox stores Size in studs. Use ×2.4 to land between catalog-accurate
+      // and visible — tight wisps that still read at viewer scale.
+      sizes[i] = sz * 2.4;
     }
 
     if (geometryRef.current) {
@@ -210,20 +208,19 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
 
   // ---- material: per-particle PNG-like smoke (procedural soft alpha mask) ----
   const material = useMemo(() => {
-    const brightness = config.brightness ?? 1;
-    // LightEmission: 0 = normal alpha (smoke/clouds), 1 = additive (fire/electricity).
-    // Default to NormalBlending so smoke renders as a transparent PNG on any backdrop.
-    const lightEmission = Math.max(0, Math.min(1, config.light_emission ?? 0));
-    const blendMode = lightEmission > 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending;
+    // Boost brightness so VFX pops on both light and dark backdrops (matching
+    // the Roblox catalog look where smoke/electricity reads strongly).
+    const brightness = (config.brightness ?? 1) * 2.2;
+    // Always use AdditiveBlending — it gives vibrant glowing wisps that read
+    // well on light backgrounds (the catalog reference) and dark alike.
     return new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: blendMode,
+      blending: THREE.AdditiveBlending,
       uniforms: {
         uTex: { value: texture },
         uHasTex: { value: texture ? 1.0 : 0.0 },
         uBrightness: { value: brightness },
-        uLightEmission: { value: lightEmission },
       },
       vertexShader: `
         attribute float size;
@@ -243,7 +240,6 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
         uniform sampler2D uTex;
         uniform float uHasTex;
         uniform float uBrightness;
-        uniform float uLightEmission;
         varying vec4 vColor;
         varying float vRotation;
         void main() {
@@ -254,29 +250,28 @@ export default function RbxParticleEmitter({ config, maxParticles }) {
           vec2 uv = gl_PointCoord - vec2(0.5);
           uv = mat2(c, -s, s, c) * uv + vec2(0.5);
 
-          // Procedural soft circular alpha mask (always present) — gives clean PNG-like
-          // edges. Falls off smoothly from the center so particles look like wisps,
-          // never as black squares.
+          // Procedural soft circular mask with bright hot core — matches the
+          // Roblox catalog wisp look (bright white center, soft color edges).
           vec2 d = gl_PointCoord - vec2(0.5);
           float r = length(d) * 2.0;
-          float softMask = 1.0 - smoothstep(0.55, 1.0, r);
+          float softMask = 1.0 - smoothstep(0.0, 1.0, r);
+          float hotCore  = 1.0 - smoothstep(0.0, 0.45, r);
 
           vec4 tex = vec4(1.0);
           if (uHasTex > 0.5 && uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
             tex = texture2D(uTex, uv);
           }
 
-          // Combine texture alpha (if any) with the procedural soft mask so corners
-          // always fade. If texture is missing, only the soft mask is used.
           float a = tex.a * softMask * vColor.a;
           if (a < 0.005) discard;
 
-          vec3 rgb = tex.rgb * vColor.rgb * uBrightness;
+          // Mix in white hot core so the smoke has a glowing nucleus
+          vec3 rgb = mix(tex.rgb * vColor.rgb, vec3(1.0), hotCore * 0.5) * uBrightness;
           gl_FragColor = vec4(rgb, a);
         }
       `,
     });
-  }, [texture, config.brightness, config.light_emission]);
+  }, [texture, config.brightness]);
 
   return (
     <points ref={pointsRef} frustumCulled={false}>
