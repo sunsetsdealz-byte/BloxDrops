@@ -205,7 +205,9 @@ function RbxBeam({ config }) {
     () => [a.x + dir.x * 0.5, a.y + dir.y * 0.5, a.z + dir.z * 0.5],
     [a, dir]
   );
-  const orbBase = useMemo(() => Math.max(0.3, dir.length() * 0.45), [dir]);
+  // Column glow scales with beam length: narrow + tall (matches the catalog ref)
+  const orbW = useMemo(() => Math.max(0.4, dir.length() * 0.35), [dir]);
+  const orbH = useMemo(() => Math.max(1.2, dir.length() * 1.25), [dir]);
 
   if (!valid) return null;
   if (!texture) return null; // ensure loader resolved (we don't actually use it but useLoader gates render)
@@ -222,17 +224,17 @@ function RbxBeam({ config }) {
         <primitive object={material} attach="material" />
       </mesh>
 
-      {/* === ORBITAL LIGHTNING GLOW (pulsing white→purple sphere) === */}
-      <PulsingOrb position={midPoint} baseRadius={orbBase} color={color} brightness={brightness} />
+      {/* === ORBITAL LIGHTNING GLOW (tall column with hot white core) === */}
+      <PulsingOrb position={midPoint} width={orbW} height={orbH} color={color} brightness={brightness} />
     </group>
   );
 }
 
 // ============================================================================
-//  PulsingOrb — billboard sprite with radial gradient + brightness pulse,
-//  used as the bright "orbital lightning" core between Beam attachments.
+//  PulsingOrb — tall billboarded sprite painting a vertical glow column,
+//  matching the "purple orbital lightning" look from the Roblox catalog.
 // ============================================================================
-function PulsingOrb({ position, baseRadius, color, brightness }) {
+function PulsingOrb({ position, width, height, color, brightness }) {
   const meshRef = useRef();
   const phaseRef = useRef(Math.random() * Math.PI * 2);
   const { camera } = useThree();
@@ -246,6 +248,7 @@ function PulsingOrb({ position, baseRadius, color, brightness }) {
         uColor:      { value: new THREE.Color(color.r, color.g, color.b) },
         uBrightness: { value: brightness },
         uPulse:      { value: 1.0 },
+        uTime:       { value: 0.0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -258,17 +261,33 @@ function PulsingOrb({ position, baseRadius, color, brightness }) {
         uniform vec3 uColor;
         uniform float uBrightness;
         uniform float uPulse;
+        uniform float uTime;
         varying vec2 vUv;
+
+        // 2D random / noise — used to add lightning-bolt zigzag inside the column
+        float rand(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
         void main() {
-          vec2 d = vUv - vec2(0.5);
-          float r = length(d) * 2.0;
-          if (r > 1.0) discard;
-          // Bright hot core fading to colored halo
-          float hotCore   = pow(1.0 - smoothstep(0.0, 0.35, r), 2.0);
-          float midGlow   = pow(1.0 - smoothstep(0.0, 0.7, r), 1.5);
-          float outerHalo = 1.0 - smoothstep(0.0, 1.0, r);
-          vec3 rgb = mix(uColor, vec3(1.0), hotCore) * uBrightness * uPulse;
-          float a = (hotCore + midGlow * 0.5 + outerHalo * 0.25) * uPulse;
+          // Map vUv into local space: x = -0.5..0.5 (horizontal), y = -0.5..0.5 (vertical)
+          float xc = vUv.x - 0.5;
+          float yc = vUv.y - 0.5;
+
+          // Slight horizontal jitter so the bolt looks like crackling lightning
+          float jitter = (rand(vec2(floor(uTime * 12.0), floor(yc * 30.0))) - 0.5) * 0.08;
+          xc += jitter;
+
+          // Distance from the vertical axis controls the bolt thickness
+          float horiz = abs(xc) * 2.0;
+          // Hot white core (very thin), purple mid glow (medium), outer haze
+          float core      = 1.0 - smoothstep(0.0, 0.12, horiz);
+          float midGlow   = 1.0 - smoothstep(0.0, 0.45, horiz);
+          float outerHalo = 1.0 - smoothstep(0.0, 1.0, horiz);
+
+          // Vertical envelope — taper top + bottom so the bolt doesn't have flat ends
+          float vertEnv = smoothstep(0.0, 0.15, vUv.y) * smoothstep(0.0, 0.15, 1.0 - vUv.y);
+
+          vec3 rgb = mix(uColor, vec3(1.0), core) * uBrightness * uPulse;
+          float a  = (core * 1.0 + midGlow * 0.55 + outerHalo * 0.18) * vertEnv * uPulse;
           if (a < 0.005) discard;
           gl_FragColor = vec4(rgb, a);
         }
@@ -277,10 +296,10 @@ function PulsingOrb({ position, baseRadius, color, brightness }) {
   }, [color, brightness]);
 
   useFrame((_, dt) => {
-    phaseRef.current += dt * 6.0; // ~1 Hz pulse
-    const pulse = 0.85 + Math.sin(phaseRef.current) * 0.15 + (Math.random() < 0.08 ? 0.25 : 0);
+    phaseRef.current += dt * 6.0;
+    const pulse = 0.85 + Math.sin(phaseRef.current) * 0.15 + (Math.random() < 0.08 ? 0.3 : 0);
     if (material.uniforms?.uPulse) material.uniforms.uPulse.value = pulse;
-    // Billboard the orb so it always faces the camera (lookAt camera position)
+    if (material.uniforms?.uTime) material.uniforms.uTime.value += dt;
     if (meshRef.current) {
       meshRef.current.lookAt(camera.position);
     }
@@ -288,7 +307,7 @@ function PulsingOrb({ position, baseRadius, color, brightness }) {
 
   return (
     <mesh ref={meshRef} position={position} renderOrder={4}>
-      <planeGeometry args={[baseRadius * 2, baseRadius * 2]} />
+      <planeGeometry args={[width, height]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
