@@ -286,6 +286,31 @@ def _read_property_array(r: _Reader, type_id: int, count: int) -> list[Any]:  # 
                 kps.append({"t": t, "r": cr, "g": cg, "b": cb})
             out.append({"keypoints": kps})
         return out
+    if type_id == 0x10:  # CFrame
+        # Per-instance: 1 byte rotation_id + optional 9 floats (rotation matrix)
+        # Then: 3 untransformed floats × count (positions, interleaved like Vector3)
+        positions_only_rot_ids = []
+        rot_matrices = []  # parallel to positions; None when identity
+        for _ in range(count):
+            rid = r.u8()
+            if rid == 0:
+                # Custom rotation: 9 floats
+                mat = [r.f32() for _ in range(9)]
+                rot_matrices.append(mat)
+            else:
+                rot_matrices.append(None)
+            positions_only_rot_ids.append(rid)
+        # Now interleaved position arrays
+        xs = _untransform_f32_array(r.read(count * 4), count)
+        ys = _untransform_f32_array(r.read(count * 4), count)
+        zs = _untransform_f32_array(r.read(count * 4), count)
+        out = []
+        for i in range(count):
+            out.append({
+                "x": xs[i], "y": ys[i], "z": zs[i],
+                "rotation_matrix": rot_matrices[i],
+            })
+        return out
     if type_id == 0x21:  # SecurityCapabilities — 8 bytes per instance, skip
         r.read(count * 8)
         return [None] * count
@@ -304,3 +329,48 @@ def extract_particle_emitters(instances: dict[int, Instance]) -> list[dict]:
                 "props": inst.properties,
             })
     return out
+
+
+# Roblox VFX classes we want to capture beyond ParticleEmitter
+_VFX_CLASS_NAMES = {
+    "ParticleEmitter",
+    "Beam",
+    "Trail",
+    "Fire",
+    "Smoke",
+    "Sparkles",
+    "PointLight",
+    "SpotLight",
+}
+
+
+def extract_all_vfx(instances: dict[int, Instance]) -> list[dict]:
+    """Return every VFX-related instance with class metadata for downstream normalization."""
+    out = []
+    for inst in instances.values():
+        if inst.class_name in _VFX_CLASS_NAMES:
+            out.append({
+                "class": inst.class_name,
+                "referent": inst.referent,
+                "name": inst.properties.get("Name", inst.class_name),
+                "props": inst.properties,
+                "parent": inst.parent,
+            })
+    return out
+
+
+def find_attachment_position(instances: dict[int, Instance], referent: int) -> Optional[dict]:
+    """Look up an Attachment instance by referent and return its CFrame position
+    (relative to its parent MeshPart). Returns None if not found."""
+    inst = instances.get(referent)
+    if not inst or inst.class_name != "Attachment":
+        return None
+    # CFrame parsing is complex; for our purposes Position (Vector3) is enough
+    pos = inst.properties.get("Position")
+    if isinstance(pos, dict):
+        return pos
+    # Fallback: parse from CFrame if present (CFrame stores position + rotation)
+    cf = inst.properties.get("CFrame")
+    if isinstance(cf, dict) and "x" in cf:
+        return {"x": cf["x"], "y": cf["y"], "z": cf["z"]}
+    return None

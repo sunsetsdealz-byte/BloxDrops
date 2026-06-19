@@ -4,7 +4,7 @@ import { OrbitControls, useGLTF, Environment, Center, Html, Bounds, useBounds } 
 import { MagnifyingGlassPlus, X } from "@phosphor-icons/react";
 import UnavailablePlaceholder from "./UnavailablePlaceholder";
 import VFXLayer from "./VFXLayer";
-import RbxParticleEmitter from "./RbxParticleEmitter";
+import RbxVfxBundle from "./RbxVfxBundle";
 
 function Model({ url }) {
   const { scene } = useGLTF(url);
@@ -117,11 +117,7 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
               </Bounds>
               {/* Custom imported Roblox VFX takes precedence over preset */}
               {vfxCustom && vfxCustom.emitters && vfxCustom.emitters.length > 0 ? (
-                vfxCustom.emitters
-                  .filter((e) => e.texture && !e.texture.startsWith("rbxassetid://"))
-                  .map((e, idx) => (
-                    <RbxParticleEmitter key={`${e.name}-${idx}`} config={e} />
-                  ))
+                <RbxVfxBundle vfx={vfxCustom} />
               ) : (
                 <VFXLayer preset={vfxPreset} />
               )}
