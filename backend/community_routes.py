@@ -244,6 +244,9 @@ async def update_generation_metadata(
         if tier not in allowed:
             raise HTTPException(status_code=400, detail=f"Invalid rarity tier. Allowed: {sorted(allowed)}")
         update["rarity_tier"] = tier
+        # Sentinel: this rarity was manually set by an admin — drops_utils.enrich_drop
+        # will then skip the auto-compute and use the override.
+        update["rarity_override"] = True
 
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")

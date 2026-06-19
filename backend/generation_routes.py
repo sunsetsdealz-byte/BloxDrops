@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from pydantic import BaseModel, Field
 from bson import ObjectId
 
 from auth_utils import get_current_user
@@ -468,6 +469,101 @@ async def rig_generation(
     )
     bg.add_task(_run_meshy_rigging, generation_id, model_url)
     return {"id": generation_id, "rigging_status": "pending"}
+
+
+# ─── Mesh optimization (Hunyuan-3D smart-topology via fal.ai) ───────────────
+async def _run_mesh_optimization(generation_id: str, model_url: str, density: str):
+    """Background task — pipe the GLB through Hunyuan-3D's smart-topology
+    endpoint to produce a cleaner low/medium-poly version with quad-friendly
+    topology. Critical for Roblox where each accessory part has a strict
+    polycount cap (10k tris for hats/hair, 4k for layered clothing)."""
+    from server import db
+    try:
+        import fal_client
+        handler = await fal_client.submit_async(
+            "fal-ai/hunyuan-3d/v3.1/smart-topology",
+            arguments={
+                "input_mesh_url": model_url,
+                # triangle output stays GLB-compatible — quad forces FBX
+                "polygon_type": "triangle",
+                "face_level": density,  # "high" | "medium" | "low"
+            },
+        )
+        result = await handler.get()
+        opt_url = None
+        if isinstance(result, dict):
+            opt_url = (
+                (result.get("output_mesh") or {}).get("url")
+                or (result.get("model_mesh") or {}).get("url")
+                or (result.get("mesh") or {}).get("url")
+            )
+        if not opt_url:
+            raise RuntimeError(f"Optimization returned no mesh url: {result!r}")
+
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {
+                "optimized_model_url": opt_url,
+                "optimization_density": density,
+                "optimization_status": "completed",
+                "optimization_completed_at": now_utc().isoformat(),
+                "optimization_error": None,
+            }},
+        )
+    except Exception as e:
+        logger.exception("Mesh optimization failed: %s", e)
+        await db.generations.update_one(
+            {"_id": ObjectId(generation_id)},
+            {"$set": {
+                "optimization_status": "failed",
+                "optimization_error": str(e)[:300],
+            }},
+        )
+
+
+class MeshOptimizeRequest(BaseModel):
+    density: str = Field(default="medium", pattern="^(low|medium|high)$")
+
+
+@router.post("/generations/{generation_id}/optimize")
+async def optimize_generation_mesh(
+    generation_id: str,
+    payload: MeshOptimizeRequest,
+    bg: BackgroundTasks,
+    user=Depends(get_current_user),
+):
+    """Run smart-topology mesh optimization on a completed drop. Reduces
+    polycount + cleans topology so it fits Roblox UGC limits. Owner-or-admin
+    only. Costs ~$0.10 per optimization (fal.ai billed)."""
+    from server import db
+    try:
+        gen = await db.generations.find_one({"_id": ObjectId(generation_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if not gen:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    if gen.get("user_id") != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You can only optimize your own creations")
+    if gen.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="Generation must be completed before optimization")
+    model_url = gen.get("model_url")
+    if not model_url:
+        raise HTTPException(status_code=400, detail="Generation has no model_url to optimize")
+    if not _has_fal_key():
+        raise HTTPException(status_code=503, detail="FAL_KEY missing — optimization unavailable in demo mode")
+    if gen.get("optimization_status") == "pending":
+        return {"id": generation_id, "optimization_status": "pending", "already_running": True}
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {
+            "optimization_status": "pending",
+            "optimization_started_at": now_utc().isoformat(),
+            "optimization_error": None,
+        }},
+    )
+    bg.add_task(_run_mesh_optimization, generation_id, model_url, payload.density)
+    return {"id": generation_id, "optimization_status": "pending", "density": payload.density}
 
 
 @router.post("/prompt/enhance")

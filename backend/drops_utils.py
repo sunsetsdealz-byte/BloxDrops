@@ -132,7 +132,12 @@ def enrich_drop(doc: Dict[str, Any]) -> Dict[str, Any]:
     if "traits" not in doc:
         doc["traits"] = []
 
-    tier = compute_rarity_tier(doc)
+    # Admin rarity override: when set, skip auto-compute and trust the stored tier.
+    override_tier = doc.get("rarity_tier") if doc.get("rarity_override") else None
+    if override_tier in RARITY_DISPLAY:
+        tier = override_tier
+    else:
+        tier = compute_rarity_tier(doc)
     display = RARITY_DISPLAY[tier]
     doc["rarity_tier"] = tier
     doc["rarity_label"] = display["label"]
