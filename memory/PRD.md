@@ -1,10 +1,10 @@
-# BloxDrops AI — Product Requirements
+# BloxDrops — Product Requirements
 
 ## Original problem statement
 "i want to build an ai generator. what about a site like tiktok where people can battle? i want a better platform that does the same as ugcraft and more"
 
 ## What it is
-BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference images into 3D Roblox-ready accessories & clothing, exported as GLB, with a TikTok-style feed, community battles, NFT-like scarcity (Rarity, Editions, Genesis drops), and a USD-cashable marketplace powered by Stripe Connect.
+BloxDrops is a Roblox UGC creator — turns text prompts and reference images into 3D Roblox-ready accessories & clothing, exported as GLB, with a TikTok-style feed, community battles, NFT-like scarcity (Rarity, Editions, Genesis drops), and a USD-cashable marketplace powered by Stripe Connect.
 
 ## User personas
 - **Roblox creators (13-25)** — want to ship marketplace items fast, no 3D experience
@@ -76,6 +76,8 @@ BloxDrops AI is an AI Roblox UGC creator — turns text prompts and reference im
 - **Studio button overlap fix**: action overlay uses `right-32` to leave room for the ModelViewer Zoom button.
 - **Roblox 3D Model push (direct GLB upload)**: Roblox Open Cloud now natively accepts `.glb` for `Model` assets (since Mar 2024 3D-import update) with MIME `model/gltf-binary`. `POST /api/roblox/upload/{id}` streams the .glb straight to Open Cloud — zero conversion, zero system deps, ~5s end-to-end. Earlier Blender-based approach removed (it required runtime apt install which doesn't carry into the production build, causing Cloudflare 520 on deploy).
 - **Pre-wrapped Accessory .rbxmx**: New `/api/roblox/accessory/{id}.rbxmx` endpoint generates a fully-configured Roblox Accessory XML with the right `AccessoryType` (Hat/Hair/Back/etc), attachment-point name, MeshPart Handle with physics flags + MeshId pointing to the uploaded asset, plus a SpecialMesh fallback. After the user pushes their drop to Roblox, they download the .rbxmx, drag it into Studio Explorer, and right-click → Save to Roblox. Solves the "Open Cloud can't upload as Accessory" platform gap.
+- **HowToEquipModal hardening (2026-02-19)**: Added explicit red error-callout block listing the two failure modes users actually hit ("Uploaded asset should be a Accessory but is a Model" + "Failed to load mesh / instances not part of approved schema") with exact recovery steps. Beefed step 3 with a STOP warning telling users not to right-click the Model directly, renamed step 4 to "MANDATORY" and step 6 to "pick the NEW Accessory, not the Model".
+- **Branding cleanup (2026-02-19)**: Removed " AI" suffix from footer wordmark, `<title>`, OG/Twitter meta, and description. Brand is now just "BloxDrops".
 
 ## P1 — Backlog
 - Regenerate Founder Avatar 3D model via fal.ai (blocked on user fal.ai balance top-up)

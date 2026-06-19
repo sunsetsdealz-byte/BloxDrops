@@ -29,7 +29,7 @@ function Layout() {
       <footer className="border-t border-white/5 py-8 mt-12">
         <div className="max-w-7xl mx-auto px-5 md:px-8 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500">
           <div className="font-display font-bold tracking-tighter uppercase">
-            Blox<span className="text-[#ccff00]">Drops</span> AI
+            Blox<span className="text-[#ccff00]">Drops</span>
           </div>
           <div>Built for UGC creators · &copy; {new Date().getFullYear()} BloxDrops</div>
         </div>

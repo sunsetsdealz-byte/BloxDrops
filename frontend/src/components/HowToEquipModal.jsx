@@ -37,15 +37,31 @@ const STEPS = (attachment, name) => [
   },
   {
     title: "Drag the Model into Workspace",
-    body: `Click your BloxDrops model in Toolbox — it inserts into Workspace. In Explorer you'll see a Model with a MeshPart inside (that MeshPart has the real mesh, properly loaded).`,
+    body: (
+      <>
+        Click your BloxDrops model in Toolbox — it inserts into Workspace. In Explorer you&apos;ll see
+        a <strong className="text-white">Model</strong> with a{" "}
+        <strong className="text-white">MeshPart</strong> inside.
+        <br />
+        <span className="text-[#ff0055] font-bold">
+          ⛔ STOP — do NOT right-click this Model and pick &ldquo;Save to Roblox&rdquo; yet.
+        </span>{" "}
+        It will fail with{" "}
+        <span className="font-mono text-[#ff0055]">
+          &ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;
+        </span>
+        . You must wrap it with AFT first (next step).
+      </>
+    ),
   },
   {
-    title: "Open the Accessory Fitting Tool",
+    title: "Open the Accessory Fitting Tool (MANDATORY)",
     body: (
       <>
         Go to the <strong className="text-white">Avatar</strong> tab in Studio&apos;s top ribbon →
         click <strong className="text-[#ccff00]">Accessory Fitting Tool</strong>. A floating panel
-        opens.
+        opens. <strong className="text-white">This step converts your Model → Accessory,</strong>{" "}
+        which is the only format Roblox accepts for wearable UGC.
       </>
     ),
   },
@@ -66,11 +82,13 @@ const STEPS = (attachment, name) => [
     ),
   },
   {
-    title: "Save to Roblox",
+    title: "Save to Roblox — pick the NEW Accessory, not the Model",
     body: (
       <>
-        In Explorer, right-click the new Accessory the tool just generated →{" "}
-        <strong className="text-white">Save to Roblox</strong>. In the dialog, the category should
+        After AFT runs, Explorer now contains a brand-new{" "}
+        <strong className="text-[#ccff00]">Accessory</strong> object (next to your original Model).
+        Right-click <strong className="text-white">that Accessory</strong> →{" "}
+        <strong className="text-white">Save to Roblox</strong>. In the dialog the category should
         auto-fill as{" "}
         <strong className="text-[#ccff00] font-mono">
           &ldquo;{ROBLOX_CATEGORY_HINT[attachment] || "Hats"}&rdquo;
@@ -81,6 +99,11 @@ const STEPS = (attachment, name) => [
           Do NOT pick &ldquo;UGC Body&rdquo;
         </span>{" "}
         — that&apos;s for full-avatar bundles.
+        <br />
+        <span className="text-[#ff0055] font-bold">
+          Do NOT right-click the original Model
+        </span>{" "}
+        — only the Accessory the fitting tool just generated.
       </>
     ),
   },
@@ -151,7 +174,7 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
 
         <div className="px-6 py-5">
           {/* Top callout */}
-          <div className="rounded-xl border border-[#fbbf24]/40 bg-[#fbbf24]/8 px-4 py-3 mb-5 flex items-start gap-2">
+          <div className="rounded-xl border border-[#fbbf24]/40 bg-[#fbbf24]/8 px-4 py-3 mb-3 flex items-start gap-2">
             <WarningCircle size={16} weight="fill" className="text-[#fbbf24] flex-shrink-0 mt-0.5" />
             <p className="text-xs text-zinc-200 leading-relaxed">
               Roblox does <strong>not</strong> have an API to publish wearable Accessories directly —
@@ -159,6 +182,32 @@ export default function HowToEquipModal({ open, onClose, attachmentType = "Hat",
               Marketplace submit flow. These 7 steps take ~3 minutes the first time, then ~30 seconds
               per drop.
             </p>
+          </div>
+
+          {/* Red common-error troubleshooting callout */}
+          <div className="rounded-xl border border-[#ff0055]/50 bg-[#ff0055]/8 px-4 py-3 mb-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-black text-[#ff0055] mb-2 flex items-center gap-1.5">
+              <WarningCircle size={12} weight="fill" /> Seeing one of these errors?
+            </p>
+            <ul className="text-xs text-zinc-200 leading-relaxed space-y-2">
+              <li>
+                <span className="font-mono text-[#ff8080]">
+                  &ldquo;Uploaded asset should be a Accessory but is a Model&rdquo;
+                </span>
+                <br />→ You right-clicked the <strong>Model</strong> in Explorer. Run the{" "}
+                <strong className="text-[#ccff00]">Accessory Fitting Tool</strong> first (steps 4–5),
+                then right-click the new <strong>Accessory</strong> it generates.
+              </li>
+              <li>
+                <span className="font-mono text-[#ff8080]">
+                  &ldquo;Failed to load mesh rbxassetid://…&rdquo; / &ldquo;instances not part of approved schema&rdquo;
+                </span>
+                <br />→ Your Accessory&apos;s <strong>Handle</strong> contains a legacy{" "}
+                <strong>Mesh</strong> or <strong>SpecialMesh</strong> child. Delete that child node;
+                the Handle should only be a single <strong>MeshPart</strong>. Re-run AFT and it
+                builds the clean structure for you.
+              </li>
+            </ul>
           </div>
 
           {/* Step list */}
