@@ -42,85 +42,174 @@ export default function RbxVfxBundle({ vfx }) {
 }
 
 // ============================================================================
-//  Beam — textured strip between two attachment points (curve-controllable)
+//  Beam — lightning-bolt style render with animated zigzag displacement
+//  + procedural "hot white core fading to purple/colored edges" shader
+//  Matches the Roblox catalog look (sharp lightning, not smooth ribbon).
 // ============================================================================
 function RbxBeam({ config }) {
-  const valid = config.texture && !config.texture.startsWith("rbxassetid://") && config.att0 && config.att1;
-  const texture = useLoader(THREE.TextureLoader, valid ? config.texture : "/hero/character.png");
-  const matRef = useRef();
-  const offsetRef = useRef(0);
+  const valid = !!(config.att0 && config.att1);
+  // Try loading the supplied texture, but don't depend on it — we ship a
+  // procedural lightning shader so it works even with rbxassetid:// URLs.
+  const texture = useLoader(THREE.TextureLoader, "/hero/character.png");
+
+  // Persistent ref structures so the shape mutates in place each frame.
+  const segs = Math.max(16, config.segments || 24);
+  const positionsRef = useRef(new Float32Array((segs + 1) * 6));
+  const uvsRef       = useRef(null);
+  const indicesRef   = useRef(null);
+  const geoRef       = useRef();
+  const flickerRef   = useRef(0);
+  const accumRef     = useRef(0);
+
+  const { color, alpha, brightness } = useMemo(() => {
+    const ck = config.color_keypoints && config.color_keypoints[0];
+    const tk = config.transparency_keypoints && config.transparency_keypoints[0];
+    const col = ck ? new THREE.Color(ck.r, ck.g, ck.b) : new THREE.Color(0.5, 0.3, 1.0);
+    const alphaVal = tk ? 1 - tk.v : 1;
+    return { color: col, alpha: alphaVal, brightness: (config.brightness || 1) * 2.5 };
+  }, [config]);
+
+  // Static UVs + indices — built once
+  useMemo(() => {
+    const uvs = new Float32Array((segs + 1) * 4);
+    const indices = new Uint16Array(segs * 6);
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      uvs[i * 4 + 0] = t; uvs[i * 4 + 1] = 0;
+      uvs[i * 4 + 2] = t; uvs[i * 4 + 3] = 1;
+    }
+    for (let i = 0; i < segs; i++) {
+      const o = i * 2;
+      indices[i * 6 + 0] = o;
+      indices[i * 6 + 1] = o + 1;
+      indices[i * 6 + 2] = o + 2;
+      indices[i * 6 + 3] = o + 1;
+      indices[i * 6 + 4] = o + 3;
+      indices[i * 6 + 5] = o + 2;
+    }
+    uvsRef.current = uvs;
+    indicesRef.current = indices;
+  }, [segs]);
+
+  const w0 = config.width0 ?? 0.3;
+  const w1 = config.width1 ?? 0.3;
+  const a = useMemo(() => new THREE.Vector3(config.att0.x, config.att0.y, config.att0.z), [config.att0]);
+  const b = useMemo(() => new THREE.Vector3(config.att1.x, config.att1.y, config.att1.z), [config.att1]);
+  const dir = useMemo(() => new THREE.Vector3().subVectors(b, a), [a, b]);
+  // Pick a stable perpendicular axis. If dir is mostly vertical, side = (1,0,0);
+  // otherwise compute cross with up.
+  const side = useMemo(() => {
+    const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+    return new THREE.Vector3().crossVectors(dir, up).normalize();
+  }, [dir]);
+
+  // Pre-compute random zigzag amplitudes per segment so the shape flickers but
+  // remains structurally coherent (re-seeded every ~80ms).
+  const zigzagRef = useRef(new Float32Array(segs + 1));
+
+  const reseedZigzag = () => {
+    const arr = zigzagRef.current;
+    const len = dir.length();
+    const amp = Math.max(0.05, len * 0.12);
+    arr[0] = 0;
+    arr[segs] = 0;
+    for (let i = 1; i < segs; i++) {
+      // Sin envelope + random — biggest displacement near the middle
+      const env = Math.sin((i / segs) * Math.PI);
+      arr[i] = (Math.random() - 0.5) * 2 * amp * env;
+    }
+  };
+  useMemo(() => reseedZigzag(), [a, b, segs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useFrame((_, dt) => {
-    if (matRef.current && config.texture_speed) {
-      offsetRef.current += dt * config.texture_speed;
-      texture.offset.x = offsetRef.current % 1;
+    accumRef.current += dt;
+    flickerRef.current += dt;
+    // Re-seed zigzag every 70ms for lightning flicker
+    if (flickerRef.current > 0.07) {
+      reseedZigzag();
+      flickerRef.current = 0;
+    }
+    // Update positions
+    const positions = positionsRef.current;
+    const z = zigzagRef.current;
+    const len = dir.length();
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const w = (w0 * (1 - t) + w1 * t) * 0.5;
+      // base point along the line
+      const px = a.x + dir.x * t + side.x * z[i];
+      const py = a.y + dir.y * t + side.y * z[i];
+      const pz = a.z + dir.z * t + side.z * z[i];
+      // top / bottom of the ribbon (perpendicular to side)
+      const tx = side.y * dir.z - side.z * dir.y;
+      const ty = side.z * dir.x - side.x * dir.z;
+      const tz = side.x * dir.y - side.y * dir.x;
+      const tlen = Math.hypot(tx, ty, tz) || 1;
+      const nx = (tx / tlen) * w;
+      const ny = (ty / tlen) * w;
+      const nz = (tz / tlen) * w;
+      positions[i * 6 + 0] = px + nx;
+      positions[i * 6 + 1] = py + ny;
+      positions[i * 6 + 2] = pz + nz;
+      positions[i * 6 + 3] = px - nx;
+      positions[i * 6 + 4] = py - ny;
+      positions[i * 6 + 5] = pz - nz;
+    }
+    if (geoRef.current && geoRef.current.attributes.position) {
+      geoRef.current.attributes.position.needsUpdate = true;
     }
   });
 
-  const { geometry, color, alpha } = useMemo(() => {
-    if (!valid) return { geometry: null, color: null, alpha: 1 };
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
+  // Procedural lightning shader: hot white core, fades to config color, then
+  // soft alpha edges. No texture dependency — works even with rbxassetid://.
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      uniforms: {
+        uColor: { value: new THREE.Color(color.r, color.g, color.b) },
+        uAlpha: { value: alpha },
+        uBrightness: { value: brightness },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uAlpha;
+        uniform float uBrightness;
+        varying vec2 vUv;
+        void main() {
+          // vUv.y goes 0..1 across the ribbon width.
+          float yc = abs(vUv.y - 0.5) * 2.0;       // 0 at center, 1 at edges
+          float core   = 1.0 - smoothstep(0.0, 0.25, yc); // bright white core
+          float glow   = 1.0 - smoothstep(0.0, 1.0, yc);  // colored outer glow
+          float a = glow * uAlpha;
+          if (a < 0.005) discard;
+          vec3 rgb = mix(uColor, vec3(1.0), core) * uBrightness;
+          gl_FragColor = vec4(rgb, a);
+        }
+      `,
+    });
+  }, [color, alpha, brightness]);
 
-    const a = new THREE.Vector3(config.att0.x, config.att0.y, config.att0.z);
-    const b = new THREE.Vector3(config.att1.x, config.att1.y, config.att1.z);
-    const segs = Math.max(2, config.segments || 10);
-
-    // Build a flat ribbon between a and b with curve control if present
-    const positions = [];
-    const indices = [];
-    const uvs = [];
-    const dir = new THREE.Vector3().subVectors(b, a);
-    const up = new THREE.Vector3(0, 0, 1); // simple default normal — fine for FaceCamera-less beams
-    const side = new THREE.Vector3().crossVectors(dir, up).normalize();
-
-    for (let i = 0; i <= segs; i++) {
-      const t = i / segs;
-      const w = config.width0 * (1 - t) + config.width1 * t;
-      // Quadratic bezier-ish curve via midpoint perturbation if curve_size set
-      const mid = new THREE.Vector3().lerpVectors(a, b, t);
-      const curve = config.curve_size0 * (1 - t) + config.curve_size1 * t;
-      if (curve) {
-        mid.y += Math.sin(Math.PI * t) * curve;
-      }
-      const top    = new THREE.Vector3().copy(mid).add(side.clone().multiplyScalar(w * 0.5));
-      const bottom = new THREE.Vector3().copy(mid).sub(side.clone().multiplyScalar(w * 0.5));
-      positions.push(top.x, top.y, top.z, bottom.x, bottom.y, bottom.z);
-      uvs.push(t * (1 / (config.texture_length || 1)), 0, t * (1 / (config.texture_length || 1)), 1);
-      if (i < segs) {
-        const o = i * 2;
-        indices.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
-      }
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute("uv",       new THREE.Float32BufferAttribute(uvs, 2));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-
-    // Average the first color keypoint for the tint
-    const ck = config.color_keypoints && config.color_keypoints[0];
-    const tk = config.transparency_keypoints && config.transparency_keypoints[0];
-    const col = ck ? new THREE.Color(ck.r, ck.g, ck.b) : new THREE.Color(1, 1, 1);
-    const alphaVal = tk ? 1 - tk.v : 1;
-    return { geometry: geo, color: col, alpha: alphaVal };
-  }, [config, texture, valid]);
-
-  if (!valid || !geometry) return null;
+  if (!valid) return null;
+  if (!texture) return null; // ensure loader resolved (we don't actually use it but useLoader gates render)
 
   return (
-    <mesh geometry={geometry} renderOrder={2}>
-      <meshBasicMaterial
-        ref={matRef}
-        map={texture}
-        color={color}
-        transparent
-        opacity={alpha * (config.brightness || 1)}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        side={THREE.DoubleSide}
-      />
+    <mesh renderOrder={3}>
+      <bufferGeometry ref={geoRef}>
+        <bufferAttribute attach="attributes-position" count={(segs + 1) * 2} array={positionsRef.current} itemSize={3} />
+        <bufferAttribute attach="attributes-uv"       count={(segs + 1) * 2} array={uvsRef.current}       itemSize={2} />
+        <bufferAttribute attach="index"                count={segs * 6}      array={indicesRef.current}   itemSize={1} />
+      </bufferGeometry>
+      <primitive object={material} attach="material" />
     </mesh>
   );
 }
