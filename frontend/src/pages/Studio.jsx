@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple } from "@phosphor-icons/react";
+import { Sparkle, MagicWand, ImageSquare, TextT, Download, ArrowsClockwise, Heart, Robot, Hash, Camera, Lock, Lightning, Trash, ArrowClockwise, PencilSimple, Share } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import ModelViewer from "../components/ModelViewer";
 import RobloxExportModal from "../components/RobloxExportModal";
 import NFTMetadataModal from "../components/NFTMetadataModal";
+import ShareNFTCard from "../components/ShareNFTCard";
 import DropBadges from "../components/DropBadges";
 import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
@@ -52,6 +53,7 @@ export default function Studio() {
   const [vfxDetectUrl, setVfxDetectUrl] = useState("");
   const [detectingVfx, setDetectingVfx] = useState(false);
   const [editingMetadata, setEditingMetadata] = useState(false);
+  const [sharingCard, setSharingCard] = useState(false);
   const pollRef = useRef(null);
 
   // Pull live Genesis counter
@@ -671,6 +673,14 @@ export default function Studio() {
                 >
                   <Download size={14} weight="bold" /> .GLB
                 </a>
+                <button
+                  onClick={() => setSharingCard(true)}
+                  data-testid="studio-share-card"
+                  title="Generate a shareable NFT card (1080×1080 PNG)"
+                  className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 hover:shadow-[0_0_14px_rgba(204,255,0,0.25)] transition-all backdrop-blur-md"
+                >
+                  <Share size={13} weight="bold" /> Share
+                </button>
                 {isAdmin && (
                   <button
                     onClick={() => setExporting(true)}
@@ -731,6 +741,13 @@ export default function Studio() {
               generation={currentGen}
               onClose={() => setEditingMetadata(false)}
               onSaved={(updated) => setCurrentGen((prev) => ({ ...prev, ...updated }))}
+            />
+          )}
+
+          {sharingCard && currentGen?.id && (
+            <ShareNFTCard
+              generation={currentGen}
+              onClose={() => setSharingCard(false)}
             />
           )}
 
