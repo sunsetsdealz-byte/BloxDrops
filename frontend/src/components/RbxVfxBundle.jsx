@@ -185,14 +185,24 @@ function RbxBeam({ config }) {
         uniform float uAlpha;
         uniform float uBrightness;
         varying vec2 vUv;
+
+        // Saturation boost in HSL-ish space — push the color away from gray
+        vec3 boostSaturation(vec3 c, float amount) {
+          float l = dot(c, vec3(0.299, 0.587, 0.114));
+          return mix(vec3(l), c, amount);
+        }
+
         void main() {
           // vUv.y goes 0..1 across the ribbon width.
           float yc = abs(vUv.y - 0.5) * 2.0;       // 0 at center, 1 at edges
-          float core   = 1.0 - smoothstep(0.0, 0.25, yc); // bright white core
+          float core   = 1.0 - smoothstep(0.0, 0.18, yc); // hot white core (narrower)
           float glow   = 1.0 - smoothstep(0.0, 1.0, yc);  // colored outer glow
           float a = glow * uAlpha;
           if (a < 0.005) discard;
-          vec3 rgb = mix(uColor, vec3(1.0), core) * uBrightness;
+          // Punch the input color so it reads as VIVID purple, not washed
+          vec3 vivid = boostSaturation(uColor, 1.6) * 1.35;
+          // Only the very thinnest center goes pure white — surrounding stays color
+          vec3 rgb = mix(vivid, vec3(1.0), core * 0.85) * uBrightness;
           gl_FragColor = vec4(rgb, a);
         }
       `,
@@ -266,6 +276,10 @@ function PulsingOrb({ position, width, height, color, brightness }) {
 
         // 2D random / noise — used to add lightning-bolt zigzag inside the column
         float rand(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        vec3 boostSaturation(vec3 c, float amount) {
+          float l = dot(c, vec3(0.299, 0.587, 0.114));
+          return mix(vec3(l), c, amount);
+        }
 
         void main() {
           // Map vUv into local space: x = -0.5..0.5 (horizontal), y = -0.5..0.5 (vertical)
@@ -279,15 +293,17 @@ function PulsingOrb({ position, width, height, color, brightness }) {
           // Distance from the vertical axis controls the bolt thickness
           float horiz = abs(xc) * 2.0;
           // Hot white core (very thin), purple mid glow (medium), outer haze
-          float core      = 1.0 - smoothstep(0.0, 0.12, horiz);
+          float core      = 1.0 - smoothstep(0.0, 0.08, horiz); // narrower core
           float midGlow   = 1.0 - smoothstep(0.0, 0.45, horiz);
           float outerHalo = 1.0 - smoothstep(0.0, 1.0, horiz);
 
           // Vertical envelope — taper top + bottom so the bolt doesn't have flat ends
           float vertEnv = smoothstep(0.0, 0.15, vUv.y) * smoothstep(0.0, 0.15, 1.0 - vUv.y);
 
-          vec3 rgb = mix(uColor, vec3(1.0), core) * uBrightness * uPulse;
-          float a  = (core * 1.0 + midGlow * 0.55 + outerHalo * 0.18) * vertEnv * uPulse;
+          // Punch saturation so the purple really pops, not pastel
+          vec3 vivid = boostSaturation(uColor, 1.7) * 1.4;
+          vec3 rgb = mix(vivid, vec3(1.0), core * 0.9) * uBrightness * uPulse;
+          float a  = (core * 1.0 + midGlow * 0.65 + outerHalo * 0.22) * vertEnv * uPulse;
           if (a < 0.005) discard;
           gl_FragColor = vec4(rgb, a);
         }
