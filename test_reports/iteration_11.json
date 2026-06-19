@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend regression on 2 bug fixes (Studio overlay overlap + Roblox export modal copy). Both bug fixes confirmed PASSED. Logged in as admin, opened /studio?view=<completed-gen-id>, verified action bar layout and Roblox export modal copy.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "bug_fix_verification": {
+    "bug_fix_1_studio_overlay_overlap": {
+      "status": "PASS",
+      "details": "Action-bar container at /app/frontend/src/pages/Studio.jsx:666 uses class 'absolute top-4 left-4 right-32 ...'. Measured bounding rects at 1920x1080: action-bar right edge = 1440px, ModelViewer zoom button (data-testid='viewer-zoom-toggle') left edge = 1463.08px. Gap of ~23px between them — NO overlap. The right-32 class is present as required."
+    },
+    "bug_fix_2_roblox_modal_copy": {
+      "status": "PASS",
+      "details": "All three copy changes confirmed in roblox-export-modal DOM: (a) heading 'Direct push · Preview Decal only' is rendered (visible in screenshot as 'DIRECT PUSH · PREVIEW DECAL ONLY' via CSS uppercase). (b) Warning panel 'Heads up: Roblox Open Cloud only accepts .fbx for Model assets — not .glb...' is shown. (c) Push button label is 'Push preview decal' (data-testid='export-push-roblox'). Old label 'Push to Roblox' is NOT present anywhere in modal text."
+    },
+    "regression_modals": {
+      "share_nft_modal": "Could not fully verify open/close cycle in same run due to a click-outside-viewport on export-close after deep scroll, but the studio-share-card button is still rendered alongside studio-export-roblox in the completed-state overlay (verified via DOM). No JS errors observed in console.",
+      "nft_metadata_modal": "studio-edit-metadata button only renders when ownsCurrent==true; admin viewing a non-owned drop will NOT see it. This is existing behavior (line 693: ownsCurrent && ...). No regression observed.",
+      "no_console_errors": true
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Studio.jsx is 951 lines — exceeds the >700 LOC threshold. Consider extracting the completed-overlay action bar, VFX picker, and provenance panel into separate components for maintainability.",
+    "RobloxExportModal.jsx line 27: toast.error('Couldnt load export details') swallows the underlying error — consider passing formatApiError(err) for visibility.",
+    "Studio.jsx line 666: container uses right-32 (128px) which is fine on desktop, but on mobile (lg breakpoint not active) the zoom button and overlay buttons could still collide because both share the same viewer space. Worth re-checking responsive layout below the lg breakpoint."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "skipped", "frontend": "100% (both targeted bug fixes verified)"},
+  "test_credentials": "admin@bloxdrops.com / BloxDrops2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Used existing completed gen id 6a3378223bc360a01b1ff640 from /api/feed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both bug fixes for iteration 11 are confirmed PASS via DOM + bounding-rect inspection. Action-bar right=1440px, zoom-toggle left=1463px @ 1920x1080. Modal shows new copy: heading 'Direct push · Preview Decal only', FBX warning panel, button label 'Push preview decal'. Backend was explicitly skipped per request."
+}

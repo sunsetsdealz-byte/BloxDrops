@@ -38,7 +38,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
     try {
       const { data } = await api.post(`/roblox/upload/${generationId}`);
       setPushResult(data);
-      toast.success(`Pushed to Roblox · Asset #${data.asset_id}`);
+      toast.success(`Decal pushed · Asset #${data.asset_id}`);
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -158,17 +158,19 @@ export default function RobloxExportModal({ generationId, onClose }) {
             <div className="bg-gradient-to-br from-[#ccff00]/8 via-zinc-900/40 to-[#ff0055]/8 border border-[#ccff00]/30 rounded-2xl p-5 mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <Robot size={18} weight="duotone" className="text-[#ccff00]" />
-                <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#ccff00]">Direct push · Open Cloud</p>
+                <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#ccff00]">Direct push · Preview Decal only</p>
               </div>
               {robloxStatus?.connected ? (
                 <>
-                  <p className="text-sm text-zinc-300 mb-3">
-                    Send the preview to <strong>@{robloxStatus.roblox_user_id}</strong>'s Roblox Inventory as a Decal in one click.
-                    Then import the .GLB into Studio for the marketplace publish.
+                  <p className="text-sm text-zinc-300 mb-2">
+                    One-click push uploads the <strong className="text-white">PNG preview</strong> as a Decal to <strong>@{robloxStatus.roblox_user_id}</strong>'s inventory — handy for thumbnails &amp; tests.
                   </p>
+                  <div className="text-[11px] text-zinc-400 bg-black/30 border border-white/8 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                    <strong className="text-[#fbbf24]">Heads up:</strong> Roblox Open Cloud only accepts <code className="text-[#ccff00]">.fbx</code> for Model assets — not <code className="text-[#ccff00]">.glb</code>. To publish the 3D accessory to the Marketplace, download the .GLB below, open Roblox Studio &gt; <em>Home → Import 3D</em>, then use <em>Avatar → Accessory Fitting Tool</em> to publish.
+                  </div>
                   {pushResult ? (
                     <div className="bg-black/40 rounded-xl p-3 space-y-1.5">
-                      <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">Pushed ✓</p>
+                      <p className="text-xs uppercase tracking-widest text-[#ccff00] font-bold">Decal pushed ✓</p>
                       <p className="text-sm text-zinc-200">
                         Asset ID: <span className="font-mono">{pushResult.asset_id}</span>
                       </p>
@@ -191,7 +193,7 @@ export default function RobloxExportModal({ generationId, onClose }) {
                       className="bg-[#ccff00] text-black rounded-full px-5 py-2.5 text-sm font-black uppercase tracking-wider hover:shadow-[0_0_24px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                       <Robot size={16} weight="fill" />
-                      {pushing ? "Pushing…" : "Push to Roblox"}
+                      {pushing ? "Pushing…" : "Push preview decal"}
                     </button>
                   )}
                 </>

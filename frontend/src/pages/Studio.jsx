@@ -663,7 +663,7 @@ export default function Studio() {
               </div>
             )}
             {currentGen?.status === "completed" && (
-              <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2 items-start">
+              <div className="absolute top-4 left-4 right-32 flex flex-wrap gap-2 items-start">
                 <a
                   href={currentGen.model_url}
                   download

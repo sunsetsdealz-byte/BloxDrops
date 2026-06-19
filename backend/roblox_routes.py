@@ -193,6 +193,10 @@ async def upload_to_roblox(generation_id: str, user=Depends(get_current_user)):
         "ok": True,
         "asset_id": final_asset_id,
         "asset_type": "Decal",
-        "inventory_url": f"https://www.roblox.com/users/{creds['user_id']}/inventory#!/decals" if creds.get("user_id") else None,
-        "studio_note": "Open the .GLB in Roblox Studio and use Avatar > Accessory Fitting Tool to publish the full 3D item to the UGC marketplace.",
+        "inventory_url": (
+            f"https://create.roblox.com/store/asset/{final_asset_id}"
+            if final_asset_id
+            else (f"https://www.roblox.com/users/{creds['user_id']}/inventory#!/decals" if creds.get("user_id") else None)
+        ),
+        "studio_note": "Open the .GLB in Roblox Studio (Home → Import 3D) and use Avatar → Accessory Fitting Tool to publish the full 3D item to the UGC marketplace.",
     }
