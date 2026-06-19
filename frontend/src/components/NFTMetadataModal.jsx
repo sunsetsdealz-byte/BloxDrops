@@ -1,19 +1,25 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { X, Plus, Trash, Lock, FloppyDisk, Tag } from "@phosphor-icons/react";
+import { X, Plus, Trash, Lock, FloppyDisk, Tag, Crown } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { RARITY_TIERS, RARITY_DISPLAY } from "../lib/rarity";
 
 /**
- * NFT Metadata Editor — owner-only.
+ * NFT Metadata Editor — owner-only (admins can also override rarity).
  * Lets the creator set a display name, lore/description, and OpenSea-style
  * key/value traits (e.g. "Edition: 1 of 1", "Element: Fire").
+ * Admins additionally see a Rarity Tier dropdown to change Common → Mythic etc.
  *
  * Locked once the drop has ever been listed on the marketplace.
  */
 export default function NFTMetadataModal({ generation, onClose, onSaved }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const locked = !!generation?.metadata_locked;
   const [displayName, setDisplayName] = useState(generation?.display_name || "");
   const [description, setDescription] = useState(generation?.description || "");
+  const [rarityTier, setRarityTier] = useState(generation?.rarity_tier || "common");
   const [traits, setTraits] = useState(
     Array.isArray(generation?.traits) && generation.traits.length
       ? generation.traits.map((t) => ({ trait_type: t.trait_type || "", value: t.value || "" }))
@@ -48,15 +54,23 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
     [traits]
   );
 
+  const fieldsLocked = locked && !isAdmin;
+
   const save = async () => {
-    if (locked) return;
+    // Owners are locked once listed; admins always editable (and can change rarity).
+    if (locked && !isAdmin) return;
     setSaving(true);
     try {
-      const { data } = await api.patch(`/generations/${generation.id}/metadata`, {
+      const payload = {
         display_name: displayName.trim() || null,
         description: description.trim() || null,
         traits: cleanedTraits,
-      });
+      };
+      // Admin-only: include rarity_tier when admin has changed it.
+      if (isAdmin && rarityTier && rarityTier !== generation?.rarity_tier) {
+        payload.rarity_tier = rarityTier;
+      }
+      const { data } = await api.patch(`/generations/${generation.id}/metadata`, payload);
       toast.success("NFT info saved");
       onSaved?.(data);
       onClose?.();
@@ -111,7 +125,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              disabled={locked}
+              disabled={fieldsLocked}
               maxLength={80}
               placeholder="e.g. Stormbreak Horns — Genesis"
               data-testid="nft-metadata-name"
@@ -125,7 +139,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={locked}
+              disabled={fieldsLocked}
               maxLength={600}
               rows={4}
               placeholder="Forged in the eye of the tempest, one of 100 horns ever minted…"
@@ -135,6 +149,42 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
             <p className="text-[10px] text-zinc-500 mt-1">{description.length}/600</p>
           </div>
 
+          {isAdmin && (
+            <div data-testid="nft-metadata-rarity-admin">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 flex items-center gap-1.5">
+                <Crown size={11} weight="fill" className="text-[#fbbf24]" />
+                Rarity Tier <span className="text-[#fbbf24]">· admin</span>
+              </label>
+              <div className="grid grid-cols-5 gap-1.5 mt-2">
+                {RARITY_TIERS.map((tier) => {
+                  const info = RARITY_DISPLAY[tier];
+                  const active = rarityTier === tier;
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => setRarityTier(tier)}
+                      data-testid={`nft-metadata-rarity-${tier}`}
+                      className={`rounded-lg px-2 py-2 text-[10px] font-black uppercase tracking-wider transition-all border ${
+                        active
+                          ? "text-black border-transparent shadow-[0_0_14px_var(--rarity-glow)]"
+                          : "bg-black/40 border-white/10 text-zinc-300 hover:border-white/30"
+                      }`}
+                      style={active
+                        ? { background: info.color, "--rarity-glow": info.glow }
+                        : undefined}
+                    >
+                      {info.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
+                Override the auto-computed rarity. Visible on every badge surface (Drop card, NFT card, Provenance row).
+              </p>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">
@@ -143,7 +193,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
               <button
                 type="button"
                 onClick={addTrait}
-                disabled={locked || traits.length >= 12}
+                disabled={fieldsLocked || traits.length >= 12}
                 data-testid="nft-metadata-add-trait"
                 className="text-[10px] uppercase tracking-[0.2em] font-black text-[#ccff00] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
@@ -157,7 +207,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
                     type="text"
                     value={t.trait_type}
                     onChange={(e) => updateTrait(i, "trait_type", e.target.value)}
-                    disabled={locked}
+                    disabled={fieldsLocked}
                     maxLength={32}
                     placeholder="Edition"
                     data-testid={`nft-metadata-trait-key-${i}`}
@@ -167,7 +217,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
                     type="text"
                     value={t.value}
                     onChange={(e) => updateTrait(i, "value", e.target.value)}
-                    disabled={locked}
+                    disabled={fieldsLocked}
                     maxLength={64}
                     placeholder="1 of 1"
                     data-testid={`nft-metadata-trait-value-${i}`}
@@ -176,7 +226,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
                   <button
                     type="button"
                     onClick={() => removeTrait(i)}
-                    disabled={locked || traits.length <= 1}
+                    disabled={fieldsLocked || traits.length <= 1}
                     data-testid={`nft-metadata-trait-remove-${i}`}
                     className="text-zinc-500 hover:text-[#ff0055] transition-colors disabled:opacity-30 disabled:cursor-not-allowed p-2"
                     title="Remove trait"
@@ -202,7 +252,7 @@ export default function NFTMetadataModal({ generation, onClose, onSaved }) {
           </button>
           <button
             onClick={save}
-            disabled={locked || saving}
+            disabled={fieldsLocked || saving}
             data-testid="nft-metadata-save"
             className="rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >

@@ -171,6 +171,9 @@ class NFTMetadataUpdate(BaseModel):
     display_name: Optional[str] = Field(default=None, max_length=80)
     description: Optional[str] = Field(default=None, max_length=600)
     traits: Optional[List[NFTTrait]] = Field(default=None, max_length=12)
+    # Admin-only field: rarity tier override (common / rare / epic / legendary / mythic).
+    # Ignored when sent by non-admin users.
+    rarity_tier: Optional[str] = Field(default=None)
 
 
 @router.patch("/generations/{generation_id}/metadata")
@@ -233,6 +236,14 @@ async def update_generation_metadata(
             seen.add(k_lower)
             cleaned.append({"trait_type": key, "value": val})
         update["traits"] = cleaned
+
+    # Admin-only: rarity tier override
+    if payload.rarity_tier is not None and is_admin:
+        tier = payload.rarity_tier.lower().strip()
+        allowed = {"common", "rare", "epic", "legendary", "mythic"}
+        if tier not in allowed:
+            raise HTTPException(status_code=400, detail=f"Invalid rarity tier. Allowed: {sorted(allowed)}")
+        update["rarity_tier"] = tier
 
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")
