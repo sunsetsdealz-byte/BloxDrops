@@ -663,31 +663,32 @@ export default function Studio() {
               </div>
             )}
             {currentGen?.status === "completed" && (
-              <div className="absolute top-4 left-4 right-32 flex flex-wrap gap-2 items-start">
+              <div className="absolute top-4 left-4 right-28 flex flex-nowrap overflow-x-auto gap-1.5 items-center scrollbar-thin">
                 <a
                   href={currentGen.model_url}
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-ghost rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                  className="btn-ghost shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <Download size={14} weight="bold" /> .GLB
+                  <Download size={11} weight="bold" /> .GLB
                 </a>
                 <button
                   onClick={() => setSharingCard(true)}
                   data-testid="studio-share-card"
                   title="Generate a shareable NFT card (1080×1080 PNG)"
-                  className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 hover:shadow-[0_0_14px_rgba(204,255,0,0.25)] transition-all backdrop-blur-md"
+                  className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 transition-all backdrop-blur-md whitespace-nowrap"
                 >
-                  <Share size={13} weight="bold" /> Share
+                  <Share size={11} weight="bold" /> Share
                 </button>
                 {isAdmin && (
                   <button
                     onClick={() => setExporting(true)}
                     data-testid="studio-export-roblox"
-                    className="bg-[#ccff00] text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:shadow-[0_0_18px_rgba(204,255,0,0.5)] transition-shadow"
+                    title="Export to Roblox"
+                    className="shrink-0 bg-[#ccff00] text-black rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:shadow-[0_0_14px_rgba(204,255,0,0.45)] transition-shadow whitespace-nowrap"
                   >
-                    <Robot size={14} weight="fill" /> Export to Roblox
+                    <Robot size={11} weight="fill" /> Export
                   </button>
                 )}
                 {currentGen?.roblox_asset_id && (
@@ -697,9 +698,9 @@ export default function Studio() {
                     rel="noreferrer"
                     data-testid="studio-open-in-roblox"
                     title={`Open Roblox asset ${currentGen.roblox_asset_id}`}
-                    className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-white text-black hover:shadow-[0_0_14px_rgba(255,255,255,0.4)] transition-all"
+                    className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-white text-black hover:shadow-[0_0_12px_rgba(255,255,255,0.4)] transition-all whitespace-nowrap"
                   >
-                    <Robot size={13} weight="fill" /> Open in Roblox
+                    <Robot size={11} weight="fill" /> Open
                   </a>
                 )}
                 {ownsCurrent && (
@@ -710,30 +711,30 @@ export default function Studio() {
                       title={currentGen.metadata_locked
                         ? "Metadata locked — drop has been listed on the marketplace"
                         : "Edit NFT info (name, description, traits)"}
-                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 hover:shadow-[0_0_14px_rgba(204,255,0,0.25)] transition-all backdrop-blur-md"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:bg-[#ccff00]/10 transition-all backdrop-blur-md whitespace-nowrap"
                     >
-                      {currentGen.metadata_locked ? <Lock size={13} weight="fill" /> : <PencilSimple size={13} weight="bold" />}
-                      Edit Info
+                      {currentGen.metadata_locked ? <Lock size={11} weight="fill" /> : <PencilSimple size={11} weight="bold" />}
+                      Edit
                     </button>
                     <button
                       onClick={regenerateCurrent}
                       disabled={regenerating}
                       data-testid="studio-regenerate-creation"
                       title="Re-run with the latest HD/PBR quality settings"
-                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#00f0ff]/70 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 hover:shadow-[0_0_14px_rgba(0,240,255,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#00f0ff]/70 hover:text-[#00f0ff] hover:bg-[#00f0ff]/10 transition-all disabled:opacity-50 backdrop-blur-md whitespace-nowrap"
                     >
-                      <ArrowClockwise size={13} weight="bold" />
-                      {regenerating ? "Queuing…" : "Regenerate"}
+                      <ArrowClockwise size={11} weight="bold" />
+                      {regenerating ? "…" : "Regen"}
                     </button>
                     <button
                       onClick={deleteCurrent}
                       disabled={deleting}
                       data-testid="studio-delete-creation"
                       title="Delete this creation"
-                      className="rounded-full px-3.5 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 hover:shadow-[0_0_14px_rgba(255,0,85,0.25)] transition-all disabled:opacity-50 backdrop-blur-md"
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-black/70 text-zinc-300 border border-white/15 hover:border-[#ff0055]/70 hover:text-[#ff0055] hover:bg-[#ff0055]/10 transition-all disabled:opacity-50 backdrop-blur-md whitespace-nowrap"
                     >
-                      <Trash size={13} weight="bold" />
-                      {deleting ? "Deleting…" : "Delete"}
+                      <Trash size={11} weight="bold" />
+                      {deleting ? "…" : "Delete"}
                     </button>
                   </>
                 )}

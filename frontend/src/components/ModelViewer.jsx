@@ -142,15 +142,15 @@ export default function ModelViewer({ url, height = 360, showHint = true, allowT
           onClick={() => setZoomed((v) => !v)}
           data-testid="viewer-zoom-toggle"
           aria-label={zoomed ? "Exit fullscreen" : "Zoom in"}
-          className={`absolute z-20 rounded-full pl-2.5 pr-3.5 py-2 text-[11px] uppercase tracking-[0.18em] font-black transition-all flex items-center gap-2 backdrop-blur-md ${
-            zoomed ? "top-5 right-5" : "top-3 right-3"
+          className={`absolute z-20 rounded-full px-2.5 py-1.5 text-[10px] uppercase tracking-[0.18em] font-black transition-all flex items-center gap-1.5 backdrop-blur-md ${
+            zoomed ? "top-5 right-5" : "top-4 right-3"
           } ${
             zoomed
               ? "bg-[#ccff00] text-black shadow-[0_0_24px_rgba(204,255,0,0.55)] hover:bg-white"
               : "bg-black/75 text-white border border-white/20 hover:border-[#ccff00]/70 hover:text-[#ccff00] hover:shadow-[0_0_18px_rgba(204,255,0,0.25)]"
           }`}
         >
-          {zoomed ? <X size={15} weight="bold" /> : <MagnifyingGlassPlus size={15} weight="bold" />}
+          {zoomed ? <X size={11} weight="bold" /> : <MagnifyingGlassPlus size={11} weight="bold" />}
           {zoomed ? "Close" : "Zoom"}
         </button>
       )}
