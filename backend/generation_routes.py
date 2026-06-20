@@ -568,38 +568,25 @@ async def optimize_generation_mesh(
 
 @router.post("/prompt/enhance")
 async def enhance_prompt(payload: PromptEnhanceRequest, user=Depends(get_current_user)):
-    """Use Claude Sonnet (via Emergent LLM key) to enhance a short prompt."""
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
+    """Use a frontier LLM (Claude Sonnet via OpenRouter) to enhance a short prompt."""
+    if not os.environ.get("OPENROUTER_API_KEY", "").strip():
         raise HTTPException(status_code=503, detail="LLM key not configured")
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"enhance-{uuid.uuid4().hex[:8]}",
-            system_message=(
-                "You are an expert Roblox UGC prompt designer. Rewrite the user's short idea "
-                "into a vivid, specific, single-sentence prompt for a 3D model generator. "
-                "Focus on materials, colors, textures, silhouette, and theme. Keep it under "
-                "60 words. Do NOT include camera/lighting/technical specs (those are added "
-                "automatically). Output ONLY the rewritten prompt, no preamble."
-            ),
-        ).with_model("anthropic", "claude-sonnet-4-6")
-
+        from llm_client import complete_text
+        system = (
+            "You are an expert Roblox UGC prompt designer. Rewrite the user's short idea "
+            "into a vivid, specific, single-sentence prompt for a 3D model generator. "
+            "Focus on materials, colors, textures, silhouette, and theme. Keep it under "
+            "60 words. Do NOT include camera/lighting/technical specs (those are added "
+            "automatically). Output ONLY the rewritten prompt, no preamble."
+        )
         user_input = (
             f"Item type: {payload.attachment_type}\n"
             f"Style: {payload.style}\n"
             f"User idea: {payload.prompt}\n\n"
             "Rewrite into a detailed prompt:"
         )
-        # Buffer the stream into a single string (one-shot use)
-        from emergentintegrations.llm.chat import TextDelta, StreamDone
-        out = ""
-        async for ev in chat.stream_message(UserMessage(text=user_input)):
-            if isinstance(ev, TextDelta):
-                out += ev.content
-            elif isinstance(ev, StreamDone):
-                break
+        out = await asyncio.to_thread(complete_text, system, user_input, max_tokens=200, temperature=0.7)
         return {"enhanced": out.strip() or payload.prompt}
     except Exception as e:
         logger.exception("prompt enhance failed: %s", e)

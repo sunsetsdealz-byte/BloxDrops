@@ -33,12 +33,31 @@ class TopUpRequest(BaseModel):
     origin_url: str = Field(min_length=8)
 
 
-def _stripe_client(host_url: str):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    api_key = os.environ["STRIPE_API_KEY"]
-    base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/") or host_url.rstrip("/")
-    webhook_url = f"{base}/api/webhook/stripe"
-    return StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+def _stripe():
+    """Configure & return the native stripe SDK module."""
+    import stripe
+    stripe.api_key = os.environ["STRIPE_API_KEY"]
+    return stripe
+
+
+def _create_bb_checkout(*, amount_usd: float, success_url: str, cancel_url: str,
+                        product_name: str, metadata: dict):
+    stripe = _stripe()
+    return stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        mode="payment",
+        line_items=[{
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": product_name},
+                "unit_amount": int(round(float(amount_usd) * 100)),
+            },
+            "quantity": 1,
+        }],
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata=metadata,
+    )
 
 
 @router.get("/bloxbucks/packages")
@@ -55,13 +74,12 @@ async def topup_checkout(payload: TopUpRequest, request: Request, user=Depends(g
     success_url = f"{origin}/marketplace?topup_session={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/marketplace?topup_status=cancelled"
 
-    from emergentintegrations.payments.stripe.checkout import CheckoutSessionRequest
-    client = _stripe_client(str(request.base_url))
-    req = CheckoutSessionRequest(
-        amount=float(pkg["usd"]),
-        currency="usd",
+    from server import db
+    session = _create_bb_checkout(
+        amount_usd=float(pkg["usd"]),
         success_url=success_url,
         cancel_url=cancel_url,
+        product_name=f"BloxBucks — {pkg['label']} ({pkg['bb']} BB)",
         metadata={
             "user_id": user["id"],
             "kind": "bloxbucks_topup",
@@ -69,12 +87,10 @@ async def topup_checkout(payload: TopUpRequest, request: Request, user=Depends(g
             "bb": str(pkg["bb"]),
         },
     )
-    session = await client.create_checkout_session(req)
 
-    from server import db
     await db.payment_transactions.insert_one({
         "user_id": user["id"],
-        "session_id": session.session_id,
+        "session_id": session.id,
         "amount": pkg["usd"],
         "currency": "usd",
         "kind": "bloxbucks_topup",
@@ -85,7 +101,7 @@ async def topup_checkout(payload: TopUpRequest, request: Request, user=Depends(g
         "metadata": {"user_id": user["id"], "kind": "bloxbucks_topup", "package_id": payload.package_id},
         "created_at": now_utc().isoformat(),
     })
-    return {"url": session.url, "session_id": session.session_id}
+    return {"url": session.url, "session_id": session.id}
 
 
 async def _credit_bb_for_session(db, session_id: str):
@@ -121,8 +137,8 @@ async def _credit_bb_for_session(db, session_id: str):
 @router.get("/bloxbucks/topup/status/{session_id}")
 async def topup_status(session_id: str, request: Request, user=Depends(get_current_user)):
     from server import db
-    client = _stripe_client(str(request.base_url))
-    status_resp = await client.get_checkout_status(session_id)
+    stripe = _stripe()
+    sess = stripe.checkout.Session.retrieve(session_id)
 
     tx = await db.payment_transactions.find_one({"session_id": session_id, "kind": "bloxbucks_topup"})
     if not tx:
@@ -133,20 +149,20 @@ async def topup_status(session_id: str, request: Request, user=Depends(get_curre
     await db.payment_transactions.update_one(
         {"session_id": session_id},
         {"$set": {
-            "status": status_resp.status,
-            "payment_status": status_resp.payment_status,
+            "status": sess.status,
+            "payment_status": sess.payment_status,
             "updated_at": now_utc().isoformat(),
         }},
     )
 
-    if status_resp.payment_status == "paid":
+    if sess.payment_status == "paid":
         await _credit_bb_for_session(db, session_id)
 
     new_balance = (await db.users.find_one({"_id": ObjectId(user["id"])}, {"bloxbucks_balance": 1}) or {}).get("bloxbucks_balance", 0)
     return {
-        "status": status_resp.status,
-        "payment_status": status_resp.payment_status,
-        "bb_credited": tx.get("bb_credited", False) or status_resp.payment_status == "paid",
+        "status": sess.status,
+        "payment_status": sess.payment_status,
+        "bb_credited": tx.get("bb_credited", False) or sess.payment_status == "paid",
         "bb_amount": tx.get("bb"),
         "new_balance": int(new_balance),
     }

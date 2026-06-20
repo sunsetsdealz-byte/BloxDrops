@@ -3,11 +3,13 @@
 Flow:
   1. Extract the Roblox assetId from the catalog URL (or accept a direct image URL).
   2. Fetch the Roblox official thumbnail PNG (high res).
-  3. Send the image (base64) to a vision LLM with a strict classification prompt.
+  3. Send the image (base64) to a vision LLM (Claude Sonnet via OpenRouter) with
+     a strict classification prompt.
   4. Parse JSON → return the closest matching VFX preset key.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import os
@@ -16,23 +18,11 @@ from typing import Optional, Tuple
 
 import httpx
 from dotenv import load_dotenv
-from emergentintegrations.llm.chat import (
-    LlmChat,
-    UserMessage,
-    ImageContent,
-    TextDelta,
-    StreamDone,
-)
 
 from drops_utils import VFX_PRESETS
+from llm_client import complete_vision
 
 load_dotenv()
-
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
-
-# Vision model — best visuals as picked by user
-_VISION_PROVIDER = "gemini"
-_VISION_MODEL = "gemini-3.1-pro-preview"
 
 
 # Roblox catalog URLs always carry the assetId as the first numeric segment after /catalog/
@@ -96,27 +86,17 @@ async def classify_image_vfx(image_url_or_base64: dict) -> dict:
 
     image_url_or_base64: {"image_base64": "...", "mime": "image/png"}
     """
-    if not EMERGENT_LLM_KEY:
-        raise RuntimeError("EMERGENT_LLM_KEY missing — cannot run vision classification")
+    if not os.environ.get("OPENROUTER_API_KEY", "").strip():
+        raise RuntimeError("OPENROUTER_API_KEY missing — cannot run vision classification")
 
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"vfx-classify-{os.urandom(4).hex()}",
-        system_message="You are a strict JSON-only classifier of Roblox UGC visual effects.",
-    ).with_model(_VISION_PROVIDER, _VISION_MODEL)
-
-    image = ImageContent(image_base64=image_url_or_base64["image_base64"])
-
-    chunks = []
-    async for ev in chat.stream_message(
-        UserMessage(text=_build_prompt(), file_contents=[image])
-    ):
-        if isinstance(ev, TextDelta):
-            chunks.append(ev.content)
-        elif isinstance(ev, StreamDone):
-            break
-
-    raw = "".join(chunks).strip()
+    raw = await asyncio.to_thread(
+        complete_vision,
+        "You are a strict JSON-only classifier of Roblox UGC visual effects.",
+        _build_prompt(),
+        image_url_or_base64["image_base64"],
+        mime=image_url_or_base64.get("mime", "image/png"),
+    )
+    raw = raw.strip()
     # Tolerate ``` fences just in case
     if raw.startswith("```"):
         raw = raw.strip("`")
