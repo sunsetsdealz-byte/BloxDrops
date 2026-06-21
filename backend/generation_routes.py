@@ -59,7 +59,10 @@ SAMPLE_GLBS = [
 
 
 def _has_fal_key() -> bool:
-    return bool(os.environ.get("FAL_KEY", "").strip())
+    key = os.environ.get("FAL_KEY", "").strip()
+    has_key = bool(key) and key not in ["", "your_key_here", "placeholder", "none", "null"]
+    logger.debug(f"FAL_KEY check: has_valid_key={has_key}")
+    return has_key
 
 
 def _build_full_prompt(prompt: str, attachment_type: str, style: str) -> str:
@@ -96,8 +99,10 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
             model = "tripo3d/h3.1/text-to-3d"
             args = {"prompt": prompt}
 
+        logger.info(f"Submitting to fal.ai model={model}, gen_id={generation_id}")
         handler = await fal_client.submit_async(model, arguments=args)
         result = await handler.get()
+        logger.info(f"fal.ai result received for gen_id={generation_id}: {type(result)}")
 
         model_url = None
         thumb_url = None
@@ -110,6 +115,7 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
             thumb_url = (result.get("rendered_image") or {}).get("url")
 
         if not model_url:
+            logger.warning(f"No model_url in fal.ai result, using fallback sample for gen_id={generation_id}")
             sample = SAMPLE_GLBS[hash(generation_id) % len(SAMPLE_GLBS)]
             model_url = sample["url"]
             thumb_url = thumb_url or sample["thumb"]
@@ -123,20 +129,35 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
                 "completed_at": now_utc().isoformat(),
             }},
         )
+        logger.info(f"Generation completed successfully: gen_id={generation_id}")
     except Exception as e:
-        logger.exception("fal.ai generation failed: %s", e)
-        await db.generations.update_one(
-            {"_id": ObjectId(generation_id)},
-            {"$set": {"status": "failed", "error": str(e)[:300]}},
-        )
+        logger.exception(f"fal.ai generation failed for gen_id={generation_id}: {e}")
+        error_msg = str(e)
+        # Make error message more user-friendly
+        if "authentication" in error_msg.lower() or "api key" in error_msg.lower() or "unauthorized" in error_msg.lower():
+            error_msg = "API authentication failed. Please check your FAL_KEY configuration."
+        elif "rate limit" in error_msg.lower():
+            error_msg = "Rate limit exceeded. Please try again in a few minutes."
+        elif "timeout" in error_msg.lower():
+            error_msg = "Request timed out. Please try again."
+        
+        try:
+            await db.generations.update_one(
+                {"_id": ObjectId(generation_id)},
+                {"$set": {"status": "failed", "error": error_msg[:300]}},
+            )
+        except Exception as db_err:
+            logger.exception(f"Failed to update generation status in DB: {db_err}")
 
 
 async def _run_mock_generation(generation_id: str):
     """Fake the fal.ai pipeline — wait briefly and assign a sample GLB."""
     from server import db
     try:
-        await asyncio.sleep(4)
+        logger.info(f"Running mock generation (demo mode) for gen_id={generation_id}")
+        await asyncio.sleep(1)
         sample = SAMPLE_GLBS[hash(generation_id) % len(SAMPLE_GLBS)]
+        logger.info(f"Mock generation using sample GLB: {sample['url'][:50]}... for gen_id={generation_id}")
         await db.generations.update_one(
             {"_id": ObjectId(generation_id)},
             {"$set": {
@@ -147,15 +168,16 @@ async def _run_mock_generation(generation_id: str):
                 "demo_mode": True,
             }},
         )
+        logger.info(f"Mock generation completed successfully: gen_id={generation_id}")
     except Exception as e:
-        logger.exception("mock generation failed: %s", e)
+        logger.exception(f"mock generation failed for gen_id={generation_id}: {e}")
         try:
             await db.generations.update_one(
                 {"_id": ObjectId(generation_id)},
                 {"$set": {"status": "failed", "error": str(e)[:300]}},
             )
-        except Exception:
-            pass
+        except Exception as db_err:
+            logger.exception(f"Failed to update mock generation status in DB: {db_err}")
 
 
 async def _create_generation_record(
@@ -170,6 +192,7 @@ async def _create_generation_record(
     from server import db, GENESIS_CAP
     from drops_utils import make_mint_id, make_signature, EDITION_CAPS, RARITY_TIERS, RARITY_DISPLAY, compute_rarity_tier
     is_admin = user.get("role") == "admin"
+    logger.info(f"Creating generation record for user={user.get('id')}, type={gen_type}, prompt={prompt[:50]}...")
     # Admins bypass credit checks and never get charged
     if not is_admin and user.get("credits", 0) <= 0:
         raise HTTPException(status_code=402, detail="Out of credits. Upgrade your plan.")
@@ -265,12 +288,14 @@ async def generate_text_to_3d(
         edition_cap=payload.edition_cap,
         desired_rarity=payload.desired_rarity,
     )
-    if _has_fal_key():
+    has_fal = _has_fal_key()
+    logger.info(f"Text-to-3D generation started: gen_id={gen_id}, has_fal_key={has_fal}, user={user.get('id')}")
+    if has_fal:
         bg.add_task(_run_fal_generation, gen_id, full_prompt)
     else:
         bg.add_task(_run_mock_generation, gen_id)
     doc["id"] = gen_id
-    return {"id": gen_id, "status": "pending", "demo_mode": not _has_fal_key()}
+    return {"id": gen_id, "status": "pending", "demo_mode": not has_fal}
 
 
 @router.post("/generate/image-to-3d")
@@ -286,11 +311,13 @@ async def generate_image_to_3d(
         edition_cap=payload.edition_cap,
         desired_rarity=payload.desired_rarity,
     )
-    if _has_fal_key():
+    has_fal = _has_fal_key()
+    logger.info(f"Image-to-3D generation started: gen_id={gen_id}, has_fal_key={has_fal}, user={user.get('id')}")
+    if has_fal:
         bg.add_task(_run_fal_generation, gen_id, doc["prompt"], payload.image_url)
     else:
         bg.add_task(_run_mock_generation, gen_id)
-    return {"id": gen_id, "status": "pending", "demo_mode": not _has_fal_key()}
+    return {"id": gen_id, "status": "pending", "demo_mode": not has_fal}
 
 
 # ============== PAID FEATURE: Real-life Photo → 3D UGC ==============

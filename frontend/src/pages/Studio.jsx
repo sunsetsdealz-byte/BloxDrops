@@ -60,7 +60,10 @@ export default function Studio() {
   const [viewerZoomed, setViewerZoomed] = useState(false);
   const [showHowToEquip, setShowHowToEquip] = useState(false);
   const [howToMode, setHowToMode] = useState("accessory");
+  const [genStartTime, setGenStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const pollRef = useRef(null);
+  const timerRef = useRef(null);
 
   // Pull live Genesis counter
   useEffect(() => {
@@ -213,13 +216,31 @@ export default function Studio() {
     }
   }, [viewId]);
 
-  // Poll pending generation
+  // Timer for elapsed time display
+  useEffect(() => {
+    if (!currentGen || currentGen.status !== "pending") {
+      clearInterval(timerRef.current);
+      return;
+    }
+    
+    timerRef.current = setInterval(() => {
+      if (genStartTime) {
+        setElapsedTime(Math.floor((Date.now() - genStartTime) / 1000));
+      }
+    }, 100);
+    
+    return () => clearInterval(timerRef.current);
+  }, [currentGen?.status, genStartTime]);
+
+  // Poll pending generation with adaptive timing
   useEffect(() => {
     if (!currentGen || currentGen.status !== "pending") {
       clearInterval(pollRef.current);
       return;
     }
-    pollRef.current = setInterval(async () => {
+    
+    let pollCount = 0;
+    const poll = async () => {
       try {
         const { data } = await api.get(`/generate/${currentGen.id}`);
         setCurrentGen(data);
@@ -228,9 +249,23 @@ export default function Studio() {
           loadHistory();
           if (data.status === "completed") toast.success("Your creation is ready!");
           if (data.status === "failed") toast.error("Generation failed: " + (data.error || "unknown"));
+        } else {
+          pollCount++;
+          // Adaptive polling: fast at first (500ms), then slow down
+          const nextInterval = pollCount < 5 ? 500 : pollCount < 15 ? 1000 : 2000;
+          clearInterval(pollRef.current);
+          pollRef.current = setTimeout(poll, nextInterval);
         }
-      } catch { /* keep polling */ }
-    }, 2200);
+      } catch { 
+        // On error, retry with current interval
+        pollCount++;
+        const nextInterval = pollCount < 5 ? 500 : pollCount < 15 ? 1000 : 2000;
+        clearInterval(pollRef.current);
+        pollRef.current = setTimeout(poll, nextInterval);
+      }
+    };
+    
+    poll(); // Start immediately
     return () => clearInterval(pollRef.current);
   }, [currentGen?.id, currentGen?.status]);
 
@@ -257,6 +292,8 @@ export default function Studio() {
         desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", original_prompt: prompt, attachment_type: attachment, style });
+      setGenStartTime(Date.now());
+      setElapsedTime(0);
       refresh();
       toast.success(data.demo_mode ? "Generating (demo mode)…" : "Submitted to fal.ai…");
     } catch (err) {
@@ -275,6 +312,8 @@ export default function Studio() {
         desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style });
+      setGenStartTime(Date.now());
+      setElapsedTime(0);
       refresh();
       toast.success(data.demo_mode ? "Generating (demo mode)…" : "Submitted to fal.ai…");
     } catch (err) {
@@ -294,6 +333,8 @@ export default function Studio() {
         desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style, source_type: "photo_scan" });
+      setGenStartTime(Date.now());
+      setElapsedTime(0);
       refresh();
       toast.success("Scanning photo into 3D…");
     } catch (err) {
@@ -307,7 +348,7 @@ export default function Studio() {
     <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
       {!user && (
         <div className="mb-6 glass rounded-2xl p-4 flex items-center justify-between">
-          <p className="text-sm text-zinc-300">Sign in to start generating — it takes 10 seconds.</p>
+          <p className="text-sm text-zinc-300">Sign in to start generating — it takes 5-15 seconds.</p>
           <Link to="/register" className="btn-volt rounded-full px-5 py-2 text-sm">Sign up free</Link>
         </div>
       )}
@@ -668,7 +709,9 @@ export default function Studio() {
               >
                 <div className="w-12 h-12 rounded-full border-2 border-[#ccff00] border-t-transparent animate-spin" />
                 <p className="font-display font-bold text-lg uppercase tracking-wider">Generating</p>
-                <p className="text-xs text-zinc-400">Usually under 2 minutes</p>
+                <p className="text-xs text-zinc-400">
+                  {elapsedTime > 0 ? `${elapsedTime}s elapsed` : "Usually 5-15 seconds"}
+                </p>
               </div>
             )}
             {currentGen?.status === "failed" && (
