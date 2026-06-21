@@ -656,7 +656,7 @@ export default function Studio() {
                   data-testid={TID.studioEnhance}
                   onClick={enhance}
                   disabled={!prompt.trim() || enhancing || !user}
-                  className="btn-ghost rounded-lg px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
+                  className="studio-action-button"
                 >
                   <MagicWand size={14} weight="bold" />
                   {enhancing ? "Boosting…" : "AI Boost"}
@@ -802,7 +802,7 @@ export default function Studio() {
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-ghost shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap"
+                  className="studio-action-button text-xs"
                 >
                   <Download size={11} weight="bold" /> .GLB
                 </a>
