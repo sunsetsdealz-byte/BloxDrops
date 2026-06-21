@@ -11,7 +11,7 @@ import ShareNFTCard from "../components/ShareNFTCard";
 import HowToEquipModal from "../components/HowToEquipModal";
 import RobloxToolkitPanel from "../components/RobloxToolkitPanel";
 import DropBadges from "../components/DropBadges";
-import { EDITION_CAP_OPTIONS, signatureShort } from "../lib/rarity";
+import { EDITION_CAP_OPTIONS, RARITY_TIERS, RARITY_DISPLAY, signatureShort } from "../lib/rarity";
 import { TID } from "../constants/testIds";
 
 const ATTACHMENTS = ["Hat", "Hair", "Back", "Neck", "Face", "Shoulder", "Hoodie", "Shirt", "Jacket", "auto"];
@@ -41,6 +41,7 @@ export default function Studio() {
   const [attachment, setAttachment] = useState("Hat");
   const [style, setStyle] = useState("auto");
   const [editionCap, setEditionCap] = useState(0); // 0 = unlimited
+  const [desiredRarity, setDesiredRarity] = useState("auto"); // "auto" | RARITY_TIERS
   const [generating, setGenerating] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [currentGen, setCurrentGen] = useState(null);
@@ -253,6 +254,7 @@ export default function Studio() {
     try {
       const { data } = await api.post("/generate/text-to-3d", {
         prompt, attachment_type: attachment, style, edition_cap: editionCap,
+        desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", original_prompt: prompt, attachment_type: attachment, style });
       refresh();
@@ -270,6 +272,7 @@ export default function Studio() {
     try {
       const { data } = await api.post("/generate/image-to-3d", {
         image_url: imageUrl, attachment_type: attachment, style, edition_cap: editionCap,
+        desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style });
       refresh();
@@ -288,6 +291,7 @@ export default function Studio() {
     try {
       const { data } = await api.post("/generate/photo-to-3d", {
         image_url: imageUrl, attachment_type: attachment, style, edition_cap: editionCap,
+        desired_rarity: desiredRarity === "auto" ? null : desiredRarity,
       });
       setCurrentGen({ id: data.id, status: "pending", source_image_url: imageUrl, attachment_type: attachment, style, source_type: "photo_scan" });
       refresh();
@@ -535,6 +539,48 @@ export default function Studio() {
               </div>
               <p className="text-[10px] text-zinc-500 mt-1.5 leading-snug">
                 {EDITION_CAP_OPTIONS.find((o) => o.value === editionCap)?.sub}
+              </p>
+            </div>
+
+            {/* === DROP PROVENANCE PICKER === user-locked-in tier on creation, admin-editable after */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 flex items-center gap-1.5">
+                  Drop · Provenance
+                </label>
+                <span className="text-[9px] uppercase tracking-widest text-zinc-500" title="Locks the rarity tier at creation. Only admins can change it after.">
+                  Locked after mint
+                </span>
+              </div>
+              <div className="grid grid-cols-6 gap-1 mt-1" data-testid="studio-provenance">
+                {[{ value: "auto", label: "Auto", color: "#71717a" },
+                  ...RARITY_TIERS.map((t) => ({ value: t, label: RARITY_DISPLAY[t].label, color: RARITY_DISPLAY[t].color }))
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-testid={`provenance-${opt.value}`}
+                    onClick={() => setDesiredRarity(opt.value)}
+                    title={opt.value === "auto"
+                      ? "Auto-compute rarity from edition cap + engagement (Common→Mythic as your drop earns likes & battle wins)"
+                      : `Lock this drop's provenance to ${opt.label} at creation`}
+                    className={`rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all border ${
+                      desiredRarity === opt.value
+                        ? "border-white/40 bg-white/[0.08] shadow-[0_0_12px_rgba(255,255,255,0.18)]"
+                        : "border-white/10 bg-black/30 hover:border-white/25"
+                    }`}
+                    style={{
+                      color: desiredRarity === opt.value ? opt.color : "rgba(255,255,255,0.55)",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-1.5 leading-snug">
+                {desiredRarity === "auto"
+                  ? "Auto-graded by the platform from edition cap, likes, and battle wins. Starts low, climbs as your drop performs."
+                  : `Pinned at ${RARITY_DISPLAY[desiredRarity]?.label}. Only an admin can change this after creation.`}
               </p>
             </div>
 

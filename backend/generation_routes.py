@@ -165,9 +165,10 @@ async def _create_generation_record(
     challenge_id: Optional[str] = None,
     original_prompt: Optional[str] = None,
     edition_cap: int = 0,
+    desired_rarity: Optional[str] = None,
 ):
     from server import db, GENESIS_CAP
-    from drops_utils import make_mint_id, make_signature, EDITION_CAPS
+    from drops_utils import make_mint_id, make_signature, EDITION_CAPS, RARITY_TIERS, RARITY_DISPLAY, compute_rarity_tier
     is_admin = user.get("role") == "admin"
     # Admins bypass credit checks and never get charged
     if not is_admin and user.get("credits", 0) <= 0:
@@ -176,6 +177,10 @@ async def _create_generation_record(
     # Sanitize edition_cap (only allow whitelisted values)
     if edition_cap not in EDITION_CAPS:
         edition_cap = 0
+
+    # Sanitize desired_rarity. None / "auto" / unknown → auto-compute. Known tier → admin-style override.
+    chosen_rarity = (desired_rarity or "").strip().lower()
+    rarity_override = chosen_rarity in RARITY_TIERS  # bool — true if user picked an explicit tier
 
     created_iso = now_utc().isoformat()
     mint_id = make_mint_id()
@@ -213,6 +218,16 @@ async def _create_generation_record(
         "signature_hash": signature_hash,
         "is_founder_signed": is_admin,        # admins auto-sign their drops
         "is_genesis": is_genesis,             # first 100 forever
+        # === USER-CHOSEN PROVENANCE (rarity) ===
+        # If the user picked an explicit tier at creation, lock it in with the
+        # admin-override flag so enrich_drop trusts it instead of auto-computing.
+        # Admins can later change this via the NFTMetadataModal (rarity_override path).
+        "rarity_tier": chosen_rarity if rarity_override else compute_rarity_tier({
+            "edition_cap": edition_cap,
+            "is_founder_signed": is_admin,
+            "likes": 0, "battle_wins": 0, "remix_count": 0,
+        }),
+        "rarity_override": rarity_override,
     }
     res = await db.generations.insert_one(doc)
     gen_id = str(res.inserted_id)
@@ -248,6 +263,7 @@ async def generate_text_to_3d(
         challenge_id=payload.challenge_id,
         original_prompt=payload.prompt,
         edition_cap=payload.edition_cap,
+        desired_rarity=payload.desired_rarity,
     )
     if _has_fal_key():
         bg.add_task(_run_fal_generation, gen_id, full_prompt)
@@ -268,6 +284,7 @@ async def generate_image_to_3d(
         payload.attachment_type, payload.style,
         source_image_url=payload.image_url,
         edition_cap=payload.edition_cap,
+        desired_rarity=payload.desired_rarity,
     )
     if _has_fal_key():
         bg.add_task(_run_fal_generation, gen_id, doc["prompt"], payload.image_url)
@@ -306,6 +323,7 @@ async def generate_photo_to_3d(
         payload.style,
         source_image_url=payload.image_url,
         edition_cap=payload.edition_cap,
+        desired_rarity=payload.desired_rarity,
     )
     if _has_fal_key():
         bg.add_task(_run_fal_generation, gen_id, enhanced_prompt, payload.image_url)

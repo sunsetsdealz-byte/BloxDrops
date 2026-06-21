@@ -58,6 +58,7 @@ class GenerationRequest(BaseModel):
     style: str = "auto"  # auto, anime, gothic, streetwear, cyberpunk, realistic, fantasy
     challenge_id: Optional[str] = None
     edition_cap: int = 0  # 0 = unlimited, else 1 / 10 / 50 / 100
+    desired_rarity: Optional[str] = None  # "common"|"rare"|"epic"|"legendary"|"mythic"|None=auto
 
 
 class ImageGenerationRequest(BaseModel):
@@ -65,6 +66,7 @@ class ImageGenerationRequest(BaseModel):
     attachment_type: str = "auto"
     style: str = "auto"
     edition_cap: int = 0
+    desired_rarity: Optional[str] = None
 
 
 class PromptEnhanceRequest(BaseModel):
