@@ -234,7 +234,15 @@ export default function RobloxExportModal({ generationId, onClose }) {
                 endpoint="attachment"
                 fieldName="attachment_type"
               />
-              <Field label="Category" value={manifest.category} />
+              <EditableSelectField
+                generationId={generationId}
+                label="Category"
+                value={manifest.category}
+                options={["Accessory", "Clothing"]}
+                onSaved={(data) => setManifest((prev) => ({ ...prev, category: data.category }))}
+                endpoint="category"
+                fieldName="category"
+              />
               <PriceField
                 generationId={generationId}
                 manifest={manifest}

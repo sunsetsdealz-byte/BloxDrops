@@ -114,6 +114,10 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
     custom_asset_name = doc.get("custom_asset_name")
     asset_name = custom_asset_name if custom_asset_name else name_base.replace("_", " ").title()
     
+    # Use custom category if set
+    custom_category = doc.get("custom_category")
+    category = custom_category if custom_category else ("Accessory" if attachment in ROBLOX_LIMITS["required_attachments"] else "Clothing")
+    
     return {
         "asset_name": asset_name,
         "description": doc.get("original_prompt") or "Generated with BloxDrops AI",
@@ -122,7 +126,7 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
         "recommended_price_robux": price_robux,
         "default_recommended_price_robux": default_price,
         "is_custom_price": bool(custom_price),
-        "category": "Accessory" if attachment in ROBLOX_LIMITS["required_attachments"] else "Clothing",
+        "category": category,
         "tags": [attachment.lower(), doc.get("style", "auto"), "bloxdrops", "ai-generated"],
         "marketplace_ready": True,
         "files": {
@@ -231,6 +235,28 @@ async def update_attachment(
         "attachment_point": attachment_point,
         "category": category
     }
+
+
+class CategoryPayload(BaseModel):
+    category: str
+
+
+@router.patch("/export/{generation_id}/category")
+async def update_category(
+    generation_id: str, payload: CategoryPayload, user=Depends(get_current_user)
+):
+    """Update the category for export."""
+    from server import db
+    doc = await _load_generation(generation_id, user)
+
+    if payload.category not in ["Accessory", "Clothing"]:
+        raise HTTPException(status_code=400, detail="Category must be either 'Accessory' or 'Clothing'")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"custom_category": payload.category}},
+    )
+    return {"ok": True, "category": payload.category}
 
 
 @router.get("/export/{generation_id}/checklist")
