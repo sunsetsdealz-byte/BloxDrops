@@ -971,13 +971,14 @@ export default function Studio() {
                     )}
                   </div>
                   {editingPrompt ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 p-3 -m-3 bg-[#ccff00]/5 border border-[#ccff00]/20 rounded-lg">
                       <textarea
                         value={editedPrompt}
                         onChange={(e) => setEditedPrompt(e.target.value)}
                         className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-[#ccff00] focus:outline-none resize-none"
                         rows={3}
                         placeholder="Edit your prompt..."
+                        autoFocus
                       />
                       <div className="flex gap-2">
                         <button

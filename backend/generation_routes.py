@@ -97,7 +97,13 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
             }
         else:
             model = "tripo3d/h3.1/text-to-3d"
-            args = {"prompt": prompt}
+            args = {
+                "prompt": prompt,
+                # HD/PBR quality stack for text-to-3d (same as image-to-3d)
+                "pbr": True,                    # full PBR material maps
+                "texture": "HD",                # highest texture tier
+                "face_limit": 50000,            # high poly = more detail
+            }
 
         logger.info(f"Submitting to fal.ai model={model}, gen_id={generation_id}")
         handler = await fal_client.submit_async(model, arguments=args)
