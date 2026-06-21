@@ -390,8 +390,8 @@ function PriceField({ generationId, manifest, onSaved }) {
 
   const save = async () => {
     const num = parseInt(value, 10);
-    if (!num || num < 1 || num > 1000000) {
-      return toast.error("Price must be between 1 and 1,000,000 Robux");
+    if (!num || num < 1) {
+      return toast.error("Price must be at least 1 Robux");
     }
     setSaving(true);
     try {
