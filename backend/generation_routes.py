@@ -85,15 +85,15 @@ async def _run_fal_generation(generation_id: str, prompt: str, image_url: Option
             model = "tripo3d/tripo/v2.5/image-to-3d"
             args = {
                 "image_url": image_url,
-                # Quality stack — same params used for the Founder regen.
-                # Catches finer geometric detail and produces sharper textures so
-                # designs with intricate features (spikes, jewelry, glowing accents)
-                # come out crisp instead of low-poly approximations.
+                # MAXIMUM QUALITY STACK — preserve exact appearance from reference
                 "pbr": True,                            # full PBR material maps
                 "texture": "HD",                        # highest texture tier
-                "texture_alignment": "original_image",  # preserve source detail
+                "texture_alignment": "original_image",  # preserve source detail & colors
                 "orientation": "align_image",           # face the camera like input
-                "face_limit": 50000,                    # high poly = more detail
+                "face_limit": 100000,                   # DOUBLED for maximum detail preservation
+                "model_version": "v2.5-20241217",       # latest stable version
+                "remesh": "none",                       # DON'T simplify - keep original detail
+                "quad_dominant": False,                 # keep triangles for accuracy
             }
         else:
             model = "tripo3d/h3.1/text-to-3d"
