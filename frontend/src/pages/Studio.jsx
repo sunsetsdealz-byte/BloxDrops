@@ -739,7 +739,7 @@ export default function Studio() {
                 <p className="text-xs text-zinc-400">
                   {elapsedTime > 0 ? `${elapsedTime}s elapsed` : "Usually 5-15 seconds"}
                 </p>
-                {ownsCurrent && elapsedTime > 30 && (
+                {currentGen && (
                   <button
                     onClick={deleteCurrent}
                     disabled={deleting}
