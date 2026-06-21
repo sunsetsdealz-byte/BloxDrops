@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth";
 import Header from "@/components/Header";
+import TokenMonitor from "@/components/TokenMonitor";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -41,6 +42,7 @@ function Layout() {
 export default function App() {
   return (
     <AuthProvider>
+      <TokenMonitor />
       <Toaster
         theme="dark"
         position="top-center"
