@@ -72,7 +72,7 @@ function UIController.CreateMainUI()
         btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         btn.BorderSizePixel = 0
         btn.Text = btnName
-        btn.TextColor3 = Color3.white
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.TextSize = 16
         btn.Font = Enum.Font.GothamBold
         btn.Parent = menuButtons
@@ -154,7 +154,7 @@ function UIController.OpenJobsMenu()
     title.Text = "🏢 JOBS"
     title.TextSize = 28
     title.Font = Enum.Font.GothamBold
-    title.TextColor3 = Color3.white
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Parent = menu
     
     -- Close button
@@ -165,7 +165,7 @@ function UIController.OpenJobsMenu()
     closeBtn.Text = "X"
     closeBtn.TextSize = 20
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextColor3 = Color3.white
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     closeBtn.Parent = menu
     
     local closecorner = Instance.new("UICorner")
@@ -207,7 +207,7 @@ function UIController.OpenJobsMenu()
         jobTitle.Text = jobData.Name
         jobTitle.TextSize = 18
         jobTitle.Font = Enum.Font.GothamBold
-        jobTitle.TextColor3 = Color3.white
+        jobTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
         jobTitle.TextXAlignment = Enum.TextXAlignment.Left
         jobTitle.Parent = jobFrame
         
@@ -229,7 +229,7 @@ function UIController.OpenJobsMenu()
         startBtn.Text = "START"
         startBtn.TextSize = 16
         startBtn.Font = Enum.Font.GothamBold
-        startBtn.TextColor3 = Color3.white
+        startBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         startBtn.Parent = jobFrame
         
         local btncorner = Instance.new("UICorner")
