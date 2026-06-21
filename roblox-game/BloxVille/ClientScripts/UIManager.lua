@@ -4,6 +4,7 @@
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -11,6 +12,10 @@ local UIManager = {}
 UIManager.Elements = {}
 
 function UIManager.CreateHUD()
+    -- Hide default Roblox UI
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+    StarterGui:SetCore("TopbarEnabled", false)
+    
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "MainHUD"
     screenGui.ResetOnSpawn = false
