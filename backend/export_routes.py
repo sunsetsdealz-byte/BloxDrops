@@ -161,8 +161,8 @@ async def update_export_price(
         return {"ok": True, "price_robux": new_price, "is_custom_price": False}
 
     price = int(payload.price_robux)
-    if price < 1 or price > 1_000_000:
-        raise HTTPException(status_code=400, detail="Price must be between 1 and 1,000,000 Robux")
+    if price < 1:
+        raise HTTPException(status_code=400, detail="Price must be at least 1 Robux")
 
     await db.generations.update_one(
         {"_id": ObjectId(generation_id)},
