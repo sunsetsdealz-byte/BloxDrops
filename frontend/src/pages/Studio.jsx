@@ -552,7 +552,7 @@ export default function Studio() {
                   Locked after mint
                 </span>
               </div>
-              <div className="grid grid-cols-6 gap-1 mt-1" data-testid="studio-provenance">
+              <div className="grid grid-cols-3 gap-1.5 mt-1" data-testid="studio-provenance">
                 {[{ value: "auto", label: "Auto", color: "#71717a" },
                   ...RARITY_TIERS.map((t) => ({ value: t, label: RARITY_DISPLAY[t].label, color: RARITY_DISPLAY[t].color }))
                 ].map((opt) => (
@@ -564,7 +564,7 @@ export default function Studio() {
                     title={opt.value === "auto"
                       ? "Auto-compute rarity from edition cap + engagement (Common→Mythic as your drop earns likes & battle wins)"
                       : `Lock this drop's provenance to ${opt.label} at creation`}
-                    className={`rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all border ${
+                    className={`rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all border truncate ${
                       desiredRarity === opt.value
                         ? "border-white/40 bg-white/[0.08] shadow-[0_0_12px_rgba(255,255,255,0.18)]"
                         : "border-white/10 bg-black/30 hover:border-white/25"
