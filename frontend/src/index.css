@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Studio Improvements */
+@import './index_studio_improvements.css';
+
 html, body, #root {
   background-color: #050507;
   color: #ffffff;
@@ -29,10 +32,11 @@ body {
 .font-mono { font-family: "JetBrains Mono", monospace; }
 
 .glass {
-  background: rgba(9, 9, 11, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 9, 11, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* Crisp text inside 3D-transformed parents — prevents the blur cascade caused by
@@ -45,6 +49,89 @@ body {
   backface-visibility: hidden;
 }
 
+/* Professional UI alignment utilities */
+.studio-panel {
+  background: rgba(18, 18, 20, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.studio-section {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio-section:last-child {
+  border-bottom: none;
+}
+
+.studio-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.studio-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.studio-button {
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(39, 39, 42, 0.6);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.studio-button:hover {
+  background: rgba(63, 63, 70, 0.8);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.studio-button.active {
+  background: #ccff00;
+  color: #000;
+  border-color: #ccff00;
+}
+
+.studio-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(24, 24, 27, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  transition: all 180ms;
+}
+
+.studio-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.studio-input:focus {
+  outline: none;
+  border-color: #ccff00;
+  box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2);
+}
+
 .btn-volt {
   background: #ccff00;
   color: #000;
@@ -54,6 +141,10 @@ body {
   transition: all 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   border: 1px solid rgba(204, 255, 0, 0.5);
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 .btn-volt:hover:not(:disabled) {
   transform: translateY(-1px);

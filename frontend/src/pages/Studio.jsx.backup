@@ -372,64 +372,66 @@ export default function Studio() {
   };
 
   return (
-    <div className="studio-container">
-      <div className="studio-wrapper">
-        {!user && (
-          <div className="mb-6 glass rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-zinc-300 font-medium">Sign in to start generating — it takes 5-15 seconds.</p>
-            <Link to="/register" className="btn-volt rounded-full px-6 py-2.5 text-sm font-bold whitespace-nowrap">Sign up free</Link>
-          </div>
-        )}
+    <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
+      {!user && (
+        <div className="mb-6 glass rounded-2xl p-4 flex items-center justify-between">
+          <p className="text-sm text-zinc-300">Sign in to start generating — it takes 5-15 seconds.</p>
+          <Link to="/register" className="btn-volt rounded-full px-5 py-2 text-sm">Sign up free</Link>
+        </div>
+      )}
 
-        <div className="studio-grid">
-          {/* LEFT: Control Room */}
-          <aside className="studio-sidebar space-y-4">
-            <div className="studio-panel">
-              <div className="studio-section">
-                <div className="studio-mode-switcher">
-                  <button
-                    data-testid={TID.studioModeText}
-                    onClick={() => setMode("text")}
-                    className={`studio-mode-button ${mode === "text" ? "active" : ""}`}
-                  >
-                    <TextT size={14} weight="bold" /> Text
-                  </button>
-                  <button
-                    data-testid={TID.studioModeImage}
-                    onClick={() => setMode("image")}
-                    className={`studio-mode-button ${mode === "image" ? "active" : ""}`}
-                  >
-                    <ImageSquare size={14} weight="bold" /> Image
-                  </button>
-                  <button
-                    data-testid="studio-mode-photo"
-                    onClick={() => setMode("photo")}
-                    className={`studio-mode-button ${mode === "photo" ? "active" : ""}`}
-                    title={!isPaid ? "Creator/Pro only" : ""}
-                  >
-                    <Camera size={14} weight="bold" /> Photo
-                    {!isPaid && <Lock size={11} weight="bold" />}
-                  </button>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* LEFT: Control Room */}
+        <aside className="lg:col-span-4 space-y-4">
+          <div className="glass rounded-2xl p-5">
+            <div className="flex gap-1 mb-5 bg-zinc-900/60 rounded-full p-1">
+              <button
+                data-testid={TID.studioModeText}
+                onClick={() => setMode("text")}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${mode === "text" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+              >
+                <TextT size={13} className="inline mr-1" weight="bold" /> Text
+              </button>
+              <button
+                data-testid={TID.studioModeImage}
+                onClick={() => setMode("image")}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors ${mode === "image" ? "bg-[#ccff00] text-black" : "text-zinc-400"}`}
+              >
+                <ImageSquare size={13} className="inline mr-1" weight="bold" /> Image
+              </button>
+              <button
+                data-testid="studio-mode-photo"
+                onClick={() => setMode("photo")}
+                className={`flex-1 rounded-full py-2 text-[11px] font-bold uppercase tracking-wider transition-colors relative ${
+                  mode === "photo"
+                    ? "bg-gradient-to-r from-[#ff0055] to-[#fbbf24] text-black"
+                    : "text-zinc-400"
+                }`}
+              >
+                <Camera size={13} className="inline mr-1" weight="bold" /> Photo
+                {!isPaid && (
+                  <Lock size={9} weight="fill" className="absolute -top-0.5 -right-0.5 text-[#fbbf24]" />
+                )}
+              </button>
+            </div>
 
-              {mode === "text" ? (
+            {mode === "text" ? (
               <>
-                <label className="studio-label">Prompt</label>
+                <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400">Prompt</label>
                 <textarea
                   data-testid={TID.studioPrompt}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="A glowing red demon hoodie with stitched smile…"
                   rows={4}
-                  className="studio-input"
+                  className="input-dark w-full rounded-lg px-4 py-3 mt-1 resize-none text-sm"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {SAMPLES.slice(0, 4).map((s) => (
                     <button
                       key={s}
                       onClick={() => setPrompt(s)}
-                      className="studio-chip text-xs"
+                      className="text-[10px] px-2 py-1 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
                     >
                       {s.slice(0, 30)}…
                     </button>
@@ -526,7 +528,7 @@ export default function Studio() {
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       placeholder="https://example.com/concept-art.png"
-                      className="studio-input"
+                      className="input-dark w-full rounded-lg px-4 py-3 mt-1 text-sm"
                     />
                   </>
                 )}
@@ -545,7 +547,7 @@ export default function Studio() {
                   data-testid={TID.studioAttachment}
                   value={attachment}
                   onChange={(e) => setAttachment(e.target.value)}
-                  className="studio-select"
+                  className="input-dark w-full rounded-lg px-3 py-2.5 mt-1 text-sm"
                 >
                   {ATTACHMENTS.map((a) => <option key={a} value={a}>{a}</option>)}
                 </select>
@@ -556,7 +558,7 @@ export default function Studio() {
                   data-testid={TID.studioStyle}
                   value={style}
                   onChange={(e) => setStyle(e.target.value)}
-                  className="studio-select"
+                  className="input-dark w-full rounded-lg px-3 py-2.5 mt-1 text-sm"
                 >
                   {STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
