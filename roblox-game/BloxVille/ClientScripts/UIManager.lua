@@ -34,19 +34,11 @@ function UIManager.CreateHUD()
     local cashBg = Instance.new("Frame")
     cashBg.Size = UDim2.new(0, 180, 1, 0)
     cashBg.Position = UDim2.new(0, 0, 0, 0)
-    cashBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+    cashBg.BackgroundTransparency = 1
     cashBg.BorderSizePixel = 0
     cashBg.Parent = topCenter
     
-    local cashCorner = Instance.new("UICorner")
-    cashCorner.CornerRadius = UDim.new(0, 10)
-    cashCorner.Parent = cashBg
-    
-    local cashStroke = Instance.new("UIStroke")
-    cashStroke.Color = Color3.fromRGB(85, 255, 127)
-    cashStroke.Transparency = 0.7
-    cashStroke.Thickness = 2
-    cashStroke.Parent = cashBg
+
     
     local cashIcon = Instance.new("ImageLabel")
     cashIcon.Size = UDim2.new(0, 24, 0, 24)
@@ -72,19 +64,11 @@ function UIManager.CreateHUD()
     local levelBg = Instance.new("Frame")
     levelBg.Size = UDim2.new(0, 180, 1, 0)
     levelBg.Position = UDim2.new(1, -180, 0, 0)
-    levelBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+    levelBg.BackgroundTransparency = 1
     levelBg.BorderSizePixel = 0
     levelBg.Parent = topCenter
     
-    local levelCorner = Instance.new("UICorner")
-    levelCorner.CornerRadius = UDim.new(0, 10)
-    levelCorner.Parent = levelBg
-    
-    local levelStroke = Instance.new("UIStroke")
-    levelStroke.Color = Color3.fromRGB(255, 215, 0)
-    levelStroke.Transparency = 0.7
-    levelStroke.Thickness = 2
-    levelStroke.Parent = levelBg
+
     
     local levelIcon = Instance.new("TextLabel")
     levelIcon.Size = UDim2.new(0, 24, 0, 24)
