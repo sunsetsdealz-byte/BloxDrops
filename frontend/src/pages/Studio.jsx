@@ -739,6 +739,17 @@ export default function Studio() {
                 <p className="text-xs text-zinc-400">
                   {elapsedTime > 0 ? `${elapsedTime}s elapsed` : "Usually 5-15 seconds"}
                 </p>
+                {ownsCurrent && elapsedTime > 30 && (
+                  <button
+                    onClick={deleteCurrent}
+                    disabled={deleting}
+                    className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Cancel and delete this stuck generation"
+                  >
+                    <Trash size={14} weight="bold" />
+                    {deleting ? "Deleting..." : "Cancel Generation"}
+                  </button>
+                )}
               </div>
             )}
             {currentGen?.status === "failed" && (
