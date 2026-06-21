@@ -17,12 +17,27 @@ export default defineConfig(({ mode }) => {
   defines["process.env.NODE_ENV"] = JSON.stringify(mode);
 
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        // Treat all .js files inside src/ as JSX (CRA-compat)
+        include: "**/*.{js,jsx}",
+      }),
+    ],
     resolve: {
       alias: { "@": path.resolve(__dirname, "src") },
     },
     define: defines,
     server: { port: 3000 },
     build: { outDir: "build" },
+    esbuild: {
+      loader: "jsx",
+      include: /src\/.*\.jsx?$/,
+      exclude: [],
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        loader: { ".js": "jsx" },
+      },
+    },
   };
 });
