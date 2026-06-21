@@ -37,9 +37,9 @@ function UIManager.CreateHUD()
     cashCorner.Parent = cashBg
     
     local cashStroke = Instance.new("UIStroke")
-    cashStroke.Color = Color3.fromRGB(255, 255, 255)
-    cashStroke.Transparency = 0.88
-    cashStroke.Thickness = 1
+    cashStroke.Color = Color3.fromRGB(85, 255, 127)
+    cashStroke.Transparency = 0.7
+    cashStroke.Thickness = 2
     cashStroke.Parent = cashBg
     
     local cashIcon = Instance.new("ImageLabel")
@@ -75,9 +75,9 @@ function UIManager.CreateHUD()
     levelCorner.Parent = levelBg
     
     local levelStroke = Instance.new("UIStroke")
-    levelStroke.Color = Color3.fromRGB(255, 255, 255)
-    levelStroke.Transparency = 0.88
-    levelStroke.Thickness = 1
+    levelStroke.Color = Color3.fromRGB(255, 215, 0)
+    levelStroke.Transparency = 0.7
+    levelStroke.Thickness = 2
     levelStroke.Parent = levelBg
     
     local levelIcon = Instance.new("TextLabel")
@@ -115,9 +115,9 @@ function UIManager.CreateHUD()
     xpCorner.Parent = xpBg
     
     local xpStroke = Instance.new("UIStroke")
-    xpStroke.Color = Color3.fromRGB(255, 255, 255)
-    xpStroke.Transparency = 0.88
-    xpStroke.Thickness = 1
+    xpStroke.Color = Color3.fromRGB(204, 255, 0)
+    xpStroke.Transparency = 0.7
+    xpStroke.Thickness = 2
     xpStroke.Parent = xpBg
     
     local xpBarBg = Instance.new("Frame")
@@ -185,9 +185,9 @@ function UIManager.CreateHUD()
         btnCorner.Parent = button
         
         local btnStroke = Instance.new("UIStroke")
-        btnStroke.Color = Color3.fromRGB(255, 255, 255)
-        btnStroke.Transparency = 0.88
-        btnStroke.Thickness = 1
+        btnStroke.Color = Color3.fromRGB(100, 100, 120)
+        btnStroke.Transparency = 0.5
+        btnStroke.Thickness = 2
         btnStroke.Parent = button
         
         local icon = Instance.new("TextLabel")
