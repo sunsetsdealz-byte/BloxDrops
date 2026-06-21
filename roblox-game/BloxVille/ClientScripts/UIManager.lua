@@ -17,20 +17,21 @@ function UIManager.CreateHUD()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.IgnoreGuiInset = true
     
-    -- Top Left Stats
-    local statsFrame = Instance.new("Frame")
-    statsFrame.Name = "Stats"
-    statsFrame.Size = UDim2.new(0, 300, 0, 140)
-    statsFrame.Position = UDim2.new(0, 16, 0, 16)
-    statsFrame.BackgroundTransparency = 1
-    statsFrame.Parent = screenGui
+    -- Top Center Stats
+    local topCenter = Instance.new("Frame")
+    topCenter.Name = "TopCenter"
+    topCenter.Size = UDim2.new(0, 400, 0, 50)
+    topCenter.Position = UDim2.new(0.5, -200, 0, 16)
+    topCenter.BackgroundTransparency = 1
+    topCenter.Parent = screenGui
     
-    -- Cash
+    -- Cash (Left side)
     local cashBg = Instance.new("Frame")
-    cashBg.Size = UDim2.new(1, 0, 0, 42)
+    cashBg.Size = UDim2.new(0, 180, 1, 0)
+    cashBg.Position = UDim2.new(0, 0, 0, 0)
     cashBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
     cashBg.BorderSizePixel = 0
-    cashBg.Parent = statsFrame
+    cashBg.Parent = topCenter
     
     local cashCorner = Instance.new("UICorner")
     cashCorner.CornerRadius = UDim.new(0, 10)
@@ -62,13 +63,13 @@ function UIManager.CreateHUD()
     cashLabel.TextXAlignment = Enum.TextXAlignment.Left
     cashLabel.Parent = cashBg
     
-    -- Level
+    -- Level (Right side)
     local levelBg = Instance.new("Frame")
-    levelBg.Size = UDim2.new(1, 0, 0, 42)
-    levelBg.Position = UDim2.new(0, 0, 0, 49)
+    levelBg.Size = UDim2.new(0, 180, 1, 0)
+    levelBg.Position = UDim2.new(1, -180, 0, 0)
     levelBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
     levelBg.BorderSizePixel = 0
-    levelBg.Parent = statsFrame
+    levelBg.Parent = topCenter
     
     local levelCorner = Instance.new("UICorner")
     levelCorner.CornerRadius = UDim.new(0, 10)
@@ -102,56 +103,39 @@ function UIManager.CreateHUD()
     levelLabel.TextXAlignment = Enum.TextXAlignment.Left
     levelLabel.Parent = levelBg
     
-    -- XP Bar
+    -- XP Bar (Bottom of screen)
     local xpBg = Instance.new("Frame")
-    xpBg.Size = UDim2.new(1, 0, 0, 42)
-    xpBg.Position = UDim2.new(0, 0, 0, 98)
-    xpBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+    xpBg.Size = UDim2.new(0, 500, 0, 8)
+    xpBg.Position = UDim2.new(0.5, -250, 1, -24)
+    xpBg.BackgroundColor3 = Color3.fromRGB(9, 9, 11)
     xpBg.BorderSizePixel = 0
-    xpBg.Parent = statsFrame
+    xpBg.Parent = screenGui
     
     local xpCorner = Instance.new("UICorner")
-    xpCorner.CornerRadius = UDim.new(0, 10)
+    xpCorner.CornerRadius = UDim.new(0, 4)
     xpCorner.Parent = xpBg
-    
-    local xpStroke = Instance.new("UIStroke")
-    xpStroke.Color = Color3.fromRGB(204, 255, 0)
-    xpStroke.Transparency = 0.7
-    xpStroke.Thickness = 2
-    xpStroke.Parent = xpBg
-    
-    local xpBarBg = Instance.new("Frame")
-    xpBarBg.Size = UDim2.new(1, -24, 0, 20)
-    xpBarBg.Position = UDim2.new(0, 12, 0.5, -10)
-    xpBarBg.BackgroundColor3 = Color3.fromRGB(9, 9, 11)
-    xpBarBg.BorderSizePixel = 0
-    xpBarBg.Parent = xpBg
-    
-    local xpBarBgCorner = Instance.new("UICorner")
-    xpBarBgCorner.CornerRadius = UDim.new(0, 10)
-    xpBarBgCorner.Parent = xpBarBg
     
     local xpBar = Instance.new("Frame")
     xpBar.Name = "XPBar"
     xpBar.Size = UDim2.new(0, 0, 1, 0)
     xpBar.BackgroundColor3 = Color3.fromRGB(204, 255, 0)
     xpBar.BorderSizePixel = 0
-    xpBar.Parent = xpBarBg
+    xpBar.Parent = xpBg
     
     local xpBarCorner = Instance.new("UICorner")
-    xpBarCorner.CornerRadius = UDim.new(0, 10)
+    xpBarCorner.CornerRadius = UDim.new(0, 4)
     xpBarCorner.Parent = xpBar
     
     local xpText = Instance.new("TextLabel")
     xpText.Name = "XPText"
-    xpText.Size = UDim2.new(1, 0, 1, 0)
+    xpText.Size = UDim2.new(1, 0, 0, 20)
+    xpText.Position = UDim2.new(0, 0, 0, -24)
     xpText.BackgroundTransparency = 1
     xpText.Text = "0/100 XP"
     xpText.TextSize = 13
     xpText.Font = Enum.Font.GothamBold
     xpText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    xpText.ZIndex = 2
-    xpText.Parent = xpBarBg
+    xpText.Parent = xpBg
     
     -- Right Menu
     local rightMenu = Instance.new("Frame")
