@@ -1,0 +1,33 @@
+ROBLOX GAME UI & GRAPHICS FIX - INSTALL INSTRUCTIONS
+====================================================
+
+1. UPDATED UI (UIManager.lua)
+   - Open Roblox Studio
+   - Navigate to: StarterPlayer > StarterPlayerScripts
+   - Replace existing UIManager.lua with the new one
+   - OR create new LocalScript, paste content from UIManager.lua
+
+2. GRAPHICS SETTINGS (GRAPHICS_SETTINGS.lua)
+   - In StarterPlayer > StarterPlayerScripts
+   - Create new LocalScript called "GraphicsSetup"
+   - Paste content from GRAPHICS_SETTINGS.lua
+   - This adds: Bloom, Atmosphere, ColorCorrection, SunRays, DOF
+
+3. TEST
+   - Press F5 or click Play
+   - UI should show aligned top bar with Cash/Level/XP
+   - Right menu buttons should be visible
+   - Graphics should look crisp with better lighting
+
+WHAT'S FIXED:
+✓ Professional aligned HUD (top bar)
+✓ Clean right-side menu buttons
+✓ Smooth animations
+✓ Better lighting & atmosphere
+✓ Bloom & color correction
+✓ Optimized camera FOV
+
+UI LAYOUT:
+- Top: Cash | Level | XP (single bar, perfectly aligned)
+- Right: Jobs, Houses, Vehicles, Shop, Settings (vertical menu)
+- All elements use consistent spacing & colors
