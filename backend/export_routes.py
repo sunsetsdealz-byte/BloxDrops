@@ -109,8 +109,13 @@ async def export_manifest(generation_id: str, user=Depends(get_current_user)):
     default_price = ROBLOX_LIMITS["recommended_price_robux"].get(attachment, 50)
     custom_price = doc.get("custom_robux_price")
     price_robux = int(custom_price) if isinstance(custom_price, (int, float)) and custom_price > 0 else default_price
+    
+    # Use custom asset name if set
+    custom_asset_name = doc.get("custom_asset_name")
+    asset_name = custom_asset_name if custom_asset_name else name_base.replace("_", " ").title()
+    
     return {
-        "asset_name": name_base.replace("_", " ").title(),
+        "asset_name": asset_name,
         "description": doc.get("original_prompt") or "Generated with BloxDrops AI",
         "attachment_type": attachment,
         "attachment_point": ROBLOX_LIMITS["required_attachments"].get(attachment, "Auto"),
@@ -169,6 +174,63 @@ async def update_export_price(
         {"$set": {"custom_robux_price": price}},
     )
     return {"ok": True, "price_robux": price, "is_custom_price": True}
+
+
+class AssetNamePayload(BaseModel):
+    asset_name: str
+
+
+@router.patch("/export/{generation_id}/asset-name")
+async def update_asset_name(
+    generation_id: str, payload: AssetNamePayload, user=Depends(get_current_user)
+):
+    """Update the asset name for export."""
+    from server import db
+    doc = await _load_generation(generation_id, user)
+
+    name = payload.asset_name.strip()
+    if not name or len(name) < 3:
+        raise HTTPException(status_code=400, detail="Asset name must be at least 3 characters")
+    if len(name) > 50:
+        raise HTTPException(status_code=400, detail="Asset name must be 50 characters or less")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"custom_asset_name": name}},
+    )
+    return {"ok": True, "asset_name": name}
+
+
+class AttachmentPayload(BaseModel):
+    attachment_type: str
+
+
+@router.patch("/export/{generation_id}/attachment")
+async def update_attachment(
+    generation_id: str, payload: AttachmentPayload, user=Depends(get_current_user)
+):
+    """Update the attachment type for export."""
+    from server import db
+    doc = await _load_generation(generation_id, user)
+
+    valid_types = list(ROBLOX_LIMITS["required_attachments"].keys()) + ["Hoodie", "Shirt", "Pants", "Jacket"]
+    if payload.attachment_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Invalid attachment type. Must be one of: {', '.join(valid_types)}")
+
+    await db.generations.update_one(
+        {"_id": ObjectId(generation_id)},
+        {"$set": {"attachment_type": payload.attachment_type}},
+    )
+    
+    attachment_point = ROBLOX_LIMITS["required_attachments"].get(payload.attachment_type, "Auto")
+    category = "Accessory" if payload.attachment_type in ROBLOX_LIMITS["required_attachments"] else "Clothing"
+    
+    return {
+        "ok": True, 
+        "attachment_type": payload.attachment_type,
+        "attachment_point": attachment_point,
+        "category": category
+    }
 
 
 @router.get("/export/{generation_id}/checklist")

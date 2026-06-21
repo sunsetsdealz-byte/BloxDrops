@@ -200,8 +200,40 @@ export default function RobloxExportModal({ generationId, onClose }) {
 
             {/* MANIFEST PREVIEW */}
             <div className="grid grid-cols-2 gap-3 mb-5">
-              <Field label="Asset name" value={manifest.asset_name} />
-              <Field label="Attachment" value={manifest.attachment_point} />
+              <EditableTextField
+                generationId={generationId}
+                label="Asset name"
+                value={manifest.asset_name}
+                onSaved={(data) => setManifest((prev) => ({ ...prev, asset_name: data.asset_name }))}
+                endpoint="asset-name"
+                fieldName="asset_name"
+                validation={(val) => {
+                  if (val.length < 3) {
+                    toast.error("Asset name must be at least 3 characters");
+                    return false;
+                  }
+                  if (val.length > 50) {
+                    toast.error("Asset name must be 50 characters or less");
+                    return false;
+                  }
+                  return true;
+                }}
+              />
+              <EditableSelectField
+                generationId={generationId}
+                label="Attachment"
+                value={manifest.attachment_type}
+                displayValue={manifest.attachment_point}
+                options={["Hat", "Hair", "Back", "Neck", "Face", "Shoulder", "Front", "Waist", "Hoodie", "Shirt", "Jacket", "Pants"]}
+                onSaved={(data) => setManifest((prev) => ({ 
+                  ...prev, 
+                  attachment_type: data.attachment_type,
+                  attachment_point: data.attachment_point,
+                  category: data.category
+                }))}
+                endpoint="attachment"
+                fieldName="attachment_type"
+              />
               <Field label="Category" value={manifest.category} />
               <PriceField
                 generationId={generationId}
@@ -376,6 +408,154 @@ function Field({ label, value, accent }) {
       <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500">{label}</p>
       <p className={`text-sm font-bold mt-1 ${accent ? "text-[#ccff00]" : "text-zinc-200"}`}>{value}</p>
     </div>
+  );
+}
+
+function EditableTextField({ generationId, label, value, onSaved, endpoint, fieldName, validation }) {
+  const [editing, setEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  const save = async () => {
+    const trimmed = inputValue.trim();
+    if (validation && !validation(trimmed)) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/export/${generationId}/${endpoint}`, { [fieldName]: trimmed });
+      onSaved(data);
+      toast.success(`${label} updated`);
+      setEditing(false);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="bg-zinc-900/60 border border-[#ccff00]/40 rounded-xl p-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 mb-1">{label}</p>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+            autoFocus
+            disabled={saving}
+            className="flex-1 min-w-0 bg-black/50 border border-white/15 focus:border-[#ccff00] rounded-lg px-2 py-1 text-sm font-bold text-zinc-200 outline-none"
+          />
+          <button
+            onClick={save}
+            disabled={saving}
+            className="text-[10px] font-black uppercase tracking-wider text-black bg-[#ccff00] rounded-full px-2.5 py-1 hover:shadow-[0_0_12px_rgba(204,255,0,0.45)] transition-all disabled:opacity-40"
+          >
+            {saving ? "…" : "Save"}
+          </button>
+          <button
+            onClick={() => { setInputValue(value); setEditing(false); }}
+            disabled={saving}
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white px-1.5"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+      className="bg-zinc-900/60 border border-white/8 hover:border-[#ccff00]/60 rounded-xl p-3 text-left transition-colors group"
+    >
+      <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 flex items-center gap-1">
+        {label}
+        <span className="text-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity">· edit</span>
+      </p>
+      <p className="text-sm font-bold mt-1 text-zinc-200">{value}</p>
+    </button>
+  );
+}
+
+function EditableSelectField({ generationId, label, value, displayValue, options, onSaved, endpoint, fieldName }) {
+  const [editing, setEditing] = useState(false);
+  const [selectedValue, setSelectedValue] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    setSelectedValue(value);
+  }, [value]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/export/${generationId}/${endpoint}`, { [fieldName]: selectedValue });
+      onSaved(data);
+      toast.success(`${label} updated`);
+      setEditing(false);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="bg-zinc-900/60 border border-[#ccff00]/40 rounded-xl p-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 mb-1">{label}</p>
+        <div className="flex items-center gap-1.5">
+          <select
+            value={selectedValue}
+            onChange={(e) => setSelectedValue(e.target.value)}
+            autoFocus
+            disabled={saving}
+            className="flex-1 min-w-0 bg-black/50 border border-white/15 focus:border-[#ccff00] rounded-lg px-2 py-1 text-sm font-bold text-zinc-200 outline-none"
+          >
+            {options.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="text-[10px] font-black uppercase tracking-wider text-black bg-[#ccff00] rounded-full px-2.5 py-1 hover:shadow-[0_0_12px_rgba(204,255,0,0.45)] transition-all disabled:opacity-40"
+          >
+            {saving ? "…" : "Save"}
+          </button>
+          <button
+            onClick={() => { setSelectedValue(value); setEditing(false); }}
+            disabled={saving}
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white px-1.5"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+      className="bg-zinc-900/60 border border-white/8 hover:border-[#ccff00]/60 rounded-xl p-3 text-left transition-colors group"
+    >
+      <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 flex items-center gap-1">
+        {label}
+        <span className="text-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity">· edit</span>
+      </p>
+      <p className="text-sm font-bold mt-1 text-zinc-200">{displayValue || value}</p>
+    </button>
   );
 }
 
