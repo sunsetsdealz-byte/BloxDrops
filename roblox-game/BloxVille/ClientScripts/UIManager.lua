@@ -1,5 +1,5 @@
 --[[
-    Professional UI Manager - Perfectly Aligned HUD
+    Professional UI Manager - Perfectly Aligned
 ]]
 
 local Players = game:GetService("Players")
@@ -17,126 +17,129 @@ function UIManager.CreateHUD()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.IgnoreGuiInset = true
     
-    -- Top Bar Container (Cash, Level, XP)
-    local topBar = Instance.new("Frame")
-    topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(0, 360, 0, 72)
-    topBar.Position = UDim2.new(0, 20, 0, 20)
-    topBar.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
-    topBar.BorderSizePixel = 0
-    topBar.Parent = screenGui
+    -- Top Left Stats
+    local statsFrame = Instance.new("Frame")
+    statsFrame.Name = "Stats"
+    statsFrame.Size = UDim2.new(0, 300, 0, 140)
+    statsFrame.Position = UDim2.new(0, 16, 0, 16)
+    statsFrame.BackgroundTransparency = 1
+    statsFrame.Parent = screenGui
     
-    local topBarCorner = Instance.new("UICorner")
-    topBarCorner.CornerRadius = UDim.new(0, 12)
-    topBarCorner.Parent = topBar
+    -- Cash
+    local cashBg = Instance.new("Frame")
+    cashBg.Size = UDim2.new(1, 0, 0, 42)
+    cashBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+    cashBg.BorderSizePixel = 0
+    cashBg.Parent = statsFrame
     
-    local topBarStroke = Instance.new("UIStroke")
-    topBarStroke.Color = Color3.fromRGB(255, 255, 255)
-    topBarStroke.Transparency = 0.9
-    topBarStroke.Thickness = 1
-    topBarStroke.Parent = topBar
+    local cashCorner = Instance.new("UICorner")
+    cashCorner.CornerRadius = UDim.new(0, 10)
+    cashCorner.Parent = cashBg
     
-    -- Cash Section
-    local cashContainer = Instance.new("Frame")
-    cashContainer.Size = UDim2.new(0, 110, 1, -16)
-    cashContainer.Position = UDim2.new(0, 8, 0, 8)
-    cashContainer.BackgroundTransparency = 1
-    cashContainer.Parent = topBar
+    local cashStroke = Instance.new("UIStroke")
+    cashStroke.Color = Color3.fromRGB(255, 255, 255)
+    cashStroke.Transparency = 0.88
+    cashStroke.Thickness = 1
+    cashStroke.Parent = cashBg
     
     local cashIcon = Instance.new("ImageLabel")
     cashIcon.Size = UDim2.new(0, 24, 0, 24)
-    cashIcon.Position = UDim2.new(0, 8, 0, 8)
+    cashIcon.Position = UDim2.new(0, 12, 0.5, -12)
     cashIcon.BackgroundTransparency = 1
     cashIcon.Image = "rbxassetid://6031097225"
     cashIcon.ImageColor3 = Color3.fromRGB(85, 255, 127)
-    cashIcon.Parent = cashContainer
+    cashIcon.Parent = cashBg
     
     local cashLabel = Instance.new("TextLabel")
     cashLabel.Name = "CashLabel"
-    cashLabel.Size = UDim2.new(1, -40, 1, 0)
-    cashLabel.Position = UDim2.new(0, 40, 0, 0)
+    cashLabel.Size = UDim2.new(1, -48, 1, 0)
+    cashLabel.Position = UDim2.new(0, 44, 0, 0)
     cashLabel.BackgroundTransparency = 1
     cashLabel.Text = "$500"
-    cashLabel.TextSize = 20
+    cashLabel.TextSize = 22
     cashLabel.Font = Enum.Font.GothamBold
     cashLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     cashLabel.TextXAlignment = Enum.TextXAlignment.Left
-    cashLabel.Parent = cashContainer
+    cashLabel.Parent = cashBg
     
-    -- Divider 1
-    local divider1 = Instance.new("Frame")
-    divider1.Size = UDim2.new(0, 1, 1, -24)
-    divider1.Position = UDim2.new(0, 126, 0, 12)
-    divider1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    divider1.BackgroundTransparency = 0.9
-    divider1.BorderSizePixel = 0
-    divider1.Parent = topBar
+    -- Level
+    local levelBg = Instance.new("Frame")
+    levelBg.Size = UDim2.new(1, 0, 0, 42)
+    levelBg.Position = UDim2.new(0, 0, 0, 49)
+    levelBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
+    levelBg.BorderSizePixel = 0
+    levelBg.Parent = statsFrame
     
-    -- Level Section
-    local levelContainer = Instance.new("Frame")
-    levelContainer.Size = UDim2.new(0, 80, 1, -16)
-    levelContainer.Position = UDim2.new(0, 135, 0, 8)
-    levelContainer.BackgroundTransparency = 1
-    levelContainer.Parent = topBar
+    local levelCorner = Instance.new("UICorner")
+    levelCorner.CornerRadius = UDim.new(0, 10)
+    levelCorner.Parent = levelBg
+    
+    local levelStroke = Instance.new("UIStroke")
+    levelStroke.Color = Color3.fromRGB(255, 255, 255)
+    levelStroke.Transparency = 0.88
+    levelStroke.Thickness = 1
+    levelStroke.Parent = levelBg
     
     local levelIcon = Instance.new("TextLabel")
     levelIcon.Size = UDim2.new(0, 24, 0, 24)
-    levelIcon.Position = UDim2.new(0, 8, 0, 8)
+    levelIcon.Position = UDim2.new(0, 12, 0.5, -12)
     levelIcon.BackgroundTransparency = 1
     levelIcon.Text = "⭐"
-    levelIcon.TextSize = 18
+    levelIcon.TextSize = 20
     levelIcon.Font = Enum.Font.GothamBold
     levelIcon.TextColor3 = Color3.fromRGB(255, 215, 0)
-    levelIcon.Parent = levelContainer
+    levelIcon.Parent = levelBg
     
     local levelLabel = Instance.new("TextLabel")
     levelLabel.Name = "LevelLabel"
-    levelLabel.Size = UDim2.new(1, -40, 1, 0)
-    levelLabel.Position = UDim2.new(0, 40, 0, 0)
+    levelLabel.Size = UDim2.new(1, -48, 1, 0)
+    levelLabel.Position = UDim2.new(0, 44, 0, 0)
     levelLabel.BackgroundTransparency = 1
-    levelLabel.Text = "1"
+    levelLabel.Text = "Level 1"
     levelLabel.TextSize = 18
     levelLabel.Font = Enum.Font.GothamBold
     levelLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     levelLabel.TextXAlignment = Enum.TextXAlignment.Left
-    levelLabel.Parent = levelContainer
+    levelLabel.Parent = levelBg
     
-    -- Divider 2
-    local divider2 = Instance.new("Frame")
-    divider2.Size = UDim2.new(0, 1, 1, -24)
-    divider2.Position = UDim2.new(0, 223, 0, 12)
-    divider2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    divider2.BackgroundTransparency = 0.9
-    divider2.BorderSizePixel = 0
-    divider2.Parent = topBar
-    
-    -- XP Section
-    local xpContainer = Instance.new("Frame")
-    xpContainer.Size = UDim2.new(0, 120, 1, -16)
-    xpContainer.Position = UDim2.new(0, 232, 0, 8)
-    xpContainer.BackgroundTransparency = 1
-    xpContainer.Parent = topBar
-    
+    -- XP Bar
     local xpBg = Instance.new("Frame")
-    xpBg.Size = UDim2.new(1, -16, 0, 24)
-    xpBg.Position = UDim2.new(0, 8, 0.5, -12)
-    xpBg.BackgroundColor3 = Color3.fromRGB(9, 9, 11)
+    xpBg.Size = UDim2.new(1, 0, 0, 42)
+    xpBg.Position = UDim2.new(0, 0, 0, 98)
+    xpBg.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
     xpBg.BorderSizePixel = 0
-    xpBg.Parent = xpContainer
+    xpBg.Parent = statsFrame
     
-    local xpBgCorner = Instance.new("UICorner")
-    xpBgCorner.CornerRadius = UDim.new(0, 12)
-    xpBgCorner.Parent = xpBg
+    local xpCorner = Instance.new("UICorner")
+    xpCorner.CornerRadius = UDim.new(0, 10)
+    xpCorner.Parent = xpBg
+    
+    local xpStroke = Instance.new("UIStroke")
+    xpStroke.Color = Color3.fromRGB(255, 255, 255)
+    xpStroke.Transparency = 0.88
+    xpStroke.Thickness = 1
+    xpStroke.Parent = xpBg
+    
+    local xpBarBg = Instance.new("Frame")
+    xpBarBg.Size = UDim2.new(1, -24, 0, 20)
+    xpBarBg.Position = UDim2.new(0, 12, 0.5, -10)
+    xpBarBg.BackgroundColor3 = Color3.fromRGB(9, 9, 11)
+    xpBarBg.BorderSizePixel = 0
+    xpBarBg.Parent = xpBg
+    
+    local xpBarBgCorner = Instance.new("UICorner")
+    xpBarBgCorner.CornerRadius = UDim.new(0, 10)
+    xpBarBgCorner.Parent = xpBarBg
     
     local xpBar = Instance.new("Frame")
     xpBar.Name = "XPBar"
     xpBar.Size = UDim2.new(0, 0, 1, 0)
     xpBar.BackgroundColor3 = Color3.fromRGB(204, 255, 0)
     xpBar.BorderSizePixel = 0
-    xpBar.Parent = xpBg
+    xpBar.Parent = xpBarBg
     
     local xpBarCorner = Instance.new("UICorner")
-    xpBarCorner.CornerRadius = UDim.new(0, 12)
+    xpBarCorner.CornerRadius = UDim.new(0, 10)
     xpBarCorner.Parent = xpBar
     
     local xpText = Instance.new("TextLabel")
@@ -144,33 +147,33 @@ function UIManager.CreateHUD()
     xpText.Size = UDim2.new(1, 0, 1, 0)
     xpText.BackgroundTransparency = 1
     xpText.Text = "0/100 XP"
-    xpText.TextSize = 12
+    xpText.TextSize = 13
     xpText.Font = Enum.Font.GothamBold
     xpText.TextColor3 = Color3.fromRGB(255, 255, 255)
     xpText.ZIndex = 2
-    xpText.Parent = xpBg
+    xpText.Parent = xpBarBg
     
-    -- Right Side Menu Buttons
+    -- Right Menu
     local rightMenu = Instance.new("Frame")
     rightMenu.Name = "RightMenu"
-    rightMenu.Size = UDim2.new(0, 72, 0, 400)
-    rightMenu.Position = UDim2.new(1, -92, 0.5, -200)
+    rightMenu.Size = UDim2.new(0, 80, 0, 420)
+    rightMenu.Position = UDim2.new(1, -96, 0.5, -210)
     rightMenu.BackgroundTransparency = 1
     rightMenu.Parent = screenGui
     
-    local menuButtons = {
-        {Name = "Jobs", Icon = "💼", Color = Color3.fromRGB(255, 140, 0)},
-        {Name = "Houses", Icon = "🏠", Color = Color3.fromRGB(100, 149, 237)},
-        {Name = "Vehicles", Icon = "🚗", Color = Color3.fromRGB(220, 20, 60)},
-        {Name = "Shop", Icon = "🛒", Color = Color3.fromRGB(50, 205, 50)},
-        {Name = "Settings", Icon = "⚙️", Color = Color3.fromRGB(128, 128, 128)}
+    local buttons = {
+        {Name = "Jobs", Icon = "💼"},
+        {Name = "Houses", Icon = "🏠"},
+        {Name = "Vehicles", Icon = "🚗"},
+        {Name = "Shop", Icon = "🛒"},
+        {Name = "Settings", Icon = "⚙️"}
     }
     
-    for i, btn in ipairs(menuButtons) do
+    for i, btn in ipairs(buttons) do
         local button = Instance.new("TextButton")
         button.Name = btn.Name
-        button.Size = UDim2.new(1, 0, 0, 64)
-        button.Position = UDim2.new(0, 0, 0, (i-1) * 72)
+        button.Size = UDim2.new(1, 0, 0, 72)
+        button.Position = UDim2.new(0, 0, 0, (i-1) * 80)
         button.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
         button.BorderSizePixel = 0
         button.AutoButtonColor = false
@@ -183,13 +186,13 @@ function UIManager.CreateHUD()
         
         local btnStroke = Instance.new("UIStroke")
         btnStroke.Color = Color3.fromRGB(255, 255, 255)
-        btnStroke.Transparency = 0.9
+        btnStroke.Transparency = 0.88
         btnStroke.Thickness = 1
         btnStroke.Parent = button
         
         local icon = Instance.new("TextLabel")
         icon.Size = UDim2.new(1, 0, 0, 32)
-        icon.Position = UDim2.new(0, 0, 0, 8)
+        icon.Position = UDim2.new(0, 0, 0, 12)
         icon.BackgroundTransparency = 1
         icon.Text = btn.Icon
         icon.TextSize = 28
@@ -198,12 +201,12 @@ function UIManager.CreateHUD()
         
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, 0, 0, 16)
-        label.Position = UDim2.new(0, 0, 1, -22)
+        label.Position = UDim2.new(0, 0, 1, -24)
         label.BackgroundTransparency = 1
         label.Text = btn.Name
-        label.TextSize = 11
+        label.TextSize = 12
         label.Font = Enum.Font.GothamBold
-        label.TextColor3 = Color3.fromRGB(200, 200, 200)
+        label.TextColor3 = Color3.fromRGB(180, 180, 180)
         label.Parent = button
         
         button.MouseEnter:Connect(function()
@@ -213,7 +216,7 @@ function UIManager.CreateHUD()
         
         button.MouseLeave:Connect(function()
             TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(18, 18, 20)}):Play()
-            TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.9}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.88}):Play()
         end)
         
         UIManager.Elements[btn.Name.."Button"] = button
@@ -236,7 +239,7 @@ end
 
 function UIManager.UpdateLevel(level)
     if UIManager.Elements.LevelLabel then
-        UIManager.Elements.LevelLabel.Text = tostring(level)
+        UIManager.Elements.LevelLabel.Text = "Level "..tostring(level)
     end
 end
 
