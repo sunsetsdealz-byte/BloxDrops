@@ -62,6 +62,8 @@ export default function Studio() {
   const [howToMode, setHowToMode] = useState("accessory");
   const [genStartTime, setGenStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState("");
   const pollRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -135,6 +137,31 @@ export default function Studio() {
       // Flip to pending locally so the GENERATING overlay shows immediately
       setCurrentGen((prev) => prev ? { ...prev, status: "pending", model_url: null } : prev);
       toast.success("Regenerating with HD/PBR — usually under 2 minutes");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const regenerateWithEditedPrompt = async () => {
+    if (!currentGen || !editedPrompt.trim()) return;
+    setRegenerating(true);
+    setEditingPrompt(false);
+    try {
+      const { data } = await api.post("/generate/text-to-3d", {
+        prompt: editedPrompt,
+        attachment_type: currentGen.attachment_type,
+        style: currentGen.style,
+        edition_cap: currentGen.edition_cap || 0,
+        desired_rarity: currentGen.rarity_tier || "auto",
+      });
+      setCurrentGen({ id: data.id, status: "pending", original_prompt: editedPrompt, attachment_type: currentGen.attachment_type, style: currentGen.style });
+      setGenStartTime(Date.now());
+      setElapsedTime(0);
+      toast.success("Generating with updated prompt...");
+      await refresh();
+      await loadHistory();
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -916,10 +943,53 @@ export default function Studio() {
 
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
-                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold mb-1">Prompt</p>
-                  <p className="text-sm text-zinc-200 leading-relaxed">
-                    {currentGen.original_prompt || currentGen.prompt}
-                  </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold">Prompt</p>
+                    {ownsCurrent && !editingPrompt && (
+                      <button
+                        onClick={() => {
+                          setEditedPrompt(currentGen.original_prompt || currentGen.prompt);
+                          setEditingPrompt(true);
+                        }}
+                        className="text-xs text-zinc-400 hover:text-[#ccff00] transition-colors flex items-center gap-1"
+                        title="Edit prompt"
+                      >
+                        <PencilSimple size={12} weight="bold" />
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {editingPrompt ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editedPrompt}
+                        onChange={(e) => setEditedPrompt(e.target.value)}
+                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:border-[#ccff00] focus:outline-none resize-none"
+                        rows={3}
+                        placeholder="Edit your prompt..."
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={regenerateWithEditedPrompt}
+                          disabled={!editedPrompt.trim() || regenerating}
+                          className="px-3 py-1.5 bg-[#ccff00] text-black rounded-lg text-xs font-bold hover:bg-[#b8e600] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                        >
+                          <ArrowClockwise size={14} weight="bold" />
+                          {regenerating ? "Generating..." : "Generate"}
+                        </button>
+                        <button
+                          onClick={() => setEditingPrompt(false)}
+                          className="px-3 py-1.5 bg-white/10 text-zinc-300 rounded-lg text-xs font-bold hover:bg-white/15"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-200 leading-relaxed">
+                      {currentGen.original_prompt || currentGen.prompt}
+                    </p>
+                  )}
                   <div className="flex gap-2 mt-3">
                     <span className="text-[10px] uppercase tracking-widest bg-white/10 rounded-full px-2 py-1 font-bold">{currentGen.attachment_type}</span>
                     <span className="text-[10px] uppercase tracking-widest bg-[#ccff00] text-black rounded-full px-2 py-1 font-bold">{currentGen.style}</span>
