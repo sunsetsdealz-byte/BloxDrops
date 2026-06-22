@@ -144,6 +144,33 @@ export default function Studio() {
     }
   };
 
+  const regenerateAsHeadReplacement = async () => {
+    if (!currentGen) return;
+    const originalPrompt = currentGen.original_prompt || currentGen.prompt || "";
+    const headPrompt = `Full head replacement helmet mask, completely enclosed ${originalPrompt}, designed to replace entire Roblox head, no face cutout, solid enclosed design that covers the entire head area`;
+    
+    setRegenerating(true);
+    try {
+      const { data } = await api.post("/generate/text-to-3d", {
+        prompt: headPrompt,
+        attachment_type: "Face",
+        style: currentGen.style,
+        edition_cap: currentGen.edition_cap || 0,
+        desired_rarity: currentGen.rarity_tier || "auto",
+      });
+      setCurrentGen({ id: data.id, status: "pending", original_prompt: headPrompt, attachment_type: "Face", style: currentGen.style });
+      setGenStartTime(Date.now());
+      setElapsedTime(0);
+      toast.success("Regenerating as full head replacement...");
+      await refresh();
+      await loadHistory();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const regenerateWithEditedPrompt = async () => {
     if (!currentGen || !editedPrompt.trim()) return;
     setRegenerating(true);
@@ -869,6 +896,18 @@ export default function Studio() {
                       <ArrowClockwise size={11} weight="bold" />
                       {regenerating ? "…" : "Regen"}
                     </button>
+                    {(currentGen.attachment_type === "Hat" || currentGen.attachment_type === "Hair") && (
+                      <button
+                        onClick={regenerateAsHeadReplacement}
+                        disabled={regenerating}
+                        data-testid="studio-regen-head"
+                        title="Regenerate as full head replacement (Face attachment)"
+                        className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/40 hover:bg-[#ccff00]/30 transition-all disabled:opacity-50 backdrop-blur-md whitespace-nowrap"
+                      >
+                        <Robot size={11} weight="bold" />
+                        {regenerating ? "…" : "As Head"}
+                      </button>
+                    )}
                     <button
                       onClick={deleteCurrent}
                       disabled={deleting}
