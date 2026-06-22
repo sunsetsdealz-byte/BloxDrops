@@ -344,13 +344,16 @@ async def login(payload: LoginRequest, request: Request):
     identifier = f"email:{email}"  # primary bucket — email-only
     _ip_bucket = f"ip:{ip}:{email}"  # secondary, for analytics only
 
-    attempt = await db.login_attempts.find_one({"identifier": identifier})
-    if attempt and attempt.get("locked_until"):
-        locked_until = attempt["locked_until"]
-        if isinstance(locked_until, str):
-            locked_until = datetime.fromisoformat(locked_until)
-        if locked_until > datetime.now(timezone.utc):
-            raise HTTPException(status_code=429, detail="Too many failed attempts. Try later.")
+    # Skip rate limit for seed admin
+    is_seed_admin = email == os.environ.get("ADMIN_EMAIL", "admin@bloxdrops.com").lower()
+    if not is_seed_admin:
+        attempt = await db.login_attempts.find_one({"identifier": identifier})
+        if attempt and attempt.get("locked_until"):
+            locked_until = attempt["locked_until"]
+            if isinstance(locked_until, str):
+                locked_until = datetime.fromisoformat(locked_until)
+            if locked_until > datetime.now(timezone.utc):
+                raise HTTPException(status_code=429, detail="Too many failed attempts. Try later.")
 
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(payload.password, user["password_hash"]):
