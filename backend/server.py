@@ -334,6 +334,14 @@ async def register(payload: RegisterRequest):
     }
 
 
+@auth_router.post("/clear-rate-limit")
+async def clear_rate_limit(email: str):
+    """Emergency endpoint to clear rate limit for an email."""
+    identifier = f"email:{email.lower().strip()}"
+    await db.login_attempts.delete_one({"identifier": identifier})
+    return {"ok": True, "cleared": identifier}
+
+
 @auth_router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginRequest, request: Request):
     email = payload.email.lower().strip()
