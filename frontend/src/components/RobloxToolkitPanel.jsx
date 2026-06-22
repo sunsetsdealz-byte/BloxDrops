@@ -8,8 +8,11 @@ import {
   CaretDown,
   CaretUp,
   Wrench,
+  Upload,
+  DownloadSimple,
 } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
 
 /**
  * Roblox Toolkit — collapsible card grouping all the GLB post-processing
@@ -19,15 +22,25 @@ import { api, formatApiError } from "../lib/api";
  * doc changes so the parent stays in sync.
  */
 export default function RobloxToolkitPanel({ generation, onUpdate, onOpenAvatarWalkthrough }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(true);
   const [rigging, setRigging] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [robloxConnected, setRobloxConnected] = useState(false);
   const rigPollRef = useRef(null);
   const optPollRef = useRef(null);
 
   const id = generation?.id;
   const status = generation?.status;
   const canRun = id && status === "completed";
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api.get("/roblox/status")
+      .then(({ data }) => setRobloxConnected(data.connected))
+      .catch(() => {});
+  }, [user]);
 
   // ── Polling: rigging
   useEffect(() => {
@@ -100,6 +113,21 @@ export default function RobloxToolkitPanel({ generation, onUpdate, onOpenAvatarW
       toast.error(formatApiError(e));
     } finally {
       setOptimizing(false);
+    }
+  };
+
+  const handlePushToRoblox = async () => {
+    if (!canRun || !robloxConnected) return;
+    setPushing(true);
+    try {
+      const { data } = await api.post(`/roblox/upload/${id}`);
+      toast.success(`Pushed! Asset ID: ${data.asset_id}`);
+      onUpdate?.({ ...generation, roblox_asset_id: data.asset_id });
+      if (data.inventory_url) window.open(data.inventory_url, "_blank");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setPushing(false);
     }
   };
 
@@ -191,6 +219,39 @@ export default function RobloxToolkitPanel({ generation, onUpdate, onOpenAvatarW
               </div>
             )}
           </ToolkitRow>
+
+          {/* ── Push to Roblox ──────────────────────────────────────── */}
+          {user?.role === "admin" && robloxConnected && generation?.model_url && (
+            <ToolkitRow
+              accent="#ccff00"
+              icon={<Upload size={14} weight="fill" className="text-[#ccff00]" />}
+              title="Push to Roblox"
+              subtitle="Upload as Model to your Roblox inventory via Open Cloud · ~5 sec"
+              testid="toolkit-push-section"
+            >
+              {!generation?.roblox_asset_id ? (
+                <button
+                  type="button"
+                  onClick={handlePushToRoblox}
+                  disabled={pushing}
+                  data-testid="toolkit-push-button"
+                  className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 bg-[#ccff00] text-black hover:shadow-[0_0_14px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50"
+                >
+                  <Upload size={11} weight="bold" />
+                  {pushing ? "Pushing…" : "Push 3D Model"}
+                </button>
+              ) : (
+                <a
+                  href={`${api.defaults.baseURL}/roblox/accessory/${id}.rbxmx`}
+                  download
+                  data-testid="toolkit-rbxmx-download"
+                  className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 bg-[#ccff00] text-black hover:shadow-[0_0_14px_rgba(204,255,0,0.55)] transition-all"
+                >
+                  <DownloadSimple size={11} weight="bold" /> Download .RBXMX
+                </a>
+              )}
+            </ToolkitRow>
+          )}
 
           {/* ── Mesh Optimization ───────────────────────────────────── */}
           <ToolkitRow
