@@ -138,6 +138,7 @@ export default function Profile() {
     if (!user) return;
     const { data } = await api.get("/me/generations");
     setItems(data.items || []);
+    console.log("Loaded items:", data.items?.map(it => ({ id: it.id, status: it.status, has_model: !!it.model_url })));
   };
 
   const loadRobloxStatus = async () => {
@@ -145,6 +146,7 @@ export default function Profile() {
     try {
       const { data } = await api.get("/roblox/status");
       setRobloxConnected(data.connected);
+      console.log("Roblox status:", data.connected, "User role:", user.role);
     } catch {}
   };
 
