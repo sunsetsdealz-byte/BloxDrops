@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { api, formatApiError } from "../lib/api";
-import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected, Trash } from "@phosphor-icons/react";
+import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected, Trash, Upload } from "@phosphor-icons/react";
 import ConnectPayoutsCard from "../components/ConnectPayoutsCard";
 
 function RobloxConnectCard() {
@@ -130,6 +130,8 @@ export default function Profile() {
   const [items, setItems] = useState([]);
   const [boosting, setBoosting] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [pushingId, setPushingId] = useState(null);
+  const [robloxConnected, setRobloxConnected] = useState(false);
   const [params] = useSearchParams();
 
   const load = async () => {
@@ -138,7 +140,15 @@ export default function Profile() {
     setItems(data.items || []);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  const loadRobloxStatus = async () => {
+    if (!user || user.role !== "admin") return;
+    try {
+      const { data } = await api.get("/roblox/status");
+      setRobloxConnected(data.connected);
+    } catch {}
+  };
+
+  useEffect(() => { load(); loadRobloxStatus(); /* eslint-disable-next-line */ }, [user]);
 
   // Poll boost return
   useEffect(() => {
@@ -190,6 +200,26 @@ export default function Profile() {
       toast.error(formatApiError(err));
     } finally {
       setBoosting(null);
+    }
+  };
+
+  const pushToRoblox = async (gen) => {
+    if (!robloxConnected) {
+      toast.error("Connect your Roblox account first");
+      return;
+    }
+    setPushingId(gen.id);
+    try {
+      const { data } = await api.post(`/roblox/upload/${gen.id}`);
+      toast.success(`Pushed to Roblox! Asset ID: ${data.asset_id}`);
+      if (data.inventory_url) {
+        window.open(data.inventory_url, "_blank");
+      }
+      load();
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setPushingId(null);
     }
   };
 
@@ -321,6 +351,17 @@ export default function Profile() {
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#00f0ff] text-center">
                     Pinned on the feed
                   </p>
+                )}
+                {user?.role === "admin" && robloxConnected && it.status === "completed" && it.model_url && (
+                  <button
+                    onClick={() => pushToRoblox(it)}
+                    disabled={pushingId === it.id}
+                    data-testid={`profile-push-${it.id}`}
+                    className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    <Upload size={12} weight="bold" />
+                    {pushingId === it.id ? "Pushing…" : "Push to Roblox"}
+                  </button>
                 )}
                 <button
                   onClick={() => deleteCreation(it)}
