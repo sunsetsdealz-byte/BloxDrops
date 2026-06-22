@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { api, formatApiError } from "../lib/api";
-import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected, Trash, Upload } from "@phosphor-icons/react";
+import { Coins, Cube, Trophy, Heart, Crown, Lightning, Robot, Plug, PlugsConnected, Trash, Upload, DownloadSimple } from "@phosphor-icons/react";
 import ConnectPayoutsCard from "../components/ConnectPayoutsCard";
 
 function RobloxConnectCard() {
@@ -355,15 +355,28 @@ export default function Profile() {
                   </p>
                 )}
                 {user?.role === "admin" && robloxConnected && it.status === "completed" && it.model_url && (
-                  <button
-                    onClick={() => pushToRoblox(it)}
-                    disabled={pushingId === it.id}
-                    data-testid={`profile-push-${it.id}`}
-                    className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <Upload size={12} weight="bold" />
-                    {pushingId === it.id ? "Pushing…" : "Push to Roblox"}
-                  </button>
+                  <>
+                    {!it.roblox_asset_id ? (
+                      <button
+                        onClick={() => pushToRoblox(it)}
+                        disabled={pushingId === it.id}
+                        data-testid={`profile-push-${it.id}`}
+                        className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        <Upload size={12} weight="bold" />
+                        {pushingId === it.id ? "Pushing…" : "Push to Roblox"}
+                      </button>
+                    ) : (
+                      <a
+                        href={`${api.defaults.baseURL}/roblox/accessory/${it.id}.rbxmx`}
+                        download
+                        className="w-full rounded-full py-2 text-[10px] uppercase tracking-[0.2em] font-black bg-[#ccff00] text-black hover:shadow-[0_0_18px_rgba(204,255,0,0.55)] transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <DownloadSimple size={12} weight="bold" />
+                        Download .RBXMX
+                      </a>
+                    )}
+                  </>
                 )}
                 <button
                   onClick={() => deleteCreation(it)}
