@@ -48,11 +48,17 @@ async def seed_admin():
             "created_at": now_utc(),
         })
         logger.info("Seeded admin user: %s", admin_email)
-    elif not verify_password(admin_password, existing["password_hash"]):
+    else:
+        # Always sync password on startup so env var changes take effect
         await db.users.update_one(
             {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}},
+            {"$set": {
+                "password_hash": hash_password(admin_password),
+                "role": "admin",
+                "plan": "pro",
+            }},
         )
+        logger.info("Synced admin password for: %s", admin_email)
 
 
 CHALLENGE_SEEDS = [
