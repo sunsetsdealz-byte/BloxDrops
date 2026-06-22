@@ -218,6 +218,7 @@ async def download_accessory_rbxmx(generation_id: str, user=Depends(get_current_
     """Return a pre-wrapped Accessory .rbxmx for a generation that was already
     pushed to Roblox. The user drags this file into Studio Explorer and submits.
     """
+    logger.info(f"RBXMX download requested for generation {generation_id}")
     from server import db
     from rbxmx_builder import build_accessory_rbxmx
 
