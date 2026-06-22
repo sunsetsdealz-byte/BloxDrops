@@ -241,14 +241,27 @@ export default function RobloxToolkitPanel({ generation, onUpdate, onOpenAvatarW
                   {pushing ? "Pushing…" : "Push 3D Model"}
                 </button>
               ) : (
-                <a
-                  href={`${api.defaults.baseURL}/roblox/accessory/${id}.rbxmx`}
-                  download
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await api.get(`/roblox/accessory/${id}.rbxmx`, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([response.data]));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', `${generation.display_name || 'accessory'}.rbxmx`);
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                      window.URL.revokeObjectURL(url);
+                    } catch (e) {
+                      toast.error('Download failed');
+                    }
+                  }}
                   data-testid="toolkit-rbxmx-download"
                   className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 bg-[#ccff00] text-black hover:shadow-[0_0_14px_rgba(204,255,0,0.55)] transition-all"
                 >
                   <DownloadSimple size={11} weight="bold" /> Download .RBXMX
-                </a>
+                </button>
               )}
             </ToolkitRow>
           )}
