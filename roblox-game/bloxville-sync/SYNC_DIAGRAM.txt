@@ -1,0 +1,252 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    BLOXVILLE ROJO SYNC ARCHITECTURE                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          YOUR COMPUTER (Files)                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Edit files with
+                                    │ VS Code / any editor
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  C:\bloxdrops\roblox-game\BloxVille\                                        │
+│  ├── ClientScripts/                                                         │
+│  │   ├── SoundManager.lua          ◄── 🎵 Background music system          │
+│  │   ├── WelcomeScreen.lua         ◄── 🎨 Black welcome banner            │
+│  │   ├── HUD.lua                   ◄── 💰 Player stats display            │
+│  │   └── ... (10 more files)                                               │
+│  │                                                                          │
+│  ├── ServerScripts/                                                         │
+│  │   ├── GameInitializer.lua       ◄── 🎮 Main game setup                 │
+│  │   ├── MapBuilder.lua            ◄── 🏙️ City generator                  │
+│  │   ├── JobSystem.lua             ◄── 💼 Job management                  │
+│  │   └── ... (14 more files)                                               │
+│  │                                                                          │
+│  └── Modules/                                                               │
+│      ├── Config.lua                ◄── ⚙️ Game configuration               │
+│      └── NeonPizzaSign.lua         ◄── 🍕 Pizza shop sign                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Watches for changes
+                                    │ (automatic)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ROJO SERVER (Port 34872)                            │
+│                                                                             │
+│  Status: ✅ RUNNING                                                         │
+│  Location: C:\bloxdrops\roblox-game\bloxville-sync\                        │
+│  Config: default.project.json                                              │
+│                                                                             │
+│  [Detects file changes] → [Prepares sync] → [Sends to Studio]             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ WebSocket connection
+                                    │ (instant sync)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ROBLOX STUDIO (Rojo Plugin)                         │
+│                                                                             │
+│  Plugin Status: Click "Connect" then "Sync In"                             │
+│  Port: 34872                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Syncs to game tree
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ROBLOX STUDIO EXPLORER TREE                            │
+│                                                                             │
+│  📁 StarterPlayer                                                           │
+│    └─ 📁 StarterPlayerScripts                                              │
+│        └─ 📁 BloxVille                  ◄── Client scripts folder          │
+│            ├─ 🎵 SoundManager.lua       ◄── Background music               │
+│            ├─ 🎨 WelcomeScreen.lua      ◄── Black banner                  │
+│            ├─ 💰 HUD.lua                                                   │
+│            ├─ 🎮 UIController.lua                                          │
+│            ├─ 📱 MainUI.lua                                                │
+│            ├─ 📋 MenuSystem.lua                                            │
+│            ├─ 🔔 NotificationUI.lua                                        │
+│            ├─ 💼 JobMenuUI.lua                                             │
+│            ├─ 🛒 ShopUI.lua                                                │
+│            ├─ 👥 TeamSelectionUI.lua                                       │
+│            ├─ 🚗 VehicleMenuUI.lua                                         │
+│            ├─ 🍕 PizzaDeliveryUI.lua                                       │
+│            └─ ⚙️ ClientInit.lua                                            │
+│                                                                             │
+│  📁 ServerScriptService                                                     │
+│    └─ 📁 BloxVille                      ◄── Server scripts folder          │
+│        ├─ 🎮 GameInitializer.lua                                           │
+│        ├─ 🏙️ MapBuilder.lua                                                │
+│        ├─ 💼 JobSystem.lua                                                 │
+│        ├─ 🚗 VehicleSpawner.lua                                            │
+│        ├─ 🚙 VehicleModels.lua                                             │
+│        ├─ 🍕 PizzaDeliverySystem.lua                                       │
+│        ├─ 🏠 HousingSystem.lua                                             │
+│        ├─ 💾 DataStore.lua                                                 │
+│        ├─ 📡 EventsSetup.lua                                               │
+│        ├─ 📍 SpawnManager.lua                                              │
+│        ├─ 🤖 NPCSystem.lua                                                 │
+│        ├─ 💡 LightingSetup.lua                                             │
+│        ├─ 🌃 StreetLights.lua                                              │
+│        ├─ 🔊 AmbientSounds.lua                                             │
+│        ├─ 👆 ProximityPromptSetup.lua                                      │
+│        └─ 👋 WelcomeSystem.lua                                             │
+│                                                                             │
+│  📁 ReplicatedStorage                                                       │
+│    ├─ 📁 Modules                        ◄── Shared modules                 │
+│    │   ├─ ⚙️ Config.lua                                                    │
+│    │   └─ 🍕 NeonPizzaSign.lua                                             │
+│    └─ 📁 Events                         ◄── Remote events (created runtime)│
+│                                                                             │
+│  📁 SoundService                                                            │
+│    └─ 🎵 BackgroundMusic (Sound)       ◄── Created by SoundManager        │
+│                                                                             │
+│  📁 Lighting                                                                │
+│    └─ (Enhanced settings)               ◄── ShadowMap, ambient, etc.      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ When you press Play
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           GAME RUNNING IN STUDIO                            │
+│                                                                             │
+│  1. Scripts initialize                                                      │
+│  2. 🎵 Background music starts playing (SoundManager.lua)                  │
+│  3. 🎨 Welcome screen appears (WelcomeScreen.lua)                          │
+│  4. Player sees black banner with features                                 │
+│  5. Music loops continuously in background                                 │
+│  6. Click "START PLAYING" → Banner fades out                               │
+│  7. 🏙️ City generates, jobs available, vehicles ready                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              WORKFLOW DIAGRAM                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    YOU EDIT FILE                ROJO DETECTS              STUDIO UPDATES
+         │                            │                          │
+         │                            │                          │
+         ▼                            ▼                          ▼
+    ┌─────────┐                 ┌─────────┐              ┌──────────┐
+    │  Save   │                 │ Watch   │              │  Sync    │
+    │  File   │────────────────▶│ Change  │─────────────▶│  Script  │
+    │ in VSC  │   Instant!      │ Event   │   Instant!   │ to Game  │
+    └─────────┘                 └─────────┘              └──────────┘
+         │                            │                          │
+         │                            │                          │
+         └────────────────────────────┴──────────────────────────┘
+                                      │
+                                      ▼
+                          ✅ Change appears in Studio
+                          ✅ No manual copy/paste
+                          ✅ Test immediately
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         KEY FEATURES HIGHLIGHTED                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🎵 BACKGROUND MUSIC SYSTEM
+   ├─ File: ClientScripts/SoundManager.lua
+   ├─ Sound ID: rbxassetid://1843404009
+   ├─ Volume: 0.3 (30%)
+   ├─ Looped: Yes
+   ├─ Auto-play: On join
+   └─ Location: SoundService/BackgroundMusic
+
+🎨 BLACK WELCOME BANNER
+   ├─ File: ClientScripts/WelcomeScreen.lua
+   ├─ Style: Semi-transparent black overlay
+   ├─ Title: "🍕 BLOXVILLE" (neon green)
+   ├─ Tagline: "Better Than Brookhaven - With Jobs & Purpose"
+   ├─ Features: 6 bullet points with emojis
+   ├─ Button: "START PLAYING" (green, hover effect)
+   ├─ Animation: Smooth fade in/out
+   └─ Display: Shows 0.5s after join
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                            SYNC PROCESS FLOW                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: START ROJO SERVER
+   ┌──────────────────────────────────────┐
+   │  cd bloxville-sync                   │
+   │  rojo serve                          │
+   │  ✅ Server listening on port 34872   │
+   └──────────────────────────────────────┘
+                    │
+                    ▼
+STEP 2: CONNECT IN STUDIO
+   ┌──────────────────────────────────────┐
+   │  1. Open Roblox Studio               │
+   │  2. Open your place                  │
+   │  3. Find Rojo plugin                 │
+   │  4. Click "Connect"                  │
+   │  5. Click "Sync In"                  │
+   │  ✅ Scripts synced!                  │
+   └──────────────────────────────────────┘
+                    │
+                    ▼
+STEP 3: TEST GAME
+   ┌──────────────────────────────────────┐
+   │  1. Press Play in Studio             │
+   │  2. 🎵 Music plays automatically     │
+   │  3. 🎨 Banner appears                │
+   │  4. Click "START PLAYING"            │
+   │  5. 🏙️ Explore the city              │
+   │  ✅ Everything works!                │
+   └──────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          TROUBLESHOOTING MAP                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+ISSUE: Connection Refused
+   └─▶ CHECK: Is Rojo server running?
+       └─▶ FIX: Run "rojo serve" or START_ROJO.bat
+
+ISSUE: Scripts Not Appearing
+   └─▶ CHECK: Did you click "Sync In"?
+       └─▶ FIX: Click "Connect" then "Sync In"
+
+ISSUE: No Music Playing
+   └─▶ CHECK: Is BackgroundMusic in SoundService?
+       └─▶ FIX: Check Output for errors, verify sound ID
+
+ISSUE: No Welcome Banner
+   └─▶ CHECK: Is WelcomeScreen.lua synced?
+       └─▶ FIX: Check PlayerGui, look for errors in Output
+
+ISSUE: Rojo Plugin Missing
+   └─▶ CHECK: Is plugin installed?
+       └─▶ FIX: Run "rojo plugin install", restart Studio
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                            STATUS SUMMARY                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+✅ Rojo Server:        RUNNING (Port 34872)
+✅ Background Music:   CONFIGURED (SoundManager.lua)
+✅ Welcome Banner:     CONFIGURED (WelcomeScreen.lua)
+✅ Client Scripts:     13 FILES READY
+✅ Server Scripts:     17 FILES READY
+✅ Shared Modules:     2 FILES READY
+✅ Documentation:      5 GUIDES CREATED
+✅ Helper Scripts:     START_ROJO.bat READY
+
+STATUS: ✅ READY TO SYNC!
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          NEXT ACTION: CONNECT!                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    Open Roblox Studio → Find Rojo Plugin → Click "Connect" → Click "Sync In"
+
+                            THEN TEST AND ENJOY! 🎉

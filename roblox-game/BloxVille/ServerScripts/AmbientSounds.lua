@@ -7,25 +7,27 @@ local function setupAmbientSounds()
 	local cityAmbience = Instance.new("Sound")
 	cityAmbience.Name = "CityAmbience"
 	cityAmbience.SoundId = "rbxassetid://1845756489" -- City sounds
-	cityAmbience.Volume = 0.3
+	cityAmbience.Volume = 0.15
 	cityAmbience.Looped = true
 	cityAmbience.Parent = SoundService
 	cityAmbience:Play()
 	
-	-- Background music (chill vibes)
+	-- Background music (chill vibes) - DISABLED
+	--[[
 	local bgMusic = Instance.new("Sound")
 	bgMusic.Name = "BackgroundMusic"
 	bgMusic.SoundId = "rbxassetid://1837849285" -- Chill music
-	bgMusic.Volume = 0.2
+	bgMusic.Volume = 0.1
 	bgMusic.Looped = true
 	bgMusic.Parent = SoundService
 	bgMusic:Play()
+	--]]
 	
 	-- Night crickets (plays at night)
 	local nightSounds = Instance.new("Sound")
 	nightSounds.Name = "NightSounds"
 	nightSounds.SoundId = "rbxassetid://413641131" -- Cricket sounds
-	nightSounds.Volume = 0.25
+	nightSounds.Volume = 0.12
 	nightSounds.Looped = true
 	nightSounds.Parent = SoundService
 	
@@ -40,12 +42,12 @@ local function setupAmbientSounds()
 				if not nightSounds.IsPlaying then
 					nightSounds:Play()
 				end
-				cityAmbience.Volume = 0.15 -- Quieter at night
+				cityAmbience.Volume = 0.08 -- Quieter at night
 			else
 				if nightSounds.IsPlaying then
 					nightSounds:Stop()
 				end
-				cityAmbience.Volume = 0.3 -- Normal during day
+				cityAmbience.Volume = 0.15 -- Normal during day
 			end
 			
 			wait(30)

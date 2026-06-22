@@ -1,0 +1,54 @@
+{
+  "name": "BloxVille",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Modules": {
+        "$path": "../BloxVille/Modules"
+      },
+      "Events": {
+        "$className": "Folder"
+      }
+    },
+
+    "ServerScriptService": {
+      "BloxVille": {
+        "$path": "../BloxVille/ServerScripts"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "BloxVille": {
+          "$path": "../BloxVille/ClientScripts"
+        }
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true
+      }
+    },
+    
+    "Lighting": {
+      "$properties": {
+        "Ambient": [0.1, 0.1, 0.15],
+        "Brightness": 2.5,
+        "GlobalShadows": true,
+        "Outlines": false,
+        "Technology": "ShadowMap",
+        "ClockTime": 14,
+        "GeographicLatitude": 41.7
+      }
+    },
+    
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true,
+        "AmbientReverb": "City"
+      }
+    }
+  }
+}

@@ -28,9 +28,6 @@ local SOUNDS = {
     Success = "rbxassetid://6895079853",
     Error = "rbxassetid://2865227271",
     LevelUp = "rbxassetid://158309736",
-    
-    -- Background Music
-    BackgroundMusic = "rbxassetid://1843404009",
 }
 
 -- Create sound instances
@@ -48,14 +45,7 @@ end
 
 -- Initialize all sounds
 for name, id in pairs(SOUNDS) do
-    local volume = (name == "BackgroundMusic") and 0.3 or 0.5
-    createSound(name, id, volume)
-end
-
--- Play background music on loop
-if soundInstances.BackgroundMusic then
-    soundInstances.BackgroundMusic.Looped = true
-    soundInstances.BackgroundMusic:Play()
+    createSound(name, id, 0.5)
 end
 
 -- Play sound function
