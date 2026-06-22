@@ -65,10 +65,13 @@ function MapBuilder.CreateJobBuilding(name, position, color, size)
     local building = Instance.new("Model")
     building.Name = name
     
+    -- Make buildings BIGGER
+    local buildingSize = size or Vector3.new(60, 45, 60)
+    
     -- Base
     local base = Instance.new("Part")
     base.Name = "Base"
-    base.Size = size or Vector3.new(40, 30, 40)
+    base.Size = buildingSize
     base.Position = position
     base.Anchored = true
     base.Material = Enum.Material.Brick
@@ -95,26 +98,74 @@ function MapBuilder.CreateJobBuilding(name, position, color, size)
     door.BrickColor = BrickColor.new("Brown")
     door.Parent = building
     
-    -- Sign
+    -- Get building info
+    local displayName = name:upper()
+    local signColor = Color3.fromRGB(255, 200, 0)
+    if name:lower():find("pizza") then
+        displayName = "🍕 PIZZA"
+        signColor = Color3.fromRGB(220, 50, 50)
+    elseif name:lower():find("hospital") then
+        displayName = "🏥 HOSPITAL"
+        signColor = Color3.fromRGB(255, 255, 255)
+    elseif name:lower():find("store") then
+        displayName = "🏪 STORE"
+        signColor = Color3.fromRGB(50, 120, 220)
+    elseif name:lower():find("garage") then
+        displayName = "🔧 GARAGE"
+        signColor = Color3.fromRGB(220, 140, 50)
+    elseif name:lower():find("airport") then
+        displayName = "✈️ AIRPORT"
+        signColor = Color3.fromRGB(100, 180, 255)
+    elseif name:lower():find("office") then
+        displayName = "🏢 OFFICE"
+        signColor = Color3.fromRGB(100, 100, 100)
+    end
+    
+    -- BIGGER realistic sign (metal frame)
+    local signFrame = Instance.new("Part")
+    signFrame.Name = "SignFrame"
+    signFrame.Size = Vector3.new(base.Size.X * 0.85, 10, 1)
+    signFrame.CFrame = base.CFrame * CFrame.new(0, base.Size.Y/2 - 5, base.Size.Z/2 + 0.6)
+    signFrame.Anchored = true
+    signFrame.Material = Enum.Material.Metal
+    signFrame.Color = Color3.fromRGB(40, 40, 40)
+    signFrame.Parent = building
+    
+    -- LED sign panel (realistic)
     local sign = Instance.new("Part")
-    sign.Size = Vector3.new(20, 8, 1)
-    sign.Position = position + Vector3.new(0, base.Size.Y/2 - 4, base.Size.Z/2 + 1)
+    sign.Name = "Sign"
+    sign.Size = Vector3.new(base.Size.X * 0.8, 8, 0.5)
+    sign.CFrame = base.CFrame * CFrame.new(0, base.Size.Y/2 - 5, base.Size.Z/2 + 1.1)
     sign.Anchored = true
     sign.Material = Enum.Material.Neon
-    sign.BrickColor = BrickColor.new("New Yeller")
+    sign.Color = signColor
     sign.Parent = building
     
-    local signGui = Instance.new("SurfaceGui")
-    signGui.Parent = sign
+    -- White text background part
+    local textBg = Instance.new("Part")
+    textBg.Name = "TextBG"
+    textBg.Size = Vector3.new(base.Size.X * 0.75, 7, 0.4)
+    textBg.CFrame = base.CFrame * CFrame.new(0, base.Size.Y/2 - 5, base.Size.Z/2 + 1.4)
+    textBg.Anchored = true
+    textBg.Material = Enum.Material.SmoothPlastic
+    textBg.Color = Color3.fromRGB(255, 255, 255)
+    textBg.Parent = building
     
-    local signLabel = Instance.new("TextLabel")
-    signLabel.Size = UDim2.new(1, 0, 1, 0)
-    signLabel.BackgroundTransparency = 1
-    signLabel.Text = name:upper()
-    signLabel.TextScaled = true
-    signLabel.Font = Enum.Font.GothamBlack
-    signLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-    signLabel.Parent = signGui
+    -- Text on white background
+    local textGui = Instance.new("SurfaceGui")
+    textGui.Face = Enum.NormalId.Front
+    textGui.AlwaysOnTop = false
+    textGui.LightInfluence = 0
+    textGui.Parent = textBg
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = displayName
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBlack
+    textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Parent = textGui
     
     -- Interaction point
     local interaction = Instance.new("Part")

@@ -1,0 +1,89 @@
+🚀 EASIEST WAY TO INSTALL ALL SCRIPTS
+
+METHOD 1: AUTO-CREATE EMPTY SCRIPTS (FASTEST)
+==============================================
+
+1. In Roblox Studio, go to VIEW → Command Bar (or press Ctrl+Shift+X)
+
+2. Copy EVERYTHING from AUTO_INSTALLER.lua file
+
+3. Paste into Command Bar at bottom of Studio
+
+4. Press ENTER
+
+5. Check Output window (F9) - you'll see all scripts created!
+
+6. Now manually copy code into each script:
+   - Double-click each script in Explorer
+   - Open matching .lua file from project folder
+   - Copy all code (Ctrl+A, Ctrl+C)
+   - Paste into Studio script (Ctrl+V)
+   - Save (Ctrl+S)
+
+
+METHOD 2: MANUAL ONE-BY-ONE (MORE CONTROL)
+===========================================
+
+Follow QUICK_INSTALL_GUIDE.md - takes 15 minutes but you see exactly what's happening.
+
+
+WHAT YOU NEED TO INSTALL:
+==========================
+
+SERVER SCRIPTS (in ServerScriptService):
+✅ MapBuilder (already have)
+✅ BuildCity (already have)
+❌ GameInitializer
+❌ DataStore
+❌ EventsSetup
+❌ HousingSystem
+❌ JobSystem
+❌ ProximityPromptSetup
+❌ VehicleModels
+❌ VehicleSpawner
+
+CLIENT SCRIPTS (in StarterPlayerScripts):
+❌ ClientInit
+❌ JobMenuUI
+❌ NotificationUI
+❌ ShopUI
+❌ SoundManager
+❌ UIController
+❌ UIManager
+❌ VehicleMenuUI
+
+CONFIG (in ReplicatedStorage/Modules):
+❌ Config
+
+
+AFTER INSTALLING:
+==================
+
+1. Press F5 to test
+2. Check Output (F9) for errors
+3. Should see: "🎮 Initializing BloxVille..."
+4. Map should auto-generate
+5. UI should appear on screen
+
+
+TROUBLESHOOTING:
+================
+
+If Command Bar doesn't work:
+- Use METHOD 2 (manual)
+- It's safer and you learn the structure
+
+If scripts have errors:
+- Make sure you copied ALL the code
+- Check script type (Script vs LocalScript vs ModuleScript)
+- Check it's in the right location
+
+
+TIME ESTIMATE:
+==============
+
+METHOD 1: 20-30 minutes (5 min auto-create + 15-25 min copy code)
+METHOD 2: 30-45 minutes (manual but thorough)
+
+
+YOU'VE GOT THIS! 🚀
