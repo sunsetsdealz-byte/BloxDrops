@@ -10,10 +10,15 @@ Config.GameName = "BloxVille"
 Config.Version = "1.0.0"
 Config.MaxPlayers = 50
 
--- Economy
-Config.StartingCash = 500
-Config.DailyCashBonus = 100
-Config.VIPCashMultiplier = 2
+-- Economy (Better than Brookhaven - actual progression)
+Config.Economy = {
+    StartingCash = 500,
+    DailyCashBonus = 100,
+    VIPCashMultiplier = 2,
+    MaxCash = 10000000,
+    TipEnabled = true,
+    TipAmount = 10
+}
 
 -- Housing
 Config.Houses = {

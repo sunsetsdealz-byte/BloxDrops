@@ -6,8 +6,9 @@
 local Players = game:GetService("Players")
 
 -- CUSTOMIZE SPAWN LOCATION HERE
-local SPAWN_POSITION = Vector3.new(0, 5, -20) -- In front of pizza shop
-local SPAWN_ORIENTATION = Vector3.new(0, 0, 0) -- Facing forward
+-- Position: exact location from your game
+local SPAWN_POSITION = Vector3.new(0.88, 4.86, -110.53)
+local SPAWN_ORIENTATION = Vector3.new(0, -9.31, 0) -- Facing direction from your game
 
 -- Create spawn location part (invisible)
 local spawnPart = Instance.new("SpawnLocation")
