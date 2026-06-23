@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { downloadRbxmx } from "../lib/rbxmxBuilder";
 
 /**
  * Roblox Toolkit — collapsible card grouping all the GLB post-processing
@@ -242,20 +243,14 @@ export default function RobloxToolkitPanel({ generation, onUpdate, onOpenAvatarW
                 </button>
               ) : (
                 <button
-                  onClick={async () => {
-                    try {
-                      const response = await api.get(`/roblox/accessory/${id}.rbxmx`, { responseType: 'blob' });
-                      const url = window.URL.createObjectURL(new Blob([response.data]));
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.setAttribute('download', `${generation.display_name || 'accessory'}.rbxmx`);
-                      document.body.appendChild(link);
-                      link.click();
-                      link.remove();
-                      window.URL.revokeObjectURL(url);
-                    } catch (e) {
-                      toast.error('Download failed');
-                    }
+                  onClick={() => {
+                    downloadRbxmx({
+                      assetId: generation.roblox_asset_id,
+                      name: generation.display_name || generation.original_prompt || 'BloxDrops Accessory',
+                      attachmentType: generation.attachment_type || 'Hat',
+                      description: generation.description || '',
+                    });
+                    toast.success('Downloaded! Drag into Roblox Studio Explorer');
                   }}
                   data-testid="toolkit-rbxmx-download"
                   className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 bg-[#ccff00] text-black hover:shadow-[0_0_14px_rgba(204,255,0,0.55)] transition-all"
